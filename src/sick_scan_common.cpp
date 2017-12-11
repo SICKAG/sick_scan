@@ -638,7 +638,7 @@ namespace sick_scan
 			}
 			else
 			{
-				outputChannelFlag[i] = true;
+				outputChannelFlag[i] = false;
 			}
 		}
 
@@ -962,6 +962,13 @@ namespace sick_scan
 
 			if (cmdId == CMD_START_MEASUREMENT)
 			{
+
+				if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
+				{
+					// do nothing for tim5xx
+				}
+				else
+				{
 				int maxWaitForDeviceStateReady = 45;   // max. 30 sec. (see manual)
 				bool scannerReady = false;
 				for (int i = 0; i < maxWaitForDeviceStateReady; i++)
@@ -987,7 +994,7 @@ namespace sick_scan
 					ros::Duration(shortSleepTime).sleep();
 
 				}
-
+				}
 			}
 			tmpReply.clear();
 
