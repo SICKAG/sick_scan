@@ -617,7 +617,7 @@ namespace sick_scan
 		maxNumberOfEchos = this->parser_->getCurrentParamPtr()->getNumberOfMaximumEchos();  // 1 for TIM 571, 3 for MRS1104, 5 for 6000
 
 		bool rssiFlag = false;
-		int activeEchos = false;
+		int activeEchos = 0;
 		ros::NodeHandle pn("~");
 		pn.getParam("intensity", rssiFlag);
 

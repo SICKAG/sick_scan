@@ -1,2 +1,6 @@
 
 ros_win/
+
+cmake-build-debug/
+
+\.idea/
