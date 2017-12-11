@@ -580,11 +580,8 @@ namespace sick_scan
 		// After definition of command, we specify the command sequence for scanner initalisation
 
 		// try for MRS1104
-		if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() > 1)
-		{
-			sopasCmdChain.push_back(CMD_STOP_MEASUREMENT); // MRS1104 recommendation
-		}
 
+		sopasCmdChain.push_back(CMD_STOP_MEASUREMENT); // MRS1104 recommendation
 		sopasCmdChain.push_back(CMD_DEVICE_IDENT);
 		sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
 		sopasCmdChain.push_back(CMD_FIRMWARE_VERSION);
