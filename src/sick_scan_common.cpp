@@ -928,8 +928,19 @@ namespace sick_scan
 			//-----------------------------------------------------------------
 		std::vector<int> startProtocolSequence;
 
-		startProtocolSequence.push_back(CMD_RUN);  // leave user level
-		startProtocolSequence.push_back(CMD_START_MEASUREMENT);
+
+		// RUN and START MEASUREMENT must be called in different sequence for TiM5xx and MRS1104
+		if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)  // TiM5xx
+		{
+			startProtocolSequence.push_back(CMD_START_MEASUREMENT);
+			startProtocolSequence.push_back(CMD_RUN);  // leave user level
+		}
+		else
+		{
+			startProtocolSequence.push_back(CMD_RUN);  // leave user level
+			startProtocolSequence.push_back(CMD_START_MEASUREMENT);
+
+		}
 		startProtocolSequence.push_back(CMD_START_SCANDATA);
 
 
