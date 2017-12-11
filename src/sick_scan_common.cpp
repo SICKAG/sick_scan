@@ -582,8 +582,15 @@ namespace sick_scan
 		// try for MRS1104
 
 		sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3);
-		sopasCmdChain.push_back(CMD_STOP_MEASUREMENT); // MRS1104 recommendation
-		sopasCmdChain.push_back(CMD_DEVICE_IDENT);
+
+		if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
+		{
+		     // do not stop measurement for TiM571 otherweise the scanner would not start after start measurement command	
+		}
+		else
+		{
+			sopasCmdChain.push_back(CMD_DEVICE_IDENT);
+		}
 		sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
 		sopasCmdChain.push_back(CMD_FIRMWARE_VERSION);
 		sopasCmdChain.push_back(CMD_DEVICE_STATE);
