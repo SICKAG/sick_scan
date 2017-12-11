@@ -163,17 +163,6 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 #endif
 
 		result = s->init();
-		s->switchToAuthorizeClient();
-
-		// HIER TESTCODE TESTCASES
-		s->stopScanData();
-		// s->stopMeasurement(); // disabled due to stability problems
-
-		
-		s->run();
-		s->switchToAuthorizeClient();
-		s->startMeasurement();
-		s->startScanData();
 
 		sick_scan::SickScanConfig cfg;
 

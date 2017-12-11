@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2013, Osnabrück University
- * Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning
+ * Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
+ * Copyrigth (C) 2017, SICK AG, Waldkirch
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -317,7 +318,11 @@ namespace sick_scan
 		std::string expectedAnswer = generateExpectedAnswerString(requestStr);
 
 		// send sopas cmd
+
+		ROS_INFO("Sending  : %s", stripControl(requestStr).c_str());
 		result = sendSOPASCommand(requestStr.c_str(), reply);
+		std::string replyStr = replyToString(*reply);
+		ROS_INFO("Receiving: %s", stripControl(replyStr).c_str());
 
 		if (result != 0)
 		{
@@ -538,6 +543,7 @@ namespace sick_scan
 		sopasCmdVec[CMD_STOP_SCANDATA] = "\x02sEN LMDscandata 0\x03";
 		sopasCmdVec[CMD_START_SCANDATA] = "\x02sEN LMDscandata 1\x03";
 		sopasCmdVec[CMD_START_MEASUREMENT] = "\x02sMN LMCstartmeas\x03";
+		sopasCmdVec[CMD_STOP_MEASUREMENT] = "\x02sMN LMCstopmeas\x03";
 
 		// defining cmd mask for cmds with variable input
 		sopasCmdMaskVec[CMD_SET_PARTICLE_FILTER] = "\x02sWN LFPparticle %d %d\x03";
@@ -572,12 +578,13 @@ namespace sick_scan
 		// ML: Add hier more useful cmd and mask entries
 
 		// After definition of command, we specify the command sequence for scanner initalisation
-		/* not reliable for MRS1104 
+
+		// try for MRS1104
 		if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() > 1)
 		{
 			sopasCmdChain.push_back(CMD_STOP_MEASUREMENT); // MRS1104 recommendation
 		}
-		*/
+
 		sopasCmdChain.push_back(CMD_DEVICE_IDENT);
 		sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
 		sopasCmdChain.push_back(CMD_FIRMWARE_VERSION);
@@ -955,20 +962,46 @@ namespace sick_scan
 			std::vector<unsigned char> tmpReply;
 			sendSopasAndCheckAnswer(sopasCmdVec[cmdId].c_str(), &tmpReply);
 
+
+			if (cmdId == CMD_START_MEASUREMENT)
+			{
+				int maxWaitForDeviceStateReady = 45;   // max. 30 sec. (see manual)
+				bool scannerReady = false;
+				for (int i = 0; i < maxWaitForDeviceStateReady; i++)
+				{
+					double shortSleepTime = 1.0;
+					std::string sopasCmd = sopasCmdVec[CMD_DEVICE_STATE];
+					std::vector<unsigned char> replyDummy;
+					int tmpResult = sendSopasAndCheckAnswer(sopasCmd.c_str(), &replyDummy);
+					std::string reply = replyToString(replyDummy);
+					ROS_INFO("STATE: %s\n", reply.c_str());
+					int deviceState = 0;
+					if (1 == sscanf(reply.c_str(), "sRA SCdevicestate %d", &deviceState))
+					{
+						if (deviceState == 1) // scanner is ready
+						{
+							scannerReady = true; // interrupt waiting for scanner ready
+							ROS_INFO("Scanner ready for measurement after %d [sec]", i);
+							break;
+						}
+
+					}
+					ROS_INFO("Wait for scanner ready state for %d Secs",i);
+					ros::Duration(shortSleepTime).sleep();
+
+				}
+
+			}
 			if (cmdId == CMD_START_SCANDATA)
 			{
+
 				if (oneLayerScanner != true)
 				{
+
 					int sleepTime = 10;
-#ifdef _MSC_VER
-					Sleep(sleepTime * 1000);
-#else
-					ros::Duration(10.0).sleep();
-					// for MRS1104 (wait for ramp up) - firmware problems of scanner
-#endif
+
 				}
 			}
-			ROS_INFO("CMD  : %s", stripControl(sopasCmdVec[cmdId]).c_str());
 			tmpReply.clear();
 
 		}
@@ -1180,8 +1213,8 @@ namespace sick_scan
 #else
 						printf("MSG received...");
 #endif
-						}
 					}
+				}
 
 
 				if (publishPointCloud == true)
@@ -1301,13 +1334,13 @@ namespace sick_scan
 #endif
 					}
 				}
-				}
+			}
 			// Start Point
 			buffer_pos = dend + 1;
-			} // end of while loop
+		} // end of while loop
 
 		return ExitSuccess; // return success to continue looping
-		}
+	}
 
 	void SickScanCommon::check_angle_range(SickScanConfig &conf)
 	{
@@ -1524,7 +1557,7 @@ namespace sick_scan
 		return(bRet);
 	}
 
-	} /* namespace sick_scan */
+} /* namespace sick_scan */
 
 
 
