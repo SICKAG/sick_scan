@@ -585,12 +585,13 @@ namespace sick_scan
 
 		if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
 		{
-		     // do not stop measurement for TiM571 otherweise the scanner would not start after start measurement command	
+		     // do not stop measurement for TiM571 otherweise the scanner would not start after start measurement	
 		}
 		else
 		{
-			sopasCmdChain.push_back(CMD_DEVICE_IDENT);
+			sopasCmdChain.push_back(CMD_STOP_MEASUREMENT);
 		}
+		sopasCmdChain.push_back(CMD_DEVICE_IDENT);
 		sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
 		sopasCmdChain.push_back(CMD_FIRMWARE_VERSION);
 		sopasCmdChain.push_back(CMD_DEVICE_STATE);
