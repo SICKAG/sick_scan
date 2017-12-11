@@ -936,23 +936,9 @@ namespace sick_scan
 			//-----------------------------------------------------------------
 		std::vector<int> startProtocolSequence;
 
-		bool oneLayerScanner = false;
-
-		if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
-		{
-			oneLayerScanner = true;
-			// TiM5xx gives sFA 1 for Run
-			startProtocolSequence.push_back(CMD_START_MEASUREMENT);
-			startProtocolSequence.push_back(CMD_START_SCANDATA);
-			startProtocolSequence.push_back(CMD_RUN);  // leave user level
-		}
-		else
-		{
-			startProtocolSequence.push_back(CMD_RUN);  // leave user level
-			startProtocolSequence.push_back(CMD_START_MEASUREMENT);
-			startProtocolSequence.push_back(CMD_START_SCANDATA);
-
-		}
+		startProtocolSequence.push_back(CMD_RUN);  // leave user level
+		startProtocolSequence.push_back(CMD_START_MEASUREMENT);
+		startProtocolSequence.push_back(CMD_START_SCANDATA);
 
 
 		std::vector<int>::iterator it;
@@ -991,16 +977,6 @@ namespace sick_scan
 
 				}
 
-			}
-			if (cmdId == CMD_START_SCANDATA)
-			{
-
-				if (oneLayerScanner != true)
-				{
-
-					int sleepTime = 10;
-
-				}
 			}
 			tmpReply.clear();
 
