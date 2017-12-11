@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package>
+  <name>sick_scan</name>
+  <version>0.0.10</version>
+  <description>
+    A ROS driver for the SICK TiM series of laser scanners.
+    This package is based on the original sick_tim-repository of Martin Günther et al.
+  </description>
+
+  <maintainer email="michael.lehning@lehning.de">Michael Lehning</maintainer>
+  <author email="ros@jochen.sprickerhof.de">Jochen Sprickerhof</author>
+  <author email="martin.guenther@dfki.de">Martin Günther</author>
+  <author email="michael.lehning@lehning.de">Michael Lehning</author>
+
+  <license>BSD</license>
+  <!-- ML: have to be changed to SICK github-repository -->
+  <!-- ML: see obligations of SICK AG -->
+  <url type="website">http://wiki.ros.org/sick_tim</url>
+  <url type="repository">https://github.com/uos/sick_tim</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>diagnostic_updater</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>libusb-1.0-dev</build_depend>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>diagnostic_updater</run_depend>
+  <run_depend>dynamic_reconfigure</run_depend>
+  <run_depend>libusb-1.0</run_depend>
+</package>
