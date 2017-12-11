@@ -581,6 +581,7 @@ namespace sick_scan
 
 		// try for MRS1104
 
+		sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3);
 		sopasCmdChain.push_back(CMD_STOP_MEASUREMENT); // MRS1104 recommendation
 		sopasCmdChain.push_back(CMD_DEVICE_IDENT);
 		sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
@@ -781,13 +782,7 @@ namespace sick_scan
 		// Set Access Mode to change parameter afterward
 		//
 		//-----------------------------------------------------------------
-		// set Access Mode (vgl. z.B. http://lars.mec.ua.pt/public/Tutorials/SickLMS151/QuickManualforUsingTelegrams_LMS100_v2.pdf
-		// <STX>sMN{ SPC }SetAccessMode{ SPC }03{SPC}F4724744<ETX
 		// sMN SetAccessMode 04 81BE23AA (vgl. https://www.google.de/url?sa=t&rct=j&q=&esrc=s&source=web&cd=2&cad=rja&uact=8&ved=0ahUKEwjTqbS_3NnXAhWCSBQKHfOwAZkQFgguMAE&url=https%3A%2F%2Fwww.sick.com%2Fmedia%2Fpdf%2F7%2F17%2F617%2FIM0056617.PDF&usg=AOvVaw16Wc_EqJALJttj1WjNnWY5 )
-		//
-		std::vector<unsigned char> requestAccessModeAuthClientReply;
-		result = sendSopasAndCheckAnswer(sopasCmdVec[CMD_SET_ACCESS_MODE_3].c_str(), &requestAccessModeAuthClientReply);
-		std::string setAccessModeReplyStr = replyToString(requestAccessModeAuthClientReply);
 
 
 		//-----------------------------------------------------------------
