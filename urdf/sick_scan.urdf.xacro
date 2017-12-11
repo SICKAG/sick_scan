@@ -4,25 +4,25 @@
   xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
   xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <xacro:macro name="sick_tim310" params="name ros_topic">
+  <xacro:macro name="sick_tim_3xx" params="name ros_topic">
     <xacro:sick_scan name="${name}" ros_topic="${ros_topic}"
       length="0.06" width="0.06" height="0.079" mass="0.150" z_offset="0.05595"
       min_range="0.05" max_range="4.0"
-      mesh="package://sick_scan/meshes/sick_tim310.stl" />
+      mesh="package://sick_scan/meshes/sick_tim_3xx.stl" />
   </xacro:macro>
 
   <xacro:macro name="sick_tim_5xx" params="name ros_topic">
     <xacro:sick_scan name="${name}" ros_topic="${ros_topic}" 
       length="0.06" width="0.06" height="0.086" mass="0.250" z_offset="0.06296"
       min_range="0.05" max_range="10.0"
-      mesh="package://sick_scan/meshes/sick_tim551.stl" />
+      mesh="package://sick_scan/meshes/sick_tim_5xx.stl" />
   </xacro:macro>
 
-  <xacro:macro name="sick_mrs_1000" params="name ros_topic">
+  <xacro:macro name="sick_mrs_1xxx" params="name ros_topic">
     <xacro:sick_scan name="${name}" ros_topic="${ros_topic}" 
       length="0.1519" width="0.15" height="0.0926" mass="0.250" z_offset="0.0658"
       min_range="0.05" max_range="10.0"
-      mesh="package://sick_scan/meshes/sick_MRS1000.stl" />
+      mesh="package://sick_scan/meshes/sick_mrs_1xxx.stl" />
   </xacro:macro>
 
   <xacro:macro name="sick_scan" params="name ros_topic length width height mass z_offset min_range max_range mesh">
