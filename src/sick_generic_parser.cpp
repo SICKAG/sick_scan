@@ -137,16 +137,16 @@ namespace sick_scan
 	{
 
 		setScannerType(_scanType);
-		allowedScannerNames.push_back(SICK_SCANNER_MRS_1000_NAME);
+		allowedScannerNames.push_back(SICK_SCANNER_MRS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_TIM_5XX_NAME);
-		allowedScannerNames.push_back(SICK_SCANNER_LMS_1000_NAME);
-		allowedScannerNames.push_back(SICK_SCANNER_MRS_6000_NAME);
+		allowedScannerNames.push_back(SICK_SCANNER_LMS_1XXX_NAME);
+		allowedScannerNames.push_back(SICK_SCANNER_MRS_6XXX_NAME);
 		basicParams.resize(allowedScannerNames.size()); // resize to number of supported scanner types
 		for (int i = 0; i < basicParams.size(); i++) // set specific parameter for each scanner type - scanner type is identified by name
 		{
 			basicParams[i].setScannerName(allowedScannerNames[i]);  // set scanner type for this parameter object
 
-			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_1000_NAME) == 0)  // MRS1000 - 4 layer, 1101 shots per scan
+			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_1XXX_NAME) == 0)  // MRS1000 - 4 layer, 1101 shots per scan
 			{
 				basicParams[i].setNumberOfMaximumEchos(3);
 				basicParams[i].setNumberOfLayers(4);
@@ -154,7 +154,7 @@ namespace sick_scan
 				basicParams[i].setAngularDegreeResolution(0.25);
 				basicParams[i].setElevationDegreeResolution(2.5); // in [degree]
 			}
-			if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1000_NAME) == 0)  // LMS1000 - 4 layer, 1101 shots per scan
+			if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)  // LMS1000 - 4 layer, 1101 shots per scan
 			{
 				basicParams[i].setNumberOfMaximumEchos(3);
 				basicParams[i].setNumberOfLayers(4);
@@ -169,7 +169,7 @@ namespace sick_scan
 				basicParams[i].setNumberOfShots(811);
 				basicParams[i].setAngularDegreeResolution(0.3333);
 			}
-			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6000_NAME) == 0) // future use
+			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) // future use
 			{
 				basicParams[i].setNumberOfMaximumEchos(5);
 				basicParams[i].setNumberOfLayers(24);
@@ -182,7 +182,7 @@ namespace sick_scan
 		int scannerIdx = lookUpForAllowedScanner(scannerType);
 		if (scannerIdx == -1)  // find index of parameter set - derived from scanner type name
 		{
-			printf("Scanner not supported.\n");
+			ROS_ERROR("Scanner not supported.\n");
 			throw new std::string("scanner type " + scannerType + " not supported.");
 		}
 		else

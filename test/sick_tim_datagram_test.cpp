@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 
 		// insert here parsing of argument for test decision
 
-		sick_scan::SickGenericParser* parser = new sick_scan::SickGenericParser(SICK_SCANNER_MRS_1000_NAME);
+		sick_scan::SickGenericParser* parser = new sick_scan::SickGenericParser(SICK_SCANNER_MRS_1XXX_NAME);
 		sick_scan::SickTimDatagramTest s(parser);
 
 		ROS_DEBUG("Start Default Spinning procedure of ROS\n");

@@ -35,10 +35,10 @@
 #ifndef SICK_GENERIC_PARSER_H_
 #define SICK_GENERIC_PARSER_H_
 
-#define SICK_SCANNER_LMS_1000_NAME "sick_lms_1000"
-#define SICK_SCANNER_MRS_1000_NAME "sick_mrs_1000"
+#define SICK_SCANNER_LMS_1XXX_NAME "sick_lms_1xxx"
+#define SICK_SCANNER_MRS_1XXX_NAME "sick_mrs_1xxx"
 #define SICK_SCANNER_TIM_5XX_NAME "sick_tim_5xx"
-#define SICK_SCANNER_MRS_6000_NAME "sick_mrs_6000"
+#define SICK_SCANNER_MRS_6XXX_NAME "sick_mrs_6xxx"
 #include "abstract_parser.h"
 
 #include "sensor_msgs/LaserScan.h"

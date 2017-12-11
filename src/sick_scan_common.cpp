@@ -624,7 +624,7 @@ namespace sick_scan
 		// parse active_echos entry and set flag array
 		pn.getParam("active_echos", activeEchos);
 
-
+		ROS_INFO("Parameter setting for <active_echo: %d>", activeEchos);
 		std::vector<bool> outputChannelFlag;
 		outputChannelFlag.resize(maxNumberOfEchos);
 		int i;
@@ -811,7 +811,7 @@ namespace sick_scan
 
 		char requestOutputAngularRange[MAX_STR_LEN];
 		// special for LMS1000
-		if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_1000_NAME) == 0)
+		if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)
 		{
 			ROS_WARN("Angular settings for LMS 1000 not reliable.\n");
 			double askAngleStart = -137.0;
@@ -897,7 +897,7 @@ namespace sick_scan
 			)
 		{
 			char requestLMDscandatacfg[MAX_STR_LEN];
-			if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_1000_NAME) == 0)
+			if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)
 			{
 				ROS_WARN("ECHO config for LMS 1000 not reliable\n");
 			}
