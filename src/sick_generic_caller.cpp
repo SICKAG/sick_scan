@@ -1,5 +1,7 @@
 /*
-* Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning
+* Copyright (C) 2013, Osnabrück University
+* Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
+* Copyright (C) 2017, SICK AG, Waldkirch
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -10,9 +12,15 @@
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
 *       documentation and/or other materials provided with the distribution.
-*     * Neither the name of Ing.-Buero Dr. Michael Lehning nor the names of its
+*     * Neither the name of Osnabrück University nor the names of its
 *       contributors may be used to endorse or promote products derived from
 *       this software without specific prior written permission.
+*     * Neither the name of SICK AG nor the names of its
+*       contributors may be used to endorse or promote products derived from
+*       this software without specific prior written permission
+*     * Neither the name of Ing.-Buero Dr. Michael Lehning nor the names of its
+*       contributors may be used to endorse or promote products derived from
+*       this software without specific prior written permission
 *
 * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -26,10 +34,14 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-
+*  Last modified: 12th Dec 2017
 *
 *      Authors:
-*      Michael Lehning <michael.lehning@lehning.de>
+*              Michael Lehning <michael.lehning@lehning.de>
+*         Jochen Sprickerhof <jochen@sprickerhof.de>
+*         Martin Günther <mguenthe@uos.de>
+*
+* Based on the TiM communication example by SICK AG.
 *
 */
 

@@ -1,43 +1,49 @@
 /*
- * Copyright (C) 2013, Osnabrück University
- * Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
- * Copyrigth (C) 2017, SICK AG, Waldkirch
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of Osnabrück University nor the names of its
- *       contributors may be used to endorse or promote products derived from
- *       this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- *  Last modified: 9th Dec 2017
- *
- *      Authors:
- *		   Michael Lehning <michael.lehning@lehning.de>
- *         Jochen Sprickerhof <jochen@sprickerhof.de>
- *         Martin Günther <mguenthe@uos.de>
- *
- * Based on the TiM communication example by SICK AG.
- *
- */
+* Copyright (C) 2013, Osnabrück University
+* Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
+* Copyright (C) 2017, SICK AG, Waldkirch
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+*     * Redistributions of source code must retain the above copyright
+*       notice, this list of conditions and the following disclaimer.
+*     * Redistributions in binary form must reproduce the above copyright
+*       notice, this list of conditions and the following disclaimer in the
+*       documentation and/or other materials provided with the distribution.
+*     * Neither the name of Osnabrück University nor the names of its
+*       contributors may be used to endorse or promote products derived from
+*       this software without specific prior written permission.
+*     * Neither the name of SICK AG nor the names of its
+*       contributors may be used to endorse or promote products derived from
+*       this software without specific prior written permission
+*     * Neither the name of Ing.-Buero Dr. Michael Lehning nor the names of its
+*       contributors may be used to endorse or promote products derived from
+*       this software without specific prior written permission
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+*
+*  Last modified: 12th Dec 2017
+*
+*      Authors:
+*              Michael Lehning <michael.lehning@lehning.de>
+*         Jochen Sprickerhof <jochen@sprickerhof.de>
+*         Martin Günther <mguenthe@uos.de>
+*
+* Based on the TiM communication example by SICK AG.
+*
+*/
 
 #ifdef _MSC_VER // compiling simulation for MS-Visual C++ - not defined for linux system
 #pragma warning(disable: 4996)
@@ -100,7 +106,7 @@ namespace sick_scan
 
 	SickScanCommon::SickScanCommon(SickGenericParser* parser) :
 		diagnosticPub_(NULL), expectedFrequency_(15.0), parser_(parser)
-		// FIXME All Tims have 15Hz?
+		// FIXME All Tims have 15Hz?Ftmp
 	{
 		init_cmdTables();
 #ifndef _MSC_VER
@@ -1229,7 +1235,7 @@ namespace sick_scan
 					cloud_.row_step = cloud_.point_step * cloud_.width;
 					cloud_.fields.resize(numChannels);
 					for (int i = 0; i < numChannels; i++) {
-						std::string channelId[] = { "x", "y", "z", "i" };
+						std::string channelId[] = { "x", "y", "z", "intensity" };
 						cloud_.fields[i].name = channelId[i];
 						cloud_.fields[i].offset = i * sizeof(float);
 						cloud_.fields[i].count = 1;
@@ -1301,6 +1307,7 @@ namespace sick_scan
 							if (config_.intensity)
 							{
 								intensity = msg.intensities[aiValidEchoIdx[iEcho] * rangeNum + i];
+
 							}
 							memcpy(ptr + 0, &(point.x), sizeof(float));
 							memcpy(ptr + 4, &(point.y), sizeof(float));

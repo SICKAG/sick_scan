@@ -9,7 +9,7 @@ Requirement:
 Proposed Test Sequence
 
 1. Switch on the scanner
-2. Launch the file in the editor.
+2. To check or modyfy your current launch file, open it with perfred editor.
 3. Check scanner IP address availability: ping aa.bb.cc.dd
     Example for use in the local network: ping 192.168.0.2
 4. If the scanner is pingable, set the correct Linux environment for ROS:
@@ -31,9 +31,10 @@ Proposed Test Sequence
 
 6. To check the node at the console level, the following tests are performed in another terminal window:
 a) rosparam list [ENTER]: output all ROS parameters
-b) rosparam list / mrs_1xxx / * Output of the parameters for the MRS1104
-c) rostopic hz / scan: Check the scan rate output rate
-d) rostopic hz / cloud: Check the Pointcloud2 output rate
+b) rosparam list / sick_mrs_1xxx / * Output of the parameters for the MRS1104
+c) rosparam get /sick_mrs_1xxx/ |tr ',' '\n' out puts the values of the parameter set
+d) rostopic hz /scan: Check the scan rate output rate
+e) rostopic hz /cloud: Check the Pointcloud2 output rate
 
 7. Check the multi-target ability:
     a) Cancel roslaunch with CTRL-C (or alternatively with kill <process>)
@@ -66,7 +67,35 @@ max_ang: +0.785398
 The representation in rviz must then be limited to this area.
 
 
-   
+Remarks for setting parameters for echo_filter and active_echo
+
+Regarding to the SOPAS documentation filtering of multi echo can be set by a echo filter or by using the configuration command.
+The specific SOPAS command are:
+multi_echo corresponds to <STX> ... <EXT>
+echo_filter correspons to <STX> .... <EXT>
+
+The combination of this settings can yield a configuration with no active echos. These setting are handled by the node driver in the following way:
+No actives actives: The software sends the nearest target information (fallback solution to avoid "empty" point clouds).
+In other cases the handling is done by a boolean "AND"-operation. E.g. echo_filter=1 and active_echo=3 gives the following result:
+
+active_echos (3):     0 1 1 
+echo_filter (1) : &   1 1 1
+                     ======
+                      0 1 1   (two echos)
+
+Example for "empty" echo:
+
+active_echos (4):     1 0 0 
+echo_filter (2) : &   0 0 1 (nearest)
+                     ======
+                      0 0 0 (no echos)  --> Fallback to one echo (see above)
+
+
+
+
+
+  
+
    
       
 	  

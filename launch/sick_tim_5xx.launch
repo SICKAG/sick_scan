@@ -1,10 +1,8 @@
 <?xml version="1.0"?>
 <!-- start and stop angle is given in [rad] -->
 <!-- 
-default min_angle is  -45 degree. 
-default max_angle is +225 degree.
-Degree ist measure relative to x-axis. For the default configuration this means a scanning area of -135 degree to 135 degree aligned to the y axis.
-
+default min_angle is  -135 degree. 
+default max_angle is +135 degree.
 -->
 <launch>
 <!-- launch file for the tim_5xx series -->
@@ -12,11 +10,11 @@ Degree ist measure relative to x-axis. For the default configuration this means 
   <node name="sick_tim_5xx" pkg="sick_scan" type="sick_generic_caller"  respawn="false" output="screen">
 
 
-    <!-- Default: min_angle = -45 degree, max_angle = 225 -->
+    <!-- Default: min_angle = -135 degree, max_angle = 135 -->
     <!-- default values: -->
     <!--
-      <param name="min_ang" type="double" value="-0.785398163" />
-      <param name="max_ang" type="double" value="+3.926990817" />
+      <param name="min_ang" type="double" value="-2.35619449" />
+      <param name="max_ang" type="double" value="2.35619449" />
       <param name="intensity" type="bool" value="True" />
       <param name="skip" type="int" value="0" />
       <param name="frame_id" type="str" value="laser" />
@@ -26,9 +24,9 @@ Degree ist measure relative to x-axis. For the default configuration this means 
       <param name="device_number" type="int" value="0" />
       <param name="range_min" type="double" value="0.05" />
     -->
-    <param name="min_ang" type="double" value="-0.785398163" />
-    <param name="max_ang" type="double" value="+0.785398163" />
-    <param name="range_max" type="double" value="25.0" />
+    <param name="min_ang" type="double" value="-2.35619449" /><!-- -135° -->
+    <param name="max_ang" type="double" value="2.35619449" /><!-- 135° -->
+    <param name="range_max" type="double" value="100.0" />
 	
     <param name="hostname" type="string" value="192.168.0.21" />
     <param name="port" type="string" value="2112" />
@@ -49,6 +47,7 @@ DEG	RAD
 -150	-2.617993878
 -145	-2.530727415
 -140	-2.443460953
+-137.5	-2,3998277
 -135	-2.35619449
 -130	-2.268928028
 -125	-2.181661565
@@ -104,6 +103,7 @@ DEG	RAD
 125	2.181661565
 130	2.268928028
 135	2.35619449
+137.5	2,3998277
 140	2.443460953
 145	2.530727415
 150	2.617993878
