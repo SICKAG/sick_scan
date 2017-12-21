@@ -34,7 +34,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 12th Dec 2017
+*  Last modified: 21st Dec 2017
 *
 *      Authors:
 *              Michael Lehning <michael.lehning@lehning.de>
@@ -106,7 +106,7 @@ namespace sick_scan
 
 	SickScanCommon::SickScanCommon(SickGenericParser* parser) :
 		diagnosticPub_(NULL), expectedFrequency_(15.0), parser_(parser)
-		// FIXME All Tims have 15Hz?Ftmp
+		// FIXME All Tims have 15Hz
 	{
 		init_cmdTables();
 #ifndef _MSC_VER
@@ -544,7 +544,7 @@ namespace sick_scan
 		sopasCmdVec[CMD_LOCATION_NAME] = "\x02sRN LocationName\x03\0";
 		sopasCmdVec[CMD_ACTIVATE_STANDBY] = "\x02sMN LMCstandby\x03";
 		sopasCmdVec[CMD_SET_ACCESS_MODE_3] = "\x02sMN SetAccessMode 3 F4724744\x03\0";
-		sopasCmdVec[CMD_OUTPUT_RANGES] = "\x02sRN LMPoutputRange\x03";
+		sopasCmdVec[CMD_GET_OUTPUT_RANGES] = "\x02sRN LMPoutputRange\x03";
 		sopasCmdVec[CMD_RUN] = "\x02sMN Run\x03\0";
 		sopasCmdVec[CMD_STOP_SCANDATA] = "\x02sEN LMDscandata 0\x03";
 		sopasCmdVec[CMD_START_SCANDATA] = "\x02sEN LMDscandata 1\x03";
@@ -575,7 +575,7 @@ namespace sick_scan
 		sopasCmdErrMsg[CMD_APLICATION_MODE] = "Error setting Meanfilter";
 		sopasCmdErrMsg[CMD_SET_ACCESS_MODE_3] = "Error Acces Mode";
 		sopasCmdErrMsg[CMD_SET_OUTPUT_RANGES] = "Error setting angular ranges";
-		sopasCmdErrMsg[CMD_OUTPUT_RANGES] = "Error reading angle range";
+		sopasCmdErrMsg[CMD_GET_OUTPUT_RANGES] = "Error reading angle range";
 		sopasCmdErrMsg[CMD_RUN] = "FATAL ERROR unable to start RUN mode!";
 		sopasCmdErrMsg[CMD_SET_PARTIAL_SCANDATA_CFG] = "Error setting Scandataconfig";
 		sopasCmdErrMsg[CMD_STOP_SCANDATA] = "Error stopping scandata output";
@@ -801,6 +801,40 @@ namespace sick_scan
 
 		//-----------------------------------------------------------------
 		//
+		// Try to read angular resolution of specific scanner.
+		// This is recommended to decide between TiM551 and TiM561/TiM571 capabilities
+		// The TiM551 has an angular resolution of 1.000 [deg]
+		// The TiM561 and TiM571 have an angular resolution of 0.333 [deg]
+		//-----------------------------------------------------------------
+
+		angleRes10000th = (int)(boost::math::round(10000.0   * this->parser_->getCurrentParamPtr()->getAngularDegreeResolution()));
+		std::vector<unsigned char> askOutputAngularRangeReply;
+		result = sendSopasAndCheckAnswer(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &askOutputAngularRangeReply);
+		if (0 == result)
+		{
+			int askTmpAngleRes10000th, askTmpAngleStart10000th, askTmpAngleEnd10000th;
+			char dummy0[MAX_STR_LEN] = { 0 };
+			char dummy1[MAX_STR_LEN] = { 0 };
+			int  dummyInt = 0;
+			std::string askOutputAngularRangeStr = replyToString(askOutputAngularRangeReply);
+			int numArgs = sscanf(askOutputAngularRangeStr.c_str(), "%s %s %d %X %X %X", dummy0, dummy1,
+				&dummyInt,
+				&askTmpAngleRes10000th,
+				&askTmpAngleStart10000th,
+				&askTmpAngleEnd10000th);
+			if (6 == numArgs)
+			{
+				double askTmpAngleRes = askTmpAngleRes10000th / 10000.0;
+				double askTmpAngleStart = askTmpAngleStart10000th / 10000.0;
+				double askTmpAngleEnd = askTmpAngleEnd10000th / 10000.0;
+
+				angleRes10000th = askTmpAngleRes10000th;
+				ROS_INFO("Angle resolution of scanner is %0.5lf [deg]  (in 1/10000th deg: 0x%X)", askTmpAngleRes, askTmpAngleRes10000th);
+
+			}
+		}
+		//-----------------------------------------------------------------
+		//
 		// Set Min- und Max scanning angle given by config
 		//
 		//-----------------------------------------------------------------
@@ -811,7 +845,6 @@ namespace sick_scan
 		// convert to 10000th degree
 		double minAngSopas = rad2deg(this->config_.min_ang) + 90;
 		double maxAngSopas = rad2deg(this->config_.max_ang) + 90;
-		angleRes10000th = (int)(boost::math::round(10000.0   * this->parser_->getCurrentParamPtr()->getAngularDegreeResolution()));
 		angleStart10000th = (int)(boost::math::round(10000.0 * minAngSopas));
 		angleEnd10000th = (int)(boost::math::round(10000.0   * maxAngSopas));
 
@@ -846,8 +879,8 @@ namespace sick_scan
 		// see http://www.ros.org/reps/rep-0103.html#coordinate-frame-conventions for more details
 		//-----------------------------------------------------------------
 
-		std::vector<unsigned char> askOutputAngularRangeReply;
-		result = sendSopasAndCheckAnswer(sopasCmdVec[CMD_OUTPUT_RANGES].c_str(), &askOutputAngularRangeReply);
+		askOutputAngularRangeReply.clear();
+		result = sendSopasAndCheckAnswer(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &askOutputAngularRangeReply);
 		if (result == 0)
 		{
 			int askAngleRes10000th, askAngleStart10000th, askAngleEnd10000th;

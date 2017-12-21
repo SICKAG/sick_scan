@@ -37,7 +37,7 @@
 *  Last modified: 12th Dec 2017
 *
 *      Authors:
-*              Michael Lehning <michael.lehning@lehning.de>
+*         Michael Lehning <michael.lehning@lehning.de>
 *         Jochen Sprickerhof <jochen@sprickerhof.de>
 *         Martin Günther <mguenthe@uos.de>
 *
@@ -78,8 +78,8 @@ int main(int argc, char **argv)
 
 	if (argc == 1) // just for testing without calling by roslaunch
 	{
-		// 	  strcpy(nameTagVal, "__name:=sick_tim_5xx");
-		strcpy(nameTagVal, "__name:=sick_mrs_1xxx"); // dann IP-Adresse auf ...2 stellen
+		strcpy(nameTagVal, "__name:=sick_tim_5xx");
+		// strcpy(nameTagVal, "__name:=sick_mrs_1xxx"); // dann IP-Adresse auf ...2 stellen
 		strcpy(logTagVal, "__log:=/tmp/tmp.log");
 		strcpy(internalDebugTagVal, "__internalDebug:=1");
 		argc_tmp = 4;
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 			strcpy(nameVal, argv_tmp[i] + strlen(nameId));
 			scannerName = nameVal;
 		}
-		printf("%s\n", argv_tmp[i]);
+		ROS_INFO("Program arguments: %s\n", argv_tmp[i]);
 	}
 
 
