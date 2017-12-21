@@ -102,6 +102,41 @@ namespace sick_scan
 	using boost::lambda::var;
 	using boost::lambda::_1;
 
+
+// Prepare for further use - broadcast, if there no responding scanner
+	bool tryBroadCastForMoreInfo(void)
+	{
+		boost::system::error_code error;
+		boost::asio::io_service my_io_service;
+		boost::asio::ip::udp::socket socket(my_io_service);
+		// both the header and the data in a single write operation.
+
+		int port = 30718;
+		socket.open(boost::asio::ip::udp::v4(), error);
+		if (!error)
+		{
+			unsigned char dataArray[] = { 0x10,0x00,0x00,0x080,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x0c, 0xa1, 0x99, 0xc0, 0x01, 0x02, 0xc0, 0xa8, 0x00, 0x64, 0xff, 0xff, 0xff, 0x00 };
+			socket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
+			socket.set_option(boost::asio::socket_base::broadcast(true));
+
+			boost::asio::ip::udp::endpoint senderEndpoint(boost::asio::ip::address_v4::broadcast(), port);
+			boost::asio::const_buffer firstBuf(dataArray, 24);
+		
+			std::vector<boost::asio::const_buffer> buffers;
+			buffers.push_back(boost::asio::buffer(firstBuf));
+
+			socket.send_to(buffers, senderEndpoint);
+			boost::asio::mutable_buffer buf;
+			const int max_length = 10000;
+			char data_[max_length];
+
+			socket.receive_from(boost::asio::buffer(data_, max_length), senderEndpoint);
+			socket.close(error);
+		}
+
+		return(0);
+	}
+
 	int SickScanCommonTcp::init_device()
 	{
 		// Resolve the supplied hostname
@@ -116,6 +151,7 @@ namespace sick_scan
 		{
 			ROS_FATAL("Could not resolve host: ... (%d)(%s)", e.code().value(), e.code().message().c_str());
 			diagnostics_.broadcast(getDiagnosticErrorCode(), "Could not resolve host.");
+
 			return ExitError;
 		}
 
@@ -144,6 +180,8 @@ namespace sick_scan
 				ROS_INFO("Succesfully connected to %s", repr.c_str());
 				break;
 			}
+
+			// tryBroadCastForMoreInfo();
 			ROS_ERROR("Failed to connect to %s", repr.c_str());
 		}
 
