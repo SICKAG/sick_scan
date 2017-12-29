@@ -502,6 +502,7 @@ namespace sick_scan
 	}
 
 
+
 	//************************************
 	// Method:    init
 	// FullName:  sick_scan::SickScanCommon::init
