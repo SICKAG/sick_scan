@@ -58,6 +58,10 @@
 
 #define MAX_NAME_LEN (1024)
 
+#define SICK_GENERIC_MAJOR_VER "001"
+#define SICK_GENERIC_MINOR_VER "000"
+#define SICK_GENERIC_PATCH_LEVEL "000"
+
 
 int main(int argc, char **argv)
 {
@@ -91,6 +95,7 @@ int main(int argc, char **argv)
 		argv_tmp[3] = internalDebugTagVal;
 
 	}
+  ROS_INFO("sick_generic_call V. %s.%s.%s", SICK_GENERIC_MAJOR_VER, SICK_GENERIC_MINOR_VER, SICK_GENERIC_PATCH_LEVEL);
 	for (int i = 0; i < argc_tmp; i++)
 	{
 		if (strstr(argv_tmp[i], nameId) == argv_tmp[i])
@@ -98,7 +103,7 @@ int main(int argc, char **argv)
 			strcpy(nameVal, argv_tmp[i] + strlen(nameId));
 			scannerName = nameVal;
 		}
-		ROS_INFO("Program arguments: %s\n", argv_tmp[i]);
+		ROS_INFO("Program arguments: %s", argv_tmp[i]);
 	}
 
 

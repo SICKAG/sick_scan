@@ -105,9 +105,11 @@ namespace sick_scan
 	}
 
 	SickScanCommon::SickScanCommon(SickGenericParser* parser) :
-		diagnosticPub_(NULL), expectedFrequency_(15.0), parser_(parser)
+		diagnosticPub_(NULL), parser_(parser)
 		// FIXME All Tims have 15Hz
 	{
+    expectedFrequency_ = this->parser_->getCurrentParamPtr()->getExpectedFrequency();
+
 		init_cmdTables();
 #ifndef _MSC_VER
 		dynamic_reconfigure::Server<sick_scan::SickScanConfig>::CallbackType f;
@@ -314,7 +316,7 @@ namespace sick_scan
 		std::string errString;
 		if (cmdId == -1)
 		{
-			errString = "Error unexpected Sopas Answer for request " + requestStr;
+			errString = "Error unexpected Sopas Answer for request " + stripControl(requestStr);
 		}
 		else
 		{
@@ -328,6 +330,7 @@ namespace sick_scan
 		ROS_INFO("Sending  : %s", stripControl(requestStr).c_str());
 		result = sendSOPASCommand(requestStr.c_str(), reply);
 		std::string replyStr = replyToString(*reply);
+		replyStr = "<STX>" + replyStr + "<ETX>";
 		ROS_INFO("Receiving: %s", stripControl(replyStr).c_str());
 
 		if (result != 0)
@@ -391,6 +394,11 @@ namespace sick_scan
 		return result;
 	}
 
+		/*
+		 *  _active : set application type active (true) or inactive (false)
+		 *  _mode   : 0 : "RANG" -> Ranging Mode
+		 *  			    1 : "FEVL" -> Field Application
+		 */
 	int SickScanCommon::setApplicationMode(bool _active, int _mode)
 		//0=RANG (Ranging) 1=FEVL (Field Application)
 	{
@@ -402,8 +410,8 @@ namespace sick_scan
 		//const char setModeMask[] = "\x02sWN SetActiveApplications 1 %s %d\x03";
 		char setAplicationMode[MAX_STR_LEN];
 		std::vector<unsigned char> outputMode;
-		sprintf(setAplicationMode, sopasCmdMaskVec[CMD_APLICATION_MODE].c_str(), modeNametmp, intactive);
-		result = sendSopasAndCheckAnswer(setAplicationMode, &outputMode, CMD_APLICATION_MODE);
+		sprintf(setAplicationMode, sopasCmdMaskVec[CMD_APPLICATION_MODE].c_str(), modeNametmp, intactive);
+		result = sendSopasAndCheckAnswer(setAplicationMode, &outputMode, CMD_APPLICATION_MODE);
 		return result;
 	}
 
@@ -529,8 +537,8 @@ namespace sick_scan
 		for (int i = 0; i < SickScanCommon::CMD_END; i++)
 		{
 			sopasCmdVec[i] = unknownStr;
-			sopasCmdMaskVec[i] = unknownStr;  // you for cmd with variable content. sprintf should print into corresponding sopasCmdVec
-			sopasCmdErrMsg[i] = unknownStr;  // you for cmd with variable content. sprintf should print into corresponding sopasCmdVec
+			sopasCmdMaskVec[i] = unknownStr;  // for cmd with variable content. sprintf should print into corresponding sopasCmdVec
+			sopasCmdErrMsg[i] = unknownStr;
 			sopasReplyVec[i] = unknownStr;
 			sopasReplyStrVec[i] = unknownStr;
 		}
@@ -550,12 +558,16 @@ namespace sick_scan
 		sopasCmdVec[CMD_START_SCANDATA] = "\x02sEN LMDscandata 1\x03";
 		sopasCmdVec[CMD_START_MEASUREMENT] = "\x02sMN LMCstartmeas\x03";
 		sopasCmdVec[CMD_STOP_MEASUREMENT] = "\x02sMN LMCstopmeas\x03";
+		sopasCmdVec[CMD_APPLICATION_MODE_FIELD_OFF] = "\x02sWN SetActiveApplications 1 FEVL 0\x03"; // <STX>sWN{SPC}SetActiveApplications{SPC}1{SPC}FEVL{SPC}1<ETX>
+		sopasCmdVec[CMD_APPLICATION_MODE_RANGING_ON] = "\x02sWN SetActiveApplications 1 RANG 1\x03";
 
-		// defining cmd mask for cmds with variable input
+
+
+						// defining cmd mask for cmds with variable input
 		sopasCmdMaskVec[CMD_SET_PARTICLE_FILTER] = "\x02sWN LFPparticle %d %d\x03";
 		sopasCmdMaskVec[CMD_SET_MEAN_FILTER] = "\x02sWN LFPmeanfilter %d +%d 1\x03";
 		sopasCmdMaskVec[CMD_ALIGNMENT_MODE] = "\x02sWN MMAlignmentMode %d\x03";
-		sopasCmdMaskVec[CMD_APLICATION_MODE] = "\x02sWN SetActiveApplications 1 %s %d\x03";
+		sopasCmdMaskVec[CMD_APPLICATION_MODE] = "\x02sWN SetActiveApplications 1 %s %d\x03";
 		sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES] = "\x02sWN LMPoutputRange 1 %X %X %X\x03";
 		sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
 		sopasCmdMaskVec[CMD_SET_ECHO_FILTER] = "\x02sWN FREchoFilter %d\x03";
@@ -572,8 +584,8 @@ namespace sick_scan
 		sopasCmdErrMsg[CMD_SET_PARTICLE_FILTER] = "Error setting Particelefilter";
 		sopasCmdErrMsg[CMD_SET_MEAN_FILTER] = "Error setting Meanfilter";
 		sopasCmdErrMsg[CMD_ALIGNMENT_MODE] = "Error setting Alignmentmode";
-		sopasCmdErrMsg[CMD_APLICATION_MODE] = "Error setting Meanfilter";
-		sopasCmdErrMsg[CMD_SET_ACCESS_MODE_3] = "Error Acces Mode";
+		sopasCmdErrMsg[CMD_APPLICATION_MODE] = "Error setting Meanfilter";
+		sopasCmdErrMsg[CMD_SET_ACCESS_MODE_3] = "Error Access Mode";
 		sopasCmdErrMsg[CMD_SET_OUTPUT_RANGES] = "Error setting angular ranges";
 		sopasCmdErrMsg[CMD_GET_OUTPUT_RANGES] = "Error reading angle range";
 		sopasCmdErrMsg[CMD_RUN] = "FATAL ERROR unable to start RUN mode!";
@@ -591,12 +603,14 @@ namespace sick_scan
 
 		if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
 		{
-		     // do not stop measurement for TiM571 otherweise the scanner would not start after start measurement	
+		     // do not stop measurement for TiM571 otherwise the scanner would not start after start measurement
 		}
 		else
 		{
 			sopasCmdChain.push_back(CMD_STOP_MEASUREMENT);
 		}
+		sopasCmdChain.push_back(CMD_APPLICATION_MODE_FIELD_OFF);
+		sopasCmdChain.push_back(CMD_APPLICATION_MODE_RANGING_ON);
 		sopasCmdChain.push_back(CMD_DEVICE_IDENT);
 		sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
 		sopasCmdChain.push_back(CMD_FIRMWARE_VERSION);
@@ -637,6 +651,12 @@ namespace sick_scan
 		int numOfFlags = 0;
 		for (i = 0; i < outputChannelFlag.size(); i++)
 		{
+			/*
+			After consultation with the company SICK,
+			all flags are set to true because the firmware currently does not support single selection of targets.
+			The selection of the echoes takes place via FREchoFilter.
+			 */
+			/* former implementation
 			if (activeEchos & (1 << i))
 			{
 				outputChannelFlag[i] = true;
@@ -646,6 +666,9 @@ namespace sick_scan
 			{
 				outputChannelFlag[i] = false;
 			}
+			 */
+			outputChannelFlag[i] = true; // always true (see comment above)
+			numOfFlags++;
 		}
 
 		if (numOfFlags == 0) // Fallback-Solution
@@ -975,7 +998,10 @@ namespace sick_scan
 			//-----------------------------------------------------------------
 		std::vector<int> startProtocolSequence;
 
+		startProtocolSequence.push_back(CMD_START_MEASUREMENT);
+		startProtocolSequence.push_back(CMD_RUN);  // leave user level
 
+#if 0
 		// RUN and START MEASUREMENT must be called in different sequence for TiM5xx and MRS1104
 		if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)  // TiM5xx
 		{
@@ -988,6 +1014,7 @@ namespace sick_scan
 			startProtocolSequence.push_back(CMD_START_MEASUREMENT);
 
 		}
+#endif
 		startProtocolSequence.push_back(CMD_START_SCANDATA);
 
 
@@ -999,7 +1026,7 @@ namespace sick_scan
 			sendSopasAndCheckAnswer(sopasCmdVec[cmdId].c_str(), &tmpReply);
 
 
-			if (cmdId == CMD_START_MEASUREMENT)
+			if (cmdId == CMD_RUN)
 			{
 
 				if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
@@ -1029,7 +1056,7 @@ namespace sick_scan
 						}
 
 					}
-					ROS_INFO("Wait for scanner ready state for %d Secs",i);
+					ROS_INFO("Waiting for scanner ready state since %d secs",i);
 					ros::Duration(shortSleepTime).sleep();
 
 				}
@@ -1082,10 +1109,13 @@ namespace sick_scan
 			return false;
 		}
 
+		bool supported = false;
+
+		// DeviceIdent 8 MRS1xxxx 8 1.3.0.0R.
 		if (sscanf(identStr.c_str(), "sRA 0 6 %6s E V%d.%d", device_string, &version_major, &version_minor) == 3)
 		{
 			std::string devStr = device_string;
-			bool supported = false;
+
 
 			if (devStr.compare(0, 4, "TiM5") == 0)
 			{
@@ -1096,14 +1126,20 @@ namespace sick_scan
 			{
 				ROS_INFO("Device %s V%d.%d found and supported by this driver.", identStr.c_str(), version_major, version_minor);
 			}
-			else
-			{
-				ROS_WARN("Device %s V%d.%d found and maybe unsupported by this driver.", device_string, version_major, version_minor);
-				ROS_WARN("Full SOPAS answer: %s", identStr.c_str());
 
-			}
 		}
 
+		if (identStr.find("MRS1xxx") != std::string::npos )  // received pattern contains 4 'x' but we check only for 3 'x' (MRS1104 should be MRS1xxx)
+		{
+			ROS_INFO("Deviceinfo %s found and supported by this driver.", identStr.c_str());
+			supported = true;
+		}
+
+		if (supported == false)
+		{
+				ROS_WARN("Device %s V%d.%d found and maybe unsupported by this driver.", device_string, version_major, version_minor);
+				ROS_WARN("Full SOPAS answer: %s", identStr.c_str());
+		}
 		return true;
 	}
 
@@ -1380,7 +1416,7 @@ namespace sick_scan
 	{
 		if (conf.min_ang > conf.max_ang)
 		{
-			ROS_WARN("Minimum angle must be greater than maximum angle. Adjusting min_ang.");
+			ROS_WARN("Maximum angle must be greater than minimum angle. Adjusting >min_ang<.");
 			conf.min_ang = conf.max_ang;
 		}
 	}

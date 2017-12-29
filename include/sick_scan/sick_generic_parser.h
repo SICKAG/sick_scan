@@ -61,6 +61,8 @@ namespace sick_scan
 		void setElevationDegreeResolution(double _elevRes); 
 		double getElevationDegreeResolution(void);
 		double getAngularDegreeResolution(void);
+		double getExpectedFrequency(void);
+      void setExpectedFrequency(double _freq);
 		ScannerBasicParam();
 	private:
 		std::string scannerName;
@@ -69,6 +71,7 @@ namespace sick_scan
 		int numberOfMaximumEchos;
 		double elevationDegreeResolution;
 		double angleDegressResolution;
+      double expectedFrequency;
 	};
 
 

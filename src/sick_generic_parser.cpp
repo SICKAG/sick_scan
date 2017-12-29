@@ -115,7 +115,19 @@ namespace sick_scan
 		return(angleDegressResolution);
 	}
 
-	ScannerBasicParam::ScannerBasicParam()
+   double ScannerBasicParam::getExpectedFrequency()
+   {
+     return(expectedFrequency);
+   }
+
+    void ScannerBasicParam::setExpectedFrequency(double _freq)
+    {
+      expectedFrequency = _freq;
+    }
+
+
+
+    ScannerBasicParam::ScannerBasicParam()
 	{
 		this->elevationDegreeResolution = 0.0;
 	}
@@ -164,6 +176,7 @@ namespace sick_scan
 				basicParams[i].setNumberOfShots(1101);
 				basicParams[i].setAngularDegreeResolution(0.25);
 				basicParams[i].setElevationDegreeResolution(2.5); // in [degree]
+        basicParams[i].setExpectedFrequency(50.0);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)  // LMS1000 - 4 layer, 1101 shots per scan
 			{
@@ -172,6 +185,7 @@ namespace sick_scan
 				basicParams[i].setNumberOfShots(1101);
 				basicParams[i].setAngularDegreeResolution(1.00);  // 0.25° wurde nicht unterstuetzt. (SFA 4)
 				basicParams[i].setElevationDegreeResolution(0.0); // in [degree]
+        basicParams[i].setExpectedFrequency(50.0);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_5XX_NAME) == 0) // TIM_5xx - 1 Layer, max. 811 shots per scan
 			{
@@ -179,6 +193,7 @@ namespace sick_scan
 				basicParams[i].setNumberOfLayers(1);
 				basicParams[i].setNumberOfShots(811);
 				basicParams[i].setAngularDegreeResolution(0.3333);
+        basicParams[i].setExpectedFrequency(15.0);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) // future use
 			{
@@ -187,6 +202,7 @@ namespace sick_scan
 				basicParams[i].setNumberOfShots(925);
 				basicParams[i].setAngularDegreeResolution(0.13);
 				basicParams[i].setElevationDegreeResolution(1.25); // in [degree]
+        basicParams[i].setExpectedFrequency(50.0);
 			}
 		}
 
