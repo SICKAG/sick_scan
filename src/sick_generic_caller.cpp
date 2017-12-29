@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 		argv_tmp[3] = internalDebugTagVal;
 
 	}
-  ROS_INFO("sick_generic_call V. %s.%s.%s", SICK_GENERIC_MAJOR_VER, SICK_GENERIC_MINOR_VER, SICK_GENERIC_PATCH_LEVEL);
+  ROS_INFO("sick_generic_caller V. %s.%s.%s", SICK_GENERIC_MAJOR_VER, SICK_GENERIC_MINOR_VER, SICK_GENERIC_PATCH_LEVEL);
 	for (int i = 0; i < argc_tmp; i++)
 	{
 		if (strstr(argv_tmp[i], nameId) == argv_tmp[i])
