@@ -604,15 +604,16 @@ namespace sick_scan
 
 		if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
 		{
-		     // do not stop measurement for TiM571 otherwise the scanner would not start after start measurement
+		  // do not stop measurement for TiM571 otherwise the scanner would not start after start measurement
+      // do not change the application - not support for TiM5xx
 		}
 		else
 		{
 			sopasCmdChain.push_back(CMD_STOP_MEASUREMENT);
-		}
-		sopasCmdChain.push_back(CMD_APPLICATION_MODE_FIELD_OFF);
-		sopasCmdChain.push_back(CMD_APPLICATION_MODE_RANGING_ON);
-		sopasCmdChain.push_back(CMD_DEVICE_IDENT);
+      sopasCmdChain.push_back(CMD_APPLICATION_MODE_FIELD_OFF);
+      sopasCmdChain.push_back(CMD_APPLICATION_MODE_RANGING_ON);
+    }
+    sopasCmdChain.push_back(CMD_DEVICE_IDENT);
 		sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
 		sopasCmdChain.push_back(CMD_FIRMWARE_VERSION);
 		sopasCmdChain.push_back(CMD_DEVICE_STATE);
@@ -788,7 +789,7 @@ namespace sick_scan
 			{
 				char szLocationName[MAX_STR_LEN] = { 0 };
 				const char *strPtr = sopasReplyStrVec[CMD_LOCATION_NAME].c_str();
-				const char *searchPattern = "sRA LocationName D";
+				const char *searchPattern = "sRA LocationName";
 				strcpy(szLocationName, "unknown location");
 
 				if (strstr(strPtr, searchPattern) == strPtr) {

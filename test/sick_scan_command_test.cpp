@@ -203,7 +203,6 @@ int main(int argc, char **argv)
 
 		int tmpVerboseLevel = 0;  // write debug file for scan data
 		nhPriv.setParam("verboseLevel", tmpVerboseLevel);
-		nhPriv.setParam("active_echos", tmpactive_echos);
 		nhPriv.setParam("auto_reboot", tmpauto_reboot);
 		nhPriv.setParam("hostname", tmphostname);
 		nhPriv.setParam("frame_id", tmpframe_id);
