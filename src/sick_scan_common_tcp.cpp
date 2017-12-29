@@ -352,8 +352,8 @@ namespace sick_scan
 		 */
 		std::vector<unsigned char> reply;
 
-		// Wait at most 1000ms for a new scan
-		size_t timeout = 1000;
+		// Wait at most 5000ms for a new scan
+		size_t timeout = 5000;
 		bool exception_occured = false;
 
 		char *buffer = reinterpret_cast<char *>(receiveBuffer);
