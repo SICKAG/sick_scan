@@ -5,7 +5,7 @@ Use the following command to start ROS node:
 For MRS1104:
 >> roslaunch sick_scan sick_mrs_1xxx.launch
 
-For TiM551, TiM561, TiM5714:
+For TiM551, TiM561, TiM571:
 >> roslaunch sick_scan sick_tim_5xx.launch
 
 
