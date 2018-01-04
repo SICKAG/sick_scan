@@ -389,7 +389,8 @@ namespace sick_scan
 
 		char setMeanFilter[MAX_STR_LEN];
 		std::vector<unsigned char> outputMeanFilter;
-		sprintf(setMeanFilter, sopasCmdMaskVec[CMD_SET_MEAN_FILTER].c_str(), intactive, _numberOfScans);
+		const char *setMeanFilterMaskVec=sopasCmdMaskVec[CMD_SET_MEAN_FILTER].c_str();
+		sprintf(setMeanFilter,setMeanFilterMaskVec, intactive, _numberOfScans);
 		result = sendSopasAndCheckAnswer(setMeanFilter, &outputMeanFilter, CMD_SET_MEAN_FILTER);
 		return result;
 	}
@@ -408,10 +409,11 @@ namespace sick_scan
 		int intactive = _active ? 1 : 0;
 		//char *modeName = const_cast<char*>(modeNametmp.c_str());
 		//const char setModeMask[] = "\x02sWN SetActiveApplications 1 %s %d\x03";
-		char setAplicationMode[MAX_STR_LEN];
+		char szApplicationMode[MAX_STR_LEN];
 		std::vector<unsigned char> outputMode;
-		sprintf(setAplicationMode, sopasCmdMaskVec[CMD_APPLICATION_MODE].c_str(), modeNametmp, intactive);
-		result = sendSopasAndCheckAnswer(setAplicationMode, &outputMode, CMD_APPLICATION_MODE);
+		const char* pcCmdMask=sopasCmdMaskVec[CMD_APPLICATION_MODE].c_str();
+		sprintf(szApplicationMode, pcCmdMask, modeNametmp, intactive);
+		result = sendSopasAndCheckAnswer(szApplicationMode, &outputMode, CMD_APPLICATION_MODE);
 		return result;
 	}
 
@@ -431,10 +433,11 @@ namespace sick_scan
 		const int MAX_STR_LEN = 1024;
 		int result = -1;
 		int intactive = _active ? 1 : 0;
-		char setParticleFilter[MAX_STR_LEN];
+		char szSetParticleFilter[MAX_STR_LEN];
 		std::vector<unsigned char> outputMode;
-		sprintf(setParticleFilter, sopasCmdMaskVec[CMD_SET_PARTICLE_FILTER].c_str(), intactive, _particleThreshold);
-		result = sendSopasAndCheckAnswer(setParticleFilter, &outputMode, CMD_SET_PARTICLE_FILTER);
+		const char* pcCmdMask=sopasCmdMaskVec[CMD_SET_PARTICLE_FILTER].c_str();
+		sprintf(szSetParticleFilter, pcCmdMask, intactive, _particleThreshold);
+		result = sendSopasAndCheckAnswer(szSetParticleFilter, &outputMode, CMD_SET_PARTICLE_FILTER);
 		return result;
 	}
 
@@ -887,7 +890,8 @@ namespace sick_scan
 		else
 		{
 			std::vector<unsigned char> outputAngularRangeReply;
-			sprintf(requestOutputAngularRange, sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES].c_str(), angleRes10000th, angleStart10000th, angleEnd10000th);
+			const char* pcCmdMask=sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES].c_str();
+			sprintf(requestOutputAngularRange, pcCmdMask, angleRes10000th, angleStart10000th, angleEnd10000th);
 			result = sendSopasAndCheckAnswer(requestOutputAngularRange, &outputAngularRangeReply);
 		}
 
@@ -968,7 +972,8 @@ namespace sick_scan
 			else
 			{
 				// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
-				sprintf(requestLMDscandatacfg, sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str(), outputChannelFlagId, rssiFlag ? 1 : 0);
+				const char* pcCmdMask=sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
+				sprintf(requestLMDscandatacfg,pcCmdMask , outputChannelFlagId, rssiFlag ? 1 : 0);
 
 				std::vector<unsigned char> lmdScanDataCfgReply;
 				result = sendSopasAndCheckAnswer(requestLMDscandatacfg, &lmdScanDataCfgReply);
@@ -984,7 +989,8 @@ namespace sick_scan
 			if (filterEchoSetting < 0) filterEchoSetting = 0;
 			if (filterEchoSetting > 2) filterEchoSetting = 2;
 			// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
-			sprintf(requestEchoSetting, sopasCmdMaskVec[CMD_SET_ECHO_FILTER].c_str(), filterEchoSetting);
+			const char* pcCmdMask=sopasCmdMaskVec[CMD_SET_ECHO_FILTER].c_str();
+			sprintf(requestEchoSetting,pcCmdMask , filterEchoSetting);
 			std::vector<unsigned char> outputFilterEchoRangeReply;
 			result = sendSopasAndCheckAnswer(requestEchoSetting, &outputFilterEchoRangeReply);
 
@@ -1271,7 +1277,8 @@ namespace sick_scan
 							char szTmp[255] = { 0 };
 							if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() > 1)
 							{
-								sprintf(szTmp, "%s_%+04d_DIST%d", config_.frame_id.c_str(), msg.header.seq, i + 1);
+								const char* cpFrameId=config_.frame_id.c_str();
+								sprintf(szTmp, "%s_%+04d_DIST%d",cpFrameId, msg.header.seq, i + 1);
 								msg.header.frame_id = std::string(szTmp);
 							}
 						}
