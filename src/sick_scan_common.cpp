@@ -154,7 +154,10 @@ namespace sick_scan
 		ROS_ASSERT(diagnosticPub_ != NULL);
 #endif
 	}
-
+    /*!
+     * Stops the scanner
+     * @return
+     */
 	int SickScanCommon::stop_scanner()
 	{
 		/*
@@ -234,7 +237,11 @@ namespace sick_scan
 		return result;
 
 	}
-
+/*!
+ *  Generates the expected answer for an given commandstring
+ * @param requestStr
+ * @return
+ */
 	std::string SickScanCommon::generateExpectedAnswerString(const std::string requestStr)
 	{
 		std::string expectedAnswer = "";
@@ -380,6 +387,7 @@ namespace sick_scan
 		return result;
 	}
 
+
 	int SickScanCommon::setMeanFilter(bool _active, int _numberOfScans)
 	{
 		const int MAX_STR_LEN = 1024;
@@ -405,14 +413,14 @@ namespace sick_scan
 	{
 		const int MAX_STR_LEN = 1024;
 		int result = -1;
-		std::string modeNametmp = _mode ? "FEVL" : "RANG";
+		const char* modeNanetmp = _mode ? "FEVL" : "RANG";
 		int intactive = _active ? 1 : 0;
 		//char *modeName = const_cast<char*>(modeNametmp.c_str());
 		//const char setModeMask[] = "\x02sWN SetActiveApplications 1 %s %d\x03";
 		char szApplicationMode[MAX_STR_LEN];
 		std::vector<unsigned char> outputMode;
 		const char* pcCmdMask=sopasCmdMaskVec[CMD_APPLICATION_MODE].c_str();
-		sprintf(szApplicationMode, pcCmdMask, modeNametmp, intactive);
+		sprintf(szApplicationMode, pcCmdMask, modeNanetmp, intactive);//
 		result = sendSopasAndCheckAnswer(szApplicationMode, &outputMode, CMD_APPLICATION_MODE);
 		return result;
 	}
@@ -1302,7 +1310,7 @@ namespace sick_scan
 					const int numChannels = 4; // x y z i (for intensity)
 					int numOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
 
-
+                    cloud_.header.stamp = ros::Time::now();
 					cloud_.header.frame_id = config_.frame_id;
 					cloud_.header.seq = 0;
 					cloud_.height = numOfLayers * numValidEchos; // due to multi echo multiplied by num. of layers
