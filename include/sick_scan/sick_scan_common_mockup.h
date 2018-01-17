@@ -62,7 +62,7 @@ protected:
   virtual int close_device();
 
   /// Send a SOPAS command to the device and print out the response to the console.
-  virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply);
+  virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen);
 
   /// Read a datagram from the device.
   /**

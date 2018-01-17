@@ -27,7 +27,9 @@ add_library(sick_scan_lib
     src/sick_scan_common.cpp
     src/sick_scan_common_usb.cpp
     src/sick_scan_common_mockup.cpp
-    src/abstract_parser.cpp)
+    src/abstract_parser.cpp
+	src/binPrintf.cpp
+	src/binScanf.cpp)
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
 target_link_libraries(sick_scan_lib
     ${catkin_LIBRARIES}

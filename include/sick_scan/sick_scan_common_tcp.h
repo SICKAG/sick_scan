@@ -59,7 +59,7 @@ protected:
   virtual int close_device();
 
   /// Send a SOPAS command to the device and print out the response to the console.
-  virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply);
+  virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen);
 
   /// Read a datagram from the device.
   /**
@@ -70,7 +70,7 @@ protected:
   virtual int get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length);
  
   // Helpers for boost asio
-  int readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read = 0, bool *exception_occured = 0);
+  int readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read = 0, bool *exception_occured = 0,  bool isBinary = false);
   void handleRead(boost::system::error_code error, size_t bytes_transfered);
   void checkDeadline();
 
@@ -87,11 +87,6 @@ private:
   int timelimit_;
 };
 
-inline void SickScanCommonTcp::handleRead(boost::system::error_code error, size_t bytes_transfered)
-{
-    ec_ = error;
-    bytes_transfered_ += bytes_transfered;
-}
 
 } /* namespace sick_scan */
 #endif /* SICK_TIM3XX_COMMON_TCP_H */

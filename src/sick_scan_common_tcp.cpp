@@ -103,7 +103,7 @@ namespace sick_scan
 	using boost::lambda::_1;
 
 
-// Prepare for further use - broadcast, if there no responding scanner
+	// Prepare for further use - broadcast, if there no responding scanner
 	bool tryBroadCastForMoreInfo(void)
 	{
 		boost::system::error_code error;
@@ -121,7 +121,7 @@ namespace sick_scan
 
 			boost::asio::ip::udp::endpoint senderEndpoint(boost::asio::ip::address_v4::broadcast(), port);
 			boost::asio::const_buffer firstBuf(dataArray, 24);
-		
+
 			std::vector<boost::asio::const_buffer> buffers;
 			buffers.push_back(boost::asio::buffer(firstBuf));
 
@@ -214,6 +214,13 @@ namespace sick_scan
 		return 0;
 	}
 
+	void SickScanCommonTcp::handleRead(boost::system::error_code error, size_t bytes_transfered)
+	{
+		ec_ = error;
+		bytes_transfered_ += bytes_transfered;
+	}
+
+
 	void SickScanCommonTcp::checkDeadline()
 	{
 		if (deadline_.expires_at() <= boost::asio::deadline_timer::traits_type::now())
@@ -228,28 +235,136 @@ namespace sick_scan
 		deadline_.async_wait(boost::bind(&SickScanCommonTcp::checkDeadline, this));
 	}
 
-	int SickScanCommonTcp::readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read, bool *exception_occured)
+	int SickScanCommonTcp::readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read, bool *exception_occured, bool isBinary)
 	{
 		// Set up the deadline to the proper timeout, error and delimiters
 		deadline_.expires_from_now(boost::posix_time::milliseconds(timeout_ms));
 		const char end_delim = static_cast<char>(0x03);
+		int dataLen = 0;
 		ec_ = boost::asio::error::would_block;
 		bytes_transfered_ = 0;
 
-		// Read until 0x03 ending indicator
-		boost::asio::async_read_until(
-			socket_,
-			input_buffer_,
-			end_delim,
-			boost::bind(
-				&SickScanCommonTcp::handleRead,
-				this,
-				boost::asio::placeholders::error,
-				boost::asio::placeholders::bytes_transferred
-			)
-		);
-		do io_service_.run_one(); while (ec_ == boost::asio::error::would_block);
+		size_t to_read;
 
+		if (isBinary)
+		{
+#if 1
+			unsigned char headerData[8] = { 0 };
+			// 1236: Die Netzwerkverbindung wurde durch das lokale System
+
+
+			/*
+			boost::asio::async_read(
+			s, buffers,
+			boost::asio::transfer_all(),
+			handler);
+
+			*/
+			int numBytes = 0;
+
+			std::vector<unsigned char> data(8);
+			boost::asio::async_read(socket_,
+				boost::asio::buffer(data, 8),
+				boost::bind(
+					&SickScanCommonTcp::handleRead,
+					this,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred
+				));
+
+			do io_service_.run_one(); while (ec_ == boost::asio::error::would_block);
+
+			for (int i = 4; i < 8; i++)
+			{
+				int relOffset = i - 4;
+				dataLen |= data[i] << (8 * (7 - i));
+			}
+
+			dataLen += 1; // wg. CRC
+			std::vector<unsigned char> payLoad;
+			payLoad.resize(dataLen);
+
+			boost::asio::async_read(socket_,
+				boost::asio::buffer(&(payLoad[0]), dataLen),
+				boost::asio::transfer_all(),
+				boost::bind(
+					&SickScanCommonTcp::handleRead,
+					this,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred
+				)
+			);
+#endif
+			do io_service_.run_one(); while (ec_ == boost::asio::error::would_block);
+
+			std::ostream os(&input_buffer_);
+			// os << "Hello, World!\n";
+			for (int i = 0; i < 8; i++)
+			{
+				os << data[i];
+			}
+			for (int i = 0; i < dataLen; i++)
+			{
+				os << payLoad[i];
+			}
+
+		//	input_buffer_.prepare(8 + dataLen);
+		
+		//	input_buffer_.commit(8 + dataLen);
+
+#if 0
+			if (ec_ == boost::asio::error::would_block)
+			{
+				if (bytes_transfered_ > 8)
+				{
+					for (int i = 0; i < 8; i++)
+					{
+						if (i < 4)
+						{
+							if (input_buffer_[i] == 0x02)
+							{
+
+								// OK
+							}
+							else
+							{
+								ROS_ERROR("sendSOPASCommand: expecting 4-times 0x02, but received: 0x%0x02", headerData[i]);
+							}
+						}
+						else
+						{
+							int relOffset = i - 4;
+							dataLen |= input_buffer_[i] << (8 * (7 - i));
+						}
+					}
+					input_buffer_.consume(8);
+					bytes_transfered_ -= 8;
+				}
+				if (dataLen > 0)
+				{
+					to_read = bytes_transfered_ > buffer_size - 1 ? buffer_size - 1 : bytes_transfered_;
+				}
+			}
+#endif
+		}
+		else
+		{
+			// Read until 0x03 ending indicator
+			boost::asio::async_read_until(
+				socket_,
+				input_buffer_,
+				end_delim,
+				boost::bind(
+					&SickScanCommonTcp::handleRead,
+					this,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred
+				)
+			);
+
+
+			do io_service_.run_one(); while (ec_ == boost::asio::error::would_block);
+		}
 		if (ec_)
 		{
 			// would_block means the connectio is ok, but nothing came in in time.
@@ -267,7 +382,7 @@ namespace sick_scan
 		}
 
 		// Avoid a buffer overflow by limiting the data we read
-		size_t to_read = bytes_transfered_ > buffer_size - 1 ? buffer_size - 1 : bytes_transfered_;
+		to_read = bytes_transfered_ > buffer_size - 1 ? buffer_size - 1 : bytes_transfered_;
 		size_t i = 0;
 		std::istream istr(&input_buffer_);
 		if (buffer != 0)
@@ -296,7 +411,7 @@ namespace sick_scan
 	/**
 	 * Send a SOPAS command to the device and print out the response to the console.
 	 */
-	int SickScanCommonTcp::sendSOPASCommand(const char* request, std::vector<unsigned char> * reply)
+	int SickScanCommonTcp::sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen)
 	{
 		if (!socket_.is_open()) {
 			ROS_ERROR("sendSOPASCommand: socket not open");
@@ -306,11 +421,11 @@ namespace sick_scan
 
 		int sLen = 0;
 		int preambelCnt = 0;
-		bool cmdIsAscii = true;
+		bool cmdIsBinary = false;
 
 		if (request != NULL)
 		{
-			sLen = strlen(request);
+			sLen = cmdLen;
 			preambelCnt = 0; // count 0x02 bytes to decide between ascii and binary command
 			if (sLen >= 4)
 			{
@@ -323,14 +438,15 @@ namespace sick_scan
 			}
 
 			if (preambelCnt < 4) {
-				cmdIsAscii = true;
+				cmdIsBinary = false;
 			}
 			else
 			{
-				cmdIsAscii = false;
+				cmdIsBinary = true;
 			}
 			int msgLen = 0;
-			if (cmdIsAscii == true) {
+			if (cmdIsBinary == false)
+			{
 				msgLen = strlen(request);
 			}
 			else
@@ -361,7 +477,7 @@ namespace sick_scan
 		const int BUF_SIZE = 1000;
 		char buffer[BUF_SIZE];
 		int bytes_read;
-		if (readWithTimeout(1000, buffer, BUF_SIZE, &bytes_read, 0) == ExitError)
+		if (readWithTimeout(1000, buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
 		{
 			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after 1s");
 			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after 5 s.");

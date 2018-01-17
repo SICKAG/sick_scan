@@ -50,7 +50,8 @@
 #include <string.h>
 
 #include "sick_scan/sick_generic_laser.h"
-
+#include "sick_scan/binScanf.hpp"
+#include "sick_scan/binPrintf.hpp"
 
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
@@ -62,7 +63,6 @@
 #define SICK_GENERIC_MINOR_VER "000"
 #define SICK_GENERIC_PATCH_LEVEL "000"
 
-
 int main(int argc, char **argv)
 {
 	char nameId[] = "__name:=";
@@ -71,7 +71,8 @@ int main(int argc, char **argv)
 	int argc_tmp;
 	std::string scannerName = "????";
 
-
+	binScanfTest();
+	
 	argc_tmp = argc;
 	argv_tmp = argv;
 

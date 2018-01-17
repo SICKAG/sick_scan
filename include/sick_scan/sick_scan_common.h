@@ -104,8 +104,9 @@ namespace sick_scan
 		virtual ~SickScanCommon();
 		int setIpAddress(std::string ipAddress);
 		int setParticleFilter(bool _active, int _particleThreshold);//actualy only 500 mm is working.
-		std::string generateExpectedAnswerString(const std::string requestStr);
-		int sendSopasAndCheckAnswer(std::string request, std::vector<unsigned char> *reply, int cmdId = -1);
+		std::string generateExpectedAnswerString(const std::vector<unsigned char> requestStr);
+		int sendSopasAndCheckAnswer(std::string request, std::vector<unsigned char> *reply, int cmdId);
+		int sendSopasAndCheckAnswer(std::vector<unsigned char> request, std::vector<unsigned char> *reply, int cmdId);
 		int setAligmentMode(int _AligmentMode);
 		int setMeanFilter(bool _active, int _numberOfScans);
 		int setApplicationMode(bool _active, int _mode); //0=RANG (Ranging) 1=FEVL (Field Application).
@@ -122,7 +123,7 @@ namespace sick_scan
 		void update_config(sick_scan::SickScanConfig &new_config, uint32_t level = 0);
 
 		double get_expected_frequency() const { return expectedFrequency_; }
-		int convertAscii2BinaryCmd(const char *requestAscii, std::vector<char>* requestBinary);
+		int convertAscii2BinaryCmd(const char *requestAscii, std::vector<unsigned char>* requestBinary);
 		int init_cmdTables();
 
 		/// Send a SOPAS command to the scanner that should cause a soft reset
@@ -148,7 +149,7 @@ namespace sick_scan
 		 * \param [in] request the command to send.
 		 * \param [out] reply if not NULL, will be filled with the reply package to the command.
 		 */
-		virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply) = 0;
+		virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen = -1) = 0;
 		/// Read a datagram from the device.
 		/**
 		 * \param [in] receiveBuffer data buffer to fill

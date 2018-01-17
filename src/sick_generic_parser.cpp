@@ -62,7 +62,7 @@
 namespace sick_scan
 {
 
-	
+
 	void ScannerBasicParam::setScannerName(std::string _s)
 	{
 		scannerName = _s;
@@ -115,21 +115,22 @@ namespace sick_scan
 		return(angleDegressResolution);
 	}
 
-   double ScannerBasicParam::getExpectedFrequency()
-   {
-     return(expectedFrequency);
-   }
+	double ScannerBasicParam::getExpectedFrequency()
+	{
+		return(expectedFrequency);
+	}
 
-    void ScannerBasicParam::setExpectedFrequency(double _freq)
-    {
-      expectedFrequency = _freq;
-    }
+	void ScannerBasicParam::setExpectedFrequency(double _freq)
+	{
+		expectedFrequency = _freq;
+	}
 
 
 
-    ScannerBasicParam::ScannerBasicParam()
+	ScannerBasicParam::ScannerBasicParam()
 	{
 		this->elevationDegreeResolution = 0.0;
+		this->setUseBinaryProtocol(false);
 	}
 
 	void ScannerBasicParam::setAngularDegreeResolution(double _res)
@@ -143,6 +144,16 @@ namespace sick_scan
 		this->elevationDegreeResolution = _elevRes;
 	}
 
+	bool ScannerBasicParam::getUseBinaryProtocol(void)
+	{
+		return(useBinaryProtocol);
+	}
+
+	void ScannerBasicParam::setUseBinaryProtocol(bool _useBinary)
+	{
+		this->useBinaryProtocol = _useBinary;
+	}
+
 	double ScannerBasicParam::getElevationDegreeResolution()
 	{
 		return(this->elevationDegreeResolution);
@@ -151,6 +162,7 @@ namespace sick_scan
 	{
 		return(currentParamSet);
 	}
+
 
 	SickGenericParser::SickGenericParser(std::string _scanType) :
 		AbstractParser(),
@@ -176,7 +188,8 @@ namespace sick_scan
 				basicParams[i].setNumberOfShots(1101);
 				basicParams[i].setAngularDegreeResolution(0.25);
 				basicParams[i].setElevationDegreeResolution(2.5); // in [degree]
-        basicParams[i].setExpectedFrequency(50.0);
+				basicParams[i].setExpectedFrequency(50.0);
+				basicParams[i].setUseBinaryProtocol(false);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)  // LMS1000 - 4 layer, 1101 shots per scan
 			{
@@ -185,7 +198,8 @@ namespace sick_scan
 				basicParams[i].setNumberOfShots(1101);
 				basicParams[i].setAngularDegreeResolution(1.00);  // 0.25° wurde nicht unterstuetzt. (SFA 4)
 				basicParams[i].setElevationDegreeResolution(0.0); // in [degree]
-        basicParams[i].setExpectedFrequency(50.0);
+				basicParams[i].setExpectedFrequency(50.0);
+				basicParams[i].setUseBinaryProtocol(false);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_5XX_NAME) == 0) // TIM_5xx - 1 Layer, max. 811 shots per scan
 			{
@@ -193,7 +207,8 @@ namespace sick_scan
 				basicParams[i].setNumberOfLayers(1);
 				basicParams[i].setNumberOfShots(811);
 				basicParams[i].setAngularDegreeResolution(0.3333);
-        basicParams[i].setExpectedFrequency(15.0);
+				basicParams[i].setExpectedFrequency(15.0);
+				basicParams[i].setUseBinaryProtocol(false);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) // future use
 			{
@@ -202,7 +217,8 @@ namespace sick_scan
 				basicParams[i].setNumberOfShots(925);
 				basicParams[i].setAngularDegreeResolution(0.13);
 				basicParams[i].setElevationDegreeResolution(1.25); // in [degree]
-        basicParams[i].setExpectedFrequency(50.0);
+				basicParams[i].setExpectedFrequency(50.0);
+				basicParams[i].setUseBinaryProtocol(true);
 			}
 		}
 
@@ -242,9 +258,9 @@ namespace sick_scan
 		rssiNum = 0;
 		int baseOffset = 20;
 
-    distMask = 0;
-  	// More in depth checks: check data length and RSSI availability
-		// 25: Number of data (<= 10F)
+		distMask = 0;
+		// More in depth checks: check data length and RSSI availability
+			// 25: Number of data (<= 10F)
 		unsigned short int number_of_data = 0;
 		if (strstr(fields[baseOffset], "DIST") != fields[baseOffset]) // First initial check
 		{
@@ -263,11 +279,11 @@ namespace sick_scan
 				{
 					distFnd = true;
 					distNum++;
-          int distId = -1;
-          if (1 == sscanf(fields[offset],"DIST%d", &distId))
-          {
-            distMask |= (1 << (distId-1)); // set bit regarding to id
-          }
+					int distId = -1;
+					if (1 == sscanf(fields[offset], "DIST%d", &distId))
+					{
+						distMask |= (1 << (distId - 1)); // set bit regarding to id
+					}
 				}
 				if (strstr(fields[offset], "RSSI") == fields[offset])
 				{
@@ -320,7 +336,7 @@ namespace sick_scan
 		return(iRet);
 	}
 
-    // echoMask introduced to get a workaround for cfg bug using MRS1104
+	// echoMask introduced to get a workaround for cfg bug using MRS1104
 	int SickGenericParser::parse_datagram(char* datagram, size_t datagram_length, SickScanConfig &config,
 		sensor_msgs::LaserScan &msg, int &numEchos, int &echoMask)
 	{
@@ -569,9 +585,9 @@ namespace sick_scan
 			sscanf(fields[j + 26], "%hx", &range);
 			msg.ranges[j - index_min] = range / 1000.0;
 
-// MMM    *x_iter = range_meter * sin(M_PI_2 - alpha) * cos(phi);
-// MMM    *y_iter = range_meter * sin(M_PI_2 - alpha) * sin(phi);
-// MMM    *z_iter = range_meter * cos(M_PI_2 - alpha);
+			// MMM    *x_iter = range_meter * sin(M_PI_2 - alpha) * cos(phi);
+			// MMM    *y_iter = range_meter * sin(M_PI_2 - alpha) * sin(phi);
+			// MMM    *z_iter = range_meter * cos(M_PI_2 - alpha);
 
 		}
 
@@ -604,21 +620,21 @@ namespace sick_scan
 				ROS_WARN_ONCE("Intensity parameter is enabled, but the scanner is not configured to send RSSI values! "
 					"Please read the section 'Enabling intensity (RSSI) output' here: http://wiki.ros.org/sick_tim.");
 			}
-		}
+	}
 #endif
 #if 1  // neuer Ansatz
 		int distNum = 0;
 		int rssiNum = 0;
-		
+
 
 		checkForDistAndRSSI(fields, number_of_data, distNum, rssiNum, msg.ranges, msg.intensities, echoMask);
-		if (config.intensity) 
+		if (config.intensity)
 		{
 			if (rssiNum > 0)
 			{
 
 			}
-			else 
+			else
 			{
 				ROS_WARN_ONCE("Intensity parameter is enabled, but the scanner is not configured to send RSSI values! "
 					"Please read the section 'Enabling intensity (RSSI) output' here: http://wiki.ros.org/sick_tim.");
@@ -692,4 +708,4 @@ namespace sick_scan
 
 	}
 
-	} /* namespace sick_scan */
+} /* namespace sick_scan */
