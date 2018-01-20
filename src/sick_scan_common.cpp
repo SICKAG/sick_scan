@@ -868,6 +868,8 @@ namespace sick_scan
 		}
 		for (int i = 0; i < this->sopasCmdChain.size(); i++)
 		{
+			ros::Duration(1.0).sleep();
+
 			int cmdId = sopasCmdChain[i]; // get next command
 			std::string sopasCmd = sopasCmdVec[cmdId];
 			std::vector<unsigned char> replyDummy;
@@ -1469,7 +1471,7 @@ namespace sick_scan
 		{
 			int cmdId = *it;
 			std::vector<unsigned char> tmpReply;
-//			sendSopasAndCheckAnswer(sopasCmdVec[cmdId].c_str(), &tmpReply);
+			//			sendSopasAndCheckAnswer(sopasCmdVec[cmdId].c_str(), &tmpReply);
 
 			std::string sopasCmd = sopasCmdVec[cmdId];
 			std::vector<unsigned char> replyDummy;
@@ -1507,7 +1509,10 @@ namespace sick_scan
 			switch (cmdId)
 			{
 #endif
-
+				if (cmdId == CMD_START_SCANDATA)
+				{
+					ROS_DEBUG("Starting scan data ....\n");
+				}
 
 				if (cmdId == CMD_RUN)
 				{
@@ -1570,9 +1575,9 @@ namespace sick_scan
 				}
 				tmpReply.clear();
 
-			}
-			return ExitSuccess;
 		}
+			return ExitSuccess;
+	}
 
 
 
@@ -1689,8 +1694,9 @@ namespace sick_scan
 			unsigned char receiveBuffer[65536];
 			int actual_length = 0;
 			static unsigned int iteration_count = 0;
+			bool useBinaryProtocol = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
 
-			int result = get_datagram(receiveBuffer, 65536, &actual_length);
+			int result = get_datagram(receiveBuffer, 65536, &actual_length, useBinaryProtocol);
 			if (result != 0)
 			{
 				ROS_ERROR("Read Error when getting datagram: %i.", result);
@@ -1718,47 +1724,105 @@ namespace sick_scan
 			 */
 			char* buffer_pos = (char*)receiveBuffer;
 			char *dstart, *dend;
-			bool dumpDbg = false;
-			while ((dstart = strchr(buffer_pos, 0x02)) && (dend = strchr(dstart + 1, 0x03)))
+			bool dumpDbg = true;
+			bool dataToProcess = true;
+			while (dataToProcess)
 			{
-				size_t dlength = dend - dstart;
-				*dend = '\0';
-
-				dstart++;
-
-				if (dumpDbg)
-				{
-					{
-						static int cnt = 0;
-						char szFileName[255];
-
-#ifdef _MSC_VER
-						sprintf(szFileName, "c:\\temp\\dump%05d.txt", cnt);
-#else
-						sprintf(szFileName, "/tmp/dump%05d.txt", cnt);
-#endif
-						FILE *fout;
-						fout = fopen(szFileName, "wb");
-						fwrite(dstart, dlength, 1, fout);
-						fclose(fout);
-						cnt++;
-					}
-				}
-
-				// HEADER of data followed by DIST1 ... DIST2 ... DIST3 .... RSSI1 ... RSSI2.... RSSI3...
-
-				// <frameid>_<sign>00500_DIST[1|2|3]
-				int numEchos = 1;
-				int echoMask;
-				// numEchos contains number of echos (1..5)
-				// _msg holds ALL data of all echos
-				int success = parser_->parse_datagram(dstart, dlength, config_, msg, numEchos, echoMask);
-				bool publishPointCloud = true; // for MRS1000
 				const int maxAllowedEchos = 5;
 
 				int numValidEchos = 0;
 				int aiValidEchoIdx[maxAllowedEchos] = { 0 };
+				size_t dlength;
+				int success = -1;
+				int numEchos = 0;
+				int echoMask = 0;
+				bool publishPointCloud = true;
+				if (useBinaryProtocol)
+				{
+					std::vector<unsigned char> receiveBufferVec = std::vector<unsigned char>(receiveBuffer, receiveBuffer + actual_length);
+					if (receiveBufferVec.size() > 8)
+					{
+						long idVal;
+						long lenVal;
+						binScanfVec(&receiveBufferVec, "%4y%4y", &idVal, &lenVal);
 
+						if (idVal == 0x02020202)
+						{
+							if (lenVal < actual_length)
+							{
+								/*
+								HIER WEITERMACHEN!!!!
+								*/
+								/*
+								// "sSN LMDscandata "
+								Offset 50: Layer als Vielfaches von 200 des Winkelwertes als Signed Short
+								Offset 52: 000003e8 // Typo in MANUAL!!
+								Offset 62: Output Channel 2
+								Offset 64: steht DIST1 
+								Offset 69: Real-Value als Multipler
+								Offset 77: StartAngle 00 04 93 E0h
+								Offset 81: Winkelinkrement
+								Offset 83: Werteanzahl 03 9c (924 dec. Werte) 
+								printf("Try to parse ...");
+								*/
+							}
+						}
+					}
+					// change Parsing Mode
+					success = ExitError; // !!! D.h. derzeit werden noch keine Daten publiziert AENDERN!!!!
+					dataToProcess = false; // only one package allowed - no chaining
+				}
+				else
+				{
+					dstart = strchr(buffer_pos, 0x02);
+					dend = strchr(dstart + 1, 0x03);
+					if ((dstart != NULL) && (dend != NULL))
+					{
+						dataToProcess = true; // continue parasing
+						dlength = dend - dstart;
+						*dend = '\0';
+						dstart++;
+					}
+					else
+					{
+						dataToProcess = false;
+						break; // 
+					}
+
+					if (dumpDbg)
+					{
+						{
+							static int cnt = 0;
+							char szFileName[255];
+
+#ifdef _MSC_VER
+							sprintf(szFileName, "c:\\temp\\dump%05d.txt", cnt);
+#else
+							sprintf(szFileName, "/tmp/dump%05d.txt", cnt);
+#endif
+							FILE *fout;
+							fout = fopen(szFileName, "wb");
+							fwrite(dstart, dlength, 1, fout);
+							fclose(fout);
+							cnt++;
+						}
+					}
+
+					// HEADER of data followed by DIST1 ... DIST2 ... DIST3 .... RSSI1 ... RSSI2.... RSSI3...
+
+					// <frameid>_<sign>00500_DIST[1|2|3]
+					numEchos = 1;
+					// numEchos contains number of echos (1..5)
+					// _msg holds ALL data of all echos
+					success = parser_->parse_datagram(dstart, dlength, config_, msg, numEchos, echoMask);
+					publishPointCloud = true; // for MRS1000
+
+					numValidEchos = 0;
+					for (int i = 0; i < maxAllowedEchos; i++)
+					{
+						aiValidEchoIdx[i] = 0;
+					}
+				}
 				if (success == ExitSuccess)
 				{
 					std::vector<float> rangeTmp = msg.ranges;  // copy all range value
@@ -1942,15 +2006,15 @@ namespace sick_scan
 #else
 							printf("PUBLISH:\n");
 #endif
+						}
 					}
 				}
-			}
 				// Start Point
 				buffer_pos = dend + 1;
-		} // end of while loop
+			} // end of while loop
 
 			return ExitSuccess; // return success to continue looping
-	}
+		}
 
 		void SickScanCommon::check_angle_range(SickScanConfig &conf)
 		{
@@ -2087,9 +2151,9 @@ namespace sick_scan
 					if (c >= '0' && c <= '9')
 					{
 						c -= '0';
-			}
+					}
 #endif
-		}
+				}
 				requestBinary->push_back(c);
 				if (requestAscii[i] == 0x20) // space
 				{
@@ -2100,7 +2164,7 @@ namespace sick_scan
 					}
 				}
 
-}
+			}
 
 			for (int i = 0; i < bufferLen; i++) // append variable data
 			{
@@ -2119,7 +2183,7 @@ namespace sick_scan
 			requestBinary->push_back(xorVal);
 			return(0);
 
-};
+		};
 
 		bool SickScanCommon::switchToAuthorizeClient()
 		{
@@ -2219,7 +2283,7 @@ namespace sick_scan
 			return(bRet);
 		}
 
-		} /* namespace sick_scan */
+} /* namespace sick_scan */
 
 
 

@@ -96,7 +96,7 @@ int SickScanCommonMockup::init_scanner()
   return ExitSuccess;
 }
 
-int SickScanCommonMockup::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length)
+int SickScanCommonMockup::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 {
   ROS_DEBUG("Mockup - get_datagram()");
 

@@ -358,6 +358,22 @@ namespace sick_scan
 		std::vector<char> datagram_copy_vec;
 		datagram_copy_vec.resize(datagram_length + 1); // to avoid using malloc. destructor frees allocated mem.
 		char* datagram_copy = &(datagram_copy_vec[0]);
+
+		if (verboseLevel > 0)
+		{
+			bool isBinary = this->getCurrentParamPtr()->getUseBinaryProtocol();
+			if (isBinary)
+			{
+				FILE *ftmp;
+				ftmp = fopen("c:\\temp\\temp.bin", "wb");
+				if (ftmp != NULL)
+				{
+					fwrite(datagram, datagram_length, 1, ftmp);
+					fclose(ftmp);
+				}
+			}
+		}
+
 		strncpy(datagram_copy, datagram, datagram_length); // datagram will be changed by strtok
 		datagram_copy[datagram_length] = 0;
 

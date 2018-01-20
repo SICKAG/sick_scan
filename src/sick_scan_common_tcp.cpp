@@ -385,6 +385,8 @@ namespace sick_scan
 		to_read = bytes_transfered_ > buffer_size - 1 ? buffer_size - 1 : bytes_transfered_;
 		size_t i = 0;
 		std::istream istr(&input_buffer_);
+
+		printf("READ %d bytes\n", to_read);
 		if (buffer != 0)
 		{
 			istr.read(buffer, to_read);
@@ -493,7 +495,7 @@ namespace sick_scan
 		return ExitSuccess;
 	}
 
-	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length)
+	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 	{
 		if (!socket_.is_open()) {
 			ROS_ERROR("get_datagram: socket not open");
@@ -512,7 +514,7 @@ namespace sick_scan
 
 		char *buffer = reinterpret_cast<char *>(receiveBuffer);
 
-		if (readWithTimeout(timeout, buffer, bufferSize, actual_length, &exception_occured) != ExitSuccess)
+		if (readWithTimeout(timeout, buffer, bufferSize, actual_length, &exception_occured, isBinaryProtocol) != ExitSuccess)
 		{
 			ROS_ERROR_THROTTLE(1.0, "get_datagram: no data available for read after %zu ms", timeout);
 			diagnostics_.broadcast(getDiagnosticErrorCode(), "get_datagram: no data available for read after timeout.");

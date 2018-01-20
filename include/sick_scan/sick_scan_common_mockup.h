@@ -70,7 +70,7 @@ protected:
    * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
    * \param [out] actual_length the actual amount of data written
    */
-  virtual int get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length);
+  virtual int get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryFormat);
 
 private:
   ros::NodeHandle nh_;
