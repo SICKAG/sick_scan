@@ -2031,7 +2031,7 @@ namespace sick_scan
 
 			std::string keyWord0 = "sMN SetAccessMode";
 			std::string keyWord1 = "sWN FREchoFilter";
-
+			std::string keyWord2 = "sEN LMDscandata";
 			std::string cmdAscii = requestAscii;
 			int copyUntilSpaceCnt = 2;
 			int spaceCnt = 0;
@@ -2066,6 +2066,15 @@ namespace sick_scan
 				buffer[0] = (unsigned char)(0xFF & echoCodeNumber);
 				bufferLen = 1;
 			}
+			if (cmdAscii.find(keyWord2) != std::string::npos)
+			{
+				int scanDataStatus = 0;
+				int keyWord1Len = keyWord1.length();
+				sscanf(requestAscii + keyWord1Len + 1, " %d", &scanDataStatus);
+				buffer[0] = (unsigned char)(0xFF & scanDataStatus);
+				bufferLen = 1;
+			}
+
 
 			bool switchDoBinaryData = false;
 			for (int i = 1; i <= (int)(msgLen); i++)  // STX DATA ETX --> 0 1 2

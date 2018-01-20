@@ -318,6 +318,10 @@ binScanfVec(const std::vector<unsigned char> *vec, const char *fmt, ...)
 	const char *buf = (const char *)(&(*vec)[0]);
 	int             count;
 	int bufLen = (int)vec->size();
+	if (0 == bufLen)
+	{
+		return(0);
+	}
 	va_list ap;
 
 	va_start(ap, fmt);
