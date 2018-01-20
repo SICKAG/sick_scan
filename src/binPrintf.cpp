@@ -247,27 +247,4 @@ std::string binDumpVecToString(std::vector<unsigned char>* outvec, bool appendRe
 }
 
 
-// Test-Routine
-void binScanfTest()
-{
-	std::vector<unsigned char> tmpVec;
-	int dummy0, dummy1, dummy2, dummy3;
-	std::string s = "123 456 ";
-	for (int i = 0; i < s.size(); i++)
-	{
 
-		tmpVec.push_back(s[i]);
-	}
-	tmpVec.push_back(0x01);
-	tmpVec.push_back(0x02);
-	tmpVec.push_back(0x03);
-	tmpVec.push_back(0x04);
-
-	binScanfVec(&tmpVec, "%d %d %2y%2y", &dummy0, &dummy1, &dummy2, &dummy3);
-	s = binDumpVecToString(&tmpVec, true);
-	std::cout << s << "\n";
-	binSprintfVec(&tmpVec, "Test: %4y", 0x12345678);
-	s = binDumpVecToString(&tmpVec, true);
-	std::cout << s << "\n";
-
-}
