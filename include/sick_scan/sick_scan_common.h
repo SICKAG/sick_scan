@@ -68,7 +68,8 @@ namespace sick_scan
 	public:
 		enum SOPAS_CMD
 		{
-			CMD_DEVICE_IDENT,
+			CMD_DEVICE_IDENT_LEGACY,
+			CMD_DEVICE_IDENT,  // for MRS6124
 			CMD_SERIAL_NUMBER,
 			CMD_FIRMWARE_VERSION,
 			CMD_DEVICE_STATE,
@@ -163,7 +164,26 @@ namespace sick_scan
 		 * \param [in] reply reply from sendSOPASCommand
 		 * \returns reply as string with special characters stripped out
 		 */
-		static std::string replyToString(const std::vector<unsigned char> &reply);
+		std::string replyToString(const std::vector<unsigned char> &reply);
+		/**
+		* \param [in] Pointer to (unsigned) char buffer in big endian byte oder (MSB first)
+		*
+		* \returns    unsigned long value as interpretation of big endian long value
+		*/
+		unsigned long convertBigEndianCharArrayToUnsignedLong(const unsigned char *vecArr);
+		/**
+		* \param [in]   (unsigned) long value which should be converto to big endian
+		* \param [out]  Pointer to byte array, where we store the big endian conversion 
+		* \returns      void
+		*/
+		void convertUnsignedLongToBigEndianCharArray(unsigned long val, unsigned char *vecArr);
+
+		/**
+		* \param [in] reply check reply whether is SOPAS-ASCII or SOPAS-Binary
+		*             
+		* \returns    -1 if ascii otherwise the length of data content following offset 8
+		*/
+		int checkForBinaryAnswer(const std::vector<unsigned char>* reply);
 
 		bool isCompatibleDevice(const std::string identStr) const;
 
@@ -198,6 +218,7 @@ namespace sick_scan
 		std::vector<std::string> sopasCmdVec;
 		std::vector<std::string> sopasCmdMaskVec;
 		std::vector<std::string> sopasReplyVec;
+		std::vector<std::vector<unsigned char>> sopasReplyBinVec;
 		std::vector<std::string> sopasReplyStrVec;
 		std::vector<std::string> sopasCmdErrMsg;
 		std::vector<int> sopasCmdChain;

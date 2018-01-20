@@ -7,7 +7,10 @@
 #include <ctype.h>
 #include <vector>
 int
-binScanf(const char *fmt, ...);
+binSscanf(const char *fmt, ...);
 int
 binScanfVec(const std::vector<unsigned char> *vec, const char *fmt, ...);
+int
+binSscanf(const char *buf, const char *fmt, ...);
+int binScanfGuessDataLenFromMask(const char *scanfMask);
 #endif
