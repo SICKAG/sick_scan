@@ -139,7 +139,7 @@ int binAtob(unsigned long*vp, char *p, int base)
  *  scanf(fmt,va_alist)
  */
 int
-binScanf(const char *fmt, ...)
+binSscanf(const char *fmt, ...)
 {
 	int            count;
 	va_list ap;
@@ -169,7 +169,7 @@ binFscanf(FILE *fp, const char *fmt, ...)
  *  sscanf(buf,fmt,va_alist)
  */
 int
-binScanf(const char *buf, const char *fmt, ...)
+binSscanf(const char *buf, const char *fmt, ...)
 {
 	int             count;
 	va_list ap;
@@ -211,7 +211,7 @@ binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 	bufEnd = buf + bufLen;
 
 	count = noassign = width = lflag = 0;
-	while (*s && (buf < bufEnd)) 
+	while (*s && (buf < bufEnd))
 	{
 		while (isspace(*s))
 			s++;
@@ -279,7 +279,7 @@ binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 					for (int i = 0; i < width; i++)  // Big Endian - MSB first - convention for SOPAS-Binary
 					{
 						destVal <<= 8;
-						destVal |= tmp[i];
+						destVal |= (unsigned char)(0xFF & tmp[i]);
 					}
 					*destAdr = destVal;
 				}
@@ -324,4 +324,54 @@ binScanfVec(const std::vector<unsigned char> *vec, const char *fmt, ...)
 	count = binVsscanf(buf, fmt, ap, bufLen);
 	va_end(ap);
 	return (count);
+}
+
+int binScanfGuessDataLenFromMask(const char *scanfMask)
+{
+	int retLen = 0;
+	int noassign = 0;
+	int lflag = 0;
+	char tmp[20];
+	int width;
+	if (scanfMask == NULL)
+	{
+	}
+	else
+	{
+		const char *s = scanfMask;
+		const char *tc = NULL;
+		while (*s)
+		{
+			while (isspace(*s))
+			{
+				s++;
+				retLen++;
+			}
+			if (*s == '%') {
+				s++;
+				for (; *s; s++) {
+					if (strchr("dibouxycsefg%", *s))
+						break;
+					if (*s == '*')
+						noassign = 1;
+					else if (*s == 'l' || *s == 'L')
+						lflag = 1;
+					else if (*s >= '1' && *s <= '9') {
+						for (tc = s; isdigit(*s); s++);
+						strncpy(tmp, tc, s - tc);
+						tmp[s - tc] = '\0';
+						binAtob((unsigned long *)&width, tmp, 10);
+						retLen += width;
+					}
+				}
+			}
+			else
+			{
+				s++;
+				retLen++;
+			}
+		}
+
+	}
+	return(retLen);
 }
