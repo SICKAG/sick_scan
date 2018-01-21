@@ -868,7 +868,7 @@ namespace sick_scan
 		}
 		for (int i = 0; i < this->sopasCmdChain.size(); i++)
 		{
-			ros::Duration(1.0).sleep();
+			ros::Duration(2.0).sleep();   // could maybe removed
 
 			int cmdId = sopasCmdChain[i]; // get next command
 			std::string sopasCmd = sopasCmdVec[cmdId];
@@ -1516,12 +1516,17 @@ namespace sick_scan
 
 				if (cmdId == CMD_RUN)
 				{
-
+					bool waitForDeviceState = true;
 					if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
 					{
-						// do nothing for tim5xx
+						waitForDeviceState = false; // do nothing for tim5xx
 					}
-					else
+					if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 24)
+					{
+						waitForDeviceState = false; // do nothing for MRS6xxx
+					}
+
+					if (waitForDeviceState)
 					{
 						int maxWaitForDeviceStateReady = 45;   // max. 30 sec. (see manual)
 						bool scannerReady = false;
