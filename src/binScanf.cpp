@@ -41,6 +41,15 @@
 
 #define ISSPACE " \t\n\r\f\v"
 
+int binIsspace(int val)
+{
+	if (val < 0) // characters >= 80
+	{
+		val = (int)(val & 0xFF);
+	}
+	int ret = isspace(val);
+	return(ret);
+}
 static char *
 _binGetbase(char *p, int *basep)
 {
@@ -213,7 +222,7 @@ binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 	count = noassign = width = lflag = 0;
 	while (*s && (buf < bufEnd))
 	{
-		while (isspace(*s))
+		while (binIsspace(*s))
 			s++;
 		if (*s == '%') {
 			s++;
@@ -232,9 +241,12 @@ binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 					s--;
 				}
 			}
-			if (*s == 's') {
-				while (isspace(*buf))
+			if (*s == 's') 
+			{
+				while (binIsspace((int)(0xFF & *buf)))   // must be done to handle data >= 0x80
+				{
 					buf++;
+				}
 				if (!width)
 					width = (int)strcspn(buf, ISSPACE);
 				if (!noassign) {
@@ -253,8 +265,10 @@ binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 				buf += width;
 			}
 			else if (strchr("dobxyu", *s)) {
-				while (isspace(*buf))
+				while (binIsspace((int)(0xFF & *buf)))   // must be done to handle data >= 0x80
+				{
 					buf++;
+				}
 				if (*s == 'd' || *s == 'u')
 					base = 10;
 				else if (*s == 'x')
@@ -266,7 +280,7 @@ binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 				else if (*s == 'y')
 					base = 1; // use as marker for binary scan
 				if (!width) {
-					if (isspace(*(s + 1)) || *(s + 1) == 0)
+					if (binIsspace(*(s + 1)) || *(s + 1) == 0)
 						width = (int)strcspn(buf, ISSPACE);
 					else
 						width = (int)(strchr(buf, *(s + 1)) - buf);
@@ -298,7 +312,7 @@ binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 			s++;
 		}
 		else {
-			while (isspace(*buf))
+			while (binIsspace(*buf))
 				buf++;
 			if (*s != *buf)
 				break;
@@ -346,7 +360,7 @@ int binScanfGuessDataLenFromMask(const char *scanfMask)
 		const char *tc = NULL;
 		while (*s)
 		{
-			while (isspace(*s))
+			while (binIsspace(*s))
 			{
 				s++;
 				retLen++;
