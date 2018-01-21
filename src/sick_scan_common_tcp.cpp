@@ -64,6 +64,9 @@
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
 
+std::vector<unsigned char> exampleData(65536);
+std::vector<unsigned char> receivedData(65536);
+static long receivedDataLen = 0;
 static int getDiagnosticErrorCode()
 {
 #ifdef _MSC_VER
@@ -234,6 +237,179 @@ namespace sick_scan
 		// Nothing bad happened, go back to sleep
 		deadline_.async_wait(boost::bind(&SickScanCommonTcp::checkDeadline, this));
 	}
+#if 0
+	std::size_t my_completion_handler(
+		// Result of latest async_read_some operation.
+		const boost::system::error_code& error,
+		// Number of bytes transferred so far.
+		std::size_t bytes_transferred
+	)
+	{
+		static int state = 0;
+		static unsigned long dataLen = 0;
+		static int bytes_total_transferred = 0;
+		bool validData = true;
+		std::size_t numToRead = 0;
+
+		if (bytes_transferred == 0)
+		{
+			bytes_total_transferred = 0;
+			receivedData.clear();
+			receivedData.reserve(65536);
+		}
+		else
+		{
+			bytes_total_transferred += bytes_transferred;
+		}
+		int receivedBytesNum = receivedData.size();
+		if (bytes_transferred > 1) // payload
+		{
+			numToRead = 0;
+			state = 0;
+		}
+		else
+		{
+			if (receivedBytesNum < 8)
+			{
+				if (bytes_transferred != 0)
+				{
+					receivedData.push_back(exampleData[receivedBytesNum]);
+				}
+				if (receivedData.size() == 8)
+				{
+
+					int cnt0x02 = 0;
+
+					for (int i = 0; i < 4; i++)
+					{
+						if (receivedData[i] == 0x02)
+						{
+							cnt0x02++;
+						}
+					}
+					if (cnt0x02 < 4)
+					{
+						validData = false;
+						if (receivedData[0] == 0x02)
+						{
+							printf("ASCII-Format for SOPAS??? Please check - Binary format required\n");
+						}
+						else
+						{
+							printf("INVALID DATA FORMAT! Cancelling data transfer\n");
+						}
+					}
+					if (validData)
+					{
+						for (int i = 4; i < 8; i++)
+						{
+							int relOffset = i - 4;
+							dataLen |= receivedData[i] << (8 * (7 - i));
+						}
+						dataLen += 1; // wg. CRC
+						state = 1;
+					}
+
+					// interpret data
+					printf("Test\n");
+				}
+			}
+			printf("Bytes transferred: %d\n", bytes_transferred);
+			if (validData)
+			{
+
+				if (dataLen != 0)
+				{
+					numToRead = dataLen;
+				}
+				else
+				{
+					numToRead = bytes_total_transferred + 1;
+				}
+			}
+			else
+			{
+				numToRead = 0;
+				state = 0;
+			}
+		}
+		printf("NumToRead: %d\n", numToRead);
+		return(numToRead);
+	}
+#endif
+
+#if 1
+	std::size_t my_completion_handler(
+		// Result of latest async_read_some operation.
+		const boost::system::error_code& error,
+		// Number of bytes transferred so far.
+		std::size_t bytes_transferred
+	)
+	{
+
+		static int state = 0;
+		static int numToRead = 0;
+		static int payloadSize = 0;
+		if (bytes_transferred == 0)  // initial
+		{
+			receivedDataLen = 0;
+			numToRead = 8;
+			state = 1;
+		}
+		else
+		{
+			receivedDataLen = bytes_transferred;
+			switch (state)
+			{
+			case 1: // read header
+			{
+				numToRead = 0;
+				int cnt0x02 = 0;
+				for (int i = 0; i < 4; i++)
+				{
+					if (exampleData[i] == 0x02)
+					{
+						cnt0x02++;
+					}
+				}
+				if (cnt0x02 == 4)
+				{
+					for (int i = 4; i < 8; i++)
+					{
+						int relOffset = i - 4;
+						numToRead |= exampleData[i] << (8 * (7 - i));
+					}
+					numToRead += 1;
+					payloadSize = numToRead;
+					state = 2;
+				}
+				else
+				{
+					numToRead = 0;  // invalid packet - cancle reading
+				}
+			}
+			break;
+			case 2: // read payload
+				numToRead = (receivedDataLen - 8 - payloadSize);
+				if (receivedDataLen >= 65000)
+				{
+					numToRead = 0;
+					printf("Parsing Error\n");
+				}
+				if (numToRead <= 0)
+				{
+					state = 0;
+				}
+				else
+				{
+					state = 2;  // interrupted packet
+				}
+				break;
+			}
+		}
+		return(numToRead);
+	}
+#endif
 
 	int SickScanCommonTcp::readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read, bool *exception_occured, bool isBinary)
 	{
@@ -248,7 +424,33 @@ namespace sick_scan
 
 		if (isBinary)
 		{
-#if 1
+			int numBytes = 0;
+
+
+			boost::asio::async_read(socket_,
+
+				boost::asio::buffer(exampleData, 65536),
+				my_completion_handler,
+				boost::bind(
+					&SickScanCommonTcp::handleRead,
+					this,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred
+				));
+
+			do io_service_.run_one();
+
+			while (ec_ == boost::asio::error::would_block);
+
+			std::ostream os(&input_buffer_);
+			// os << "Hello, World!\n";
+			for (int i = 0; i < receivedDataLen; i++)
+			{
+				os << exampleData[i];
+			}
+
+
+#if 0
 			unsigned char headerData[8] = { 0 };
 			// 1236: Die Netzwerkverbindung wurde durch das lokale System
 
@@ -260,7 +462,7 @@ namespace sick_scan
 			handler);
 
 			*/
-			int numBytes = 0;
+
 
 			std::vector<unsigned char> data(8);
 			boost::asio::async_read(socket_,
@@ -294,7 +496,7 @@ namespace sick_scan
 					boost::asio::placeholders::bytes_transferred
 				)
 			);
-#endif
+
 			do io_service_.run_one(); while (ec_ == boost::asio::error::would_block);
 
 			std::ostream os(&input_buffer_);
@@ -307,10 +509,10 @@ namespace sick_scan
 			{
 				os << payLoad[i];
 			}
+#endif
+			//	input_buffer_.prepare(8 + dataLen);
 
-		//	input_buffer_.prepare(8 + dataLen);
-		
-		//	input_buffer_.commit(8 + dataLen);
+			//	input_buffer_.commit(8 + dataLen);
 
 #if 0
 			if (ec_ == boost::asio::error::would_block)
@@ -386,7 +588,14 @@ namespace sick_scan
 		size_t i = 0;
 		std::istream istr(&input_buffer_);
 
-		printf("READ %d bytes\n", to_read);
+		if ((to_read > 1000) && (to_read != 0xEE7))
+		{
+			printf("Stop!");
+		}
+		if (to_read != 0xEE7)
+		{
+		// printf("READ %d bytes\n", to_read);
+		}
 		if (buffer != 0)
 		{
 			istr.read(buffer, to_read);
