@@ -20,6 +20,11 @@ For TiM551, TiM561, TiM571:
 4. Check the scanner status using the LEDs on the device. The LED codes are described in the above mentioned operation manuals.
 5. Further testing and troubleshooting informations can found in the file test/readme_testplan.txt
 
+# SUPPORT
+ 
+* In case of technical support please open a new issue. 
+* In case of application support please use [https://supportportal.sick.com ](https://supportportal.sick.com).
+
 
 
 
