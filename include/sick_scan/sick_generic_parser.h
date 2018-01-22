@@ -62,6 +62,8 @@ namespace sick_scan
 		double getElevationDegreeResolution(void);
 		double getAngularDegreeResolution(void);
 		double getExpectedFrequency(void);
+		bool getUseBinaryProtocol(void);
+		void setUseBinaryProtocol(bool _useBinary);
       void setExpectedFrequency(double _freq);
 		ScannerBasicParam();
 	private:
@@ -72,6 +74,7 @@ namespace sick_scan
 		double elevationDegreeResolution;
 		double angleDegressResolution;
       double expectedFrequency;
+	  bool useBinaryProtocol;
 	};
 
 

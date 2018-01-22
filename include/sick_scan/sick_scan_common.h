@@ -68,7 +68,8 @@ namespace sick_scan
 	public:
 		enum SOPAS_CMD
 		{
-			CMD_DEVICE_IDENT,
+			CMD_DEVICE_IDENT_LEGACY,
+			CMD_DEVICE_IDENT,  // for MRS6124
 			CMD_SERIAL_NUMBER,
 			CMD_FIRMWARE_VERSION,
 			CMD_DEVICE_STATE,
@@ -104,8 +105,9 @@ namespace sick_scan
 		virtual ~SickScanCommon();
 		int setIpAddress(std::string ipAddress);
 		int setParticleFilter(bool _active, int _particleThreshold);//actualy only 500 mm is working.
-		std::string generateExpectedAnswerString(const std::string requestStr);
-		int sendSopasAndCheckAnswer(std::string request, std::vector<unsigned char> *reply, int cmdId = -1);
+		std::string generateExpectedAnswerString(const std::vector<unsigned char> requestStr);
+		int sendSopasAndCheckAnswer(std::string request, std::vector<unsigned char> *reply, int cmdId);
+		int sendSopasAndCheckAnswer(std::vector<unsigned char> request, std::vector<unsigned char> *reply, int cmdId);
 		int setAligmentMode(int _AligmentMode);
 		int setMeanFilter(bool _active, int _numberOfScans);
 		int setApplicationMode(bool _active, int _mode); //0=RANG (Ranging) 1=FEVL (Field Application).
@@ -122,7 +124,7 @@ namespace sick_scan
 		void update_config(sick_scan::SickScanConfig &new_config, uint32_t level = 0);
 
 		double get_expected_frequency() const { return expectedFrequency_; }
-		int convertAscii2BinaryCmd(const char *requestAscii, std::vector<char>* requestBinary);
+		int convertAscii2BinaryCmd(const char *requestAscii, std::vector<unsigned char>* requestBinary);
 		int init_cmdTables();
 
 		/// Send a SOPAS command to the scanner that should cause a soft reset
@@ -148,21 +150,40 @@ namespace sick_scan
 		 * \param [in] request the command to send.
 		 * \param [out] reply if not NULL, will be filled with the reply package to the command.
 		 */
-		virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply) = 0;
+		virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen = -1) = 0;
 		/// Read a datagram from the device.
 		/**
 		 * \param [in] receiveBuffer data buffer to fill
 		 * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
 		 * \param [out] actual_length the actual amount of data written
 		 */
-		virtual int get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length) = 0;
+		virtual int get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol) = 0;
 
 		/// Converts reply from sendSOPASCommand to string
 		/**
 		 * \param [in] reply reply from sendSOPASCommand
 		 * \returns reply as string with special characters stripped out
 		 */
-		static std::string replyToString(const std::vector<unsigned char> &reply);
+		std::string replyToString(const std::vector<unsigned char> &reply);
+		/**
+		* \param [in] Pointer to (unsigned) char buffer in big endian byte oder (MSB first)
+		*
+		* \returns    unsigned long value as interpretation of big endian long value
+		*/
+		unsigned long convertBigEndianCharArrayToUnsignedLong(const unsigned char *vecArr);
+		/**
+		* \param [in]   (unsigned) long value which should be converto to big endian
+		* \param [out]  Pointer to byte array, where we store the big endian conversion 
+		* \returns      void
+		*/
+		void convertUnsignedLongToBigEndianCharArray(unsigned long val, unsigned char *vecArr);
+
+		/**
+		* \param [in] reply check reply whether is SOPAS-ASCII or SOPAS-Binary
+		*             
+		* \returns    -1 if ascii otherwise the length of data content following offset 8
+		*/
+		int checkForBinaryAnswer(const std::vector<unsigned char>* reply);
 
 		bool isCompatibleDevice(const std::string identStr) const;
 
@@ -197,6 +218,7 @@ namespace sick_scan
 		std::vector<std::string> sopasCmdVec;
 		std::vector<std::string> sopasCmdMaskVec;
 		std::vector<std::string> sopasReplyVec;
+		std::vector<std::vector<unsigned char> > sopasReplyBinVec;
 		std::vector<std::string> sopasReplyStrVec;
 		std::vector<std::string> sopasCmdErrMsg;
 		std::vector<int> sopasCmdChain;

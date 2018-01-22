@@ -275,10 +275,6 @@ int main(int argc, char **argv)
 			s = new sick_scan::SickScanCommonMockup(parser);
 		else if (useTCP)
 			s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser);
-#ifndef _MSC_VER
-		else
-			s = new sick_scan::SickScanCommonUsb(parser, device_number);
-#endif
 
 		result = s->init();
 		s->switchToAuthorizeClient();

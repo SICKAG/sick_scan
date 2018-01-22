@@ -72,7 +72,7 @@ int SickScanCommonMockup::close_device()
 /**
  * Send a SOPAS command to the device and print out the response to the console.
  */
-int SickScanCommonMockup::sendSOPASCommand(const char* request, std::vector<unsigned char> * reply)
+int SickScanCommonMockup::sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen = -1)
 {
   ROS_ERROR("Mockup - sendSOPASCommand(), this should never be called");
   return ExitError;
@@ -96,7 +96,7 @@ int SickScanCommonMockup::init_scanner()
   return ExitSuccess;
 }
 
-int SickScanCommonMockup::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length)
+int SickScanCommonMockup::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 {
   ROS_DEBUG("Mockup - get_datagram()");
 

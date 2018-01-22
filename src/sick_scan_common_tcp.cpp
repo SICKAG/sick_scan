@@ -64,6 +64,9 @@
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
 
+std::vector<unsigned char> exampleData(65536);
+std::vector<unsigned char> receivedData(65536);
+static long receivedDataLen = 0;
 static int getDiagnosticErrorCode()
 {
 #ifdef _MSC_VER
@@ -76,6 +79,100 @@ static int getDiagnosticErrorCode()
 namespace sick_scan
 {
 
+#if 0
+	/**
+	* Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
+	* hereingekommen sind.
+	*/
+#define RECEIVE_BUFFER_SIZE (100000)
+	int m_receiveBufferIdx = 0;
+	void readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
+	{
+		bool m_beVerbose = false;
+		if (m_beVerbose == true)
+		{
+		//	traceNote(m_traceVersion) << "readCallbackFunction(): Called with " << numOfBytes << " available bytes." << std::endl;
+		}
+
+		UINT32 remainingSpace = RECEIVE_BUFFER_SIZE - m_receiveBufferIdx;
+		UINT32 bytesToBeTransferred = numOfBytes;
+		if (remainingSpace < numOfBytes)
+		{
+			bytesToBeTransferred = remainingSpace;
+			// traceWarning(m_traceVersion) << "readCallbackFunction(): Input buffer space is to small, transferring only "
+			// 	<< bytesToBeTransferred << " from " << numOfBytes << " bytes." << std::endl;
+		}
+		else
+		{
+			if (m_beVerbose == true)
+			{
+				//  traceNote(m_traceVersion) << "readCallbackFunction(): Transferring " << bytesToBeTransferred
+				// 	<< " bytes from TCP to input buffer." << std::endl;
+			}
+		}
+
+		if (bytesToBeTransferred > 0)
+		{
+			{
+#if 0
+				boost::mutex::scoped_lock lock(m_receiveDataMutex); // Mutex for access to the input buffer
+																	// Data can be transferred into our input buffer
+				memcpy(&(m_receiveBuffer[m_receiveBufferIdx]), buffer, bytesToBeTransferred);
+				m_receiveBufferIdx += bytesToBeTransferred;
+#endif
+			}
+
+			UINT32 size = 0;
+
+			while (1)
+			{
+				// Now work on the input buffer until all received datasets are processed
+
+			//	size = findFrameInReceiveBuffer();
+				if (size == 0)
+				{
+					// Framesize = 0: There is no valid frame in the buffer. The buffer is either empty or the frame
+					// is incomplete, so leave the loop
+					if (m_beVerbose == true)
+					{
+//						traceNote(m_traceVersion) << "readCallbackFunction(): No complete frame in input buffer, we are done." << std::endl;
+					}
+
+					// Leave the loop
+					break;
+				}
+				else
+				{
+#if 0
+					processInputData(size);
+
+					if (!isRunning())
+					{
+						//					traceDebug(m_traceVersion) << "set sensor to running" << std::endl;
+						DeviceStateWatchdog::setRunning();
+					}
+#endif
+				}
+			}
+		}
+		else
+		{
+			// There was input data from the TCP interface, but our input buffer was unable to hold a single byte.
+			// Either we have not read data from our buffer for a long time, or something has gone wrong. To re-sync,
+			// we clear the input buffer here.
+			m_receiveBufferIdx = 0;
+		}
+
+		if (m_beVerbose == true)
+		{
+			// traceNote(m_traceVersion) << "readCallbackFunction(): Leaving. Current input buffer fill level is "
+			// 	<< m_receiveBufferIdx << " bytes." << std::endl;
+		}
+	}
+
+#endif
+
+
 	SickScanCommonTcp::SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser* parser)
 		:
 		SickScanCommon(parser),
@@ -85,6 +182,8 @@ namespace sick_scan
 		port_(port),
 		timelimit_(timelimit)
 	{
+		// io_service_.setReadCallbackFunction(boost::bind(&SopasDevice::readCallbackFunction, this, _1, _2));
+
 		// Set up the deadline actor to implement timeouts.
 		// Based on blocking TCP example on:
 		// http://www.boost.org/doc/libs/1_46_0/doc/html/boost_asio/example/timeouts/blocking_tcp_client.cpp
@@ -103,7 +202,7 @@ namespace sick_scan
 	using boost::lambda::_1;
 
 
-// Prepare for further use - broadcast, if there no responding scanner
+	// Prepare for further use - broadcast, if there no responding scanner
 	bool tryBroadCastForMoreInfo(void)
 	{
 		boost::system::error_code error;
@@ -121,7 +220,7 @@ namespace sick_scan
 
 			boost::asio::ip::udp::endpoint senderEndpoint(boost::asio::ip::address_v4::broadcast(), port);
 			boost::asio::const_buffer firstBuf(dataArray, 24);
-		
+
 			std::vector<boost::asio::const_buffer> buffers;
 			buffers.push_back(boost::asio::buffer(firstBuf));
 
@@ -214,6 +313,13 @@ namespace sick_scan
 		return 0;
 	}
 
+	void SickScanCommonTcp::handleRead(boost::system::error_code error, size_t bytes_transfered)
+	{
+		ec_ = error;
+		bytes_transfered_ += bytes_transfered;
+	}
+
+
 	void SickScanCommonTcp::checkDeadline()
 	{
 		if (deadline_.expires_at() <= boost::asio::deadline_timer::traits_type::now())
@@ -227,29 +333,339 @@ namespace sick_scan
 		// Nothing bad happened, go back to sleep
 		deadline_.async_wait(boost::bind(&SickScanCommonTcp::checkDeadline, this));
 	}
+#if 0
+	std::size_t my_completion_handler(
+		// Result of latest async_read_some operation.
+		const boost::system::error_code& error,
+		// Number of bytes transferred so far.
+		std::size_t bytes_transferred
+	)
+	{
+		static int state = 0;
+		static unsigned long dataLen = 0;
+		static int bytes_total_transferred = 0;
+		bool validData = true;
+		std::size_t numToRead = 0;
 
-	int SickScanCommonTcp::readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read, bool *exception_occured)
+		if (bytes_transferred == 0)
+		{
+			bytes_total_transferred = 0;
+			receivedData.clear();
+			receivedData.reserve(65536);
+		}
+		else
+		{
+			bytes_total_transferred += bytes_transferred;
+		}
+		int receivedBytesNum = receivedData.size();
+		if (bytes_transferred > 1) // payload
+		{
+			numToRead = 0;
+			state = 0;
+		}
+		else
+		{
+			if (receivedBytesNum < 8)
+			{
+				if (bytes_transferred != 0)
+				{
+					receivedData.push_back(exampleData[receivedBytesNum]);
+				}
+				if (receivedData.size() == 8)
+				{
+
+					int cnt0x02 = 0;
+
+					for (int i = 0; i < 4; i++)
+					{
+						if (receivedData[i] == 0x02)
+						{
+							cnt0x02++;
+						}
+					}
+					if (cnt0x02 < 4)
+					{
+						validData = false;
+						if (receivedData[0] == 0x02)
+						{
+							printf("ASCII-Format for SOPAS??? Please check - Binary format required\n");
+						}
+						else
+						{
+							printf("INVALID DATA FORMAT! Cancelling data transfer\n");
+						}
+					}
+					if (validData)
+					{
+						for (int i = 4; i < 8; i++)
+						{
+							int relOffset = i - 4;
+							dataLen |= receivedData[i] << (8 * (7 - i));
+						}
+						dataLen += 1; // wg. CRC
+						state = 1;
+					}
+
+					// interpret data
+					printf("Test\n");
+				}
+			}
+			printf("Bytes transferred: %d\n", bytes_transferred);
+			if (validData)
+			{
+
+				if (dataLen != 0)
+				{
+					numToRead = dataLen;
+				}
+				else
+				{
+					numToRead = bytes_total_transferred + 1;
+				}
+			}
+			else
+			{
+				numToRead = 0;
+				state = 0;
+			}
+		}
+		printf("NumToRead: %d\n", numToRead);
+		return(numToRead);
+	}
+#endif
+
+#if 1
+	std::size_t my_completion_handler(
+		// Result of latest async_read_some operation.
+		const boost::system::error_code& error,
+		// Number of bytes transferred so far.
+		std::size_t bytes_transferred
+	)
+	{
+
+		static int state = 0;
+		static int numToRead = 0;
+		static int payloadSize = 0;
+		if (bytes_transferred == 0)  // initial
+		{
+			receivedDataLen = 0;
+			numToRead = 8;
+			state = 1;
+		}
+		else
+		{
+			receivedDataLen = bytes_transferred;
+			switch (state)
+			{
+			case 1: // read header
+			{
+				numToRead = 0;
+				int cnt0x02 = 0;
+				for (int i = 0; i < 4; i++)
+				{
+					if (exampleData[i] == 0x02)
+					{
+						cnt0x02++;
+					}
+				}
+				if (cnt0x02 == 4)
+				{
+					for (int i = 4; i < 8; i++)
+					{
+						int relOffset = i - 4;
+						numToRead |= exampleData[i] << (8 * (7 - i));
+					}
+					numToRead += 1;
+					payloadSize = numToRead;
+					state = 2;
+				}
+				else
+				{
+					// out of sync - what shell we do now?
+					numToRead = 0;  // invalid packet - cancle reading
+				}
+			}
+			break;
+			case 2: // read payload
+				numToRead = (receivedDataLen - 8 - payloadSize);
+				if (receivedDataLen >= 65000)
+				{
+					numToRead = 0;
+					printf("Parsing Error\n");
+				}
+				if (numToRead <= 0)
+				{
+					state = 0;
+				}
+				else
+				{
+					state = 2;  // interrupted packet
+				}
+				break;
+			}
+		}
+		return(numToRead);
+	}
+#endif
+
+	int SickScanCommonTcp::readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read, bool *exception_occured, bool isBinary)
 	{
 		// Set up the deadline to the proper timeout, error and delimiters
 		deadline_.expires_from_now(boost::posix_time::milliseconds(timeout_ms));
 		const char end_delim = static_cast<char>(0x03);
+		int dataLen = 0;
 		ec_ = boost::asio::error::would_block;
 		bytes_transfered_ = 0;
 
-		// Read until 0x03 ending indicator
-		boost::asio::async_read_until(
-			socket_,
-			input_buffer_,
-			end_delim,
-			boost::bind(
-				&SickScanCommonTcp::handleRead,
-				this,
-				boost::asio::placeholders::error,
-				boost::asio::placeholders::bytes_transferred
-			)
-		);
-		do io_service_.run_one(); while (ec_ == boost::asio::error::would_block);
+		size_t to_read;
 
+		if (isBinary)
+		{
+			int numBytes = 0;
+
+#if 1
+			boost::asio::async_read(socket_,
+
+				boost::asio::buffer(exampleData, 65536),
+				my_completion_handler,
+				boost::bind(
+					&SickScanCommonTcp::handleRead,
+					this,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred
+				));
+#endif
+
+
+			do
+			{
+				io_service_.run_one();
+			}
+			while (ec_ == boost::asio::error::would_block);
+
+			std::ostream os(&input_buffer_);
+			// os << "Hello, World!\n";
+			const char *ptr = (const char *)(&(exampleData[0]));
+			os.write(ptr,  receivedDataLen);
+
+
+#if 0
+			unsigned char headerData[8] = { 0 };
+			// 1236: Die Netzwerkverbindung wurde durch das lokale System
+
+
+			/*
+			boost::asio::async_read(
+			s, buffers,
+			boost::asio::transfer_all(),
+			handler);
+
+			*/
+
+
+			std::vector<unsigned char> data(8);
+			boost::asio::async_read(socket_,
+				boost::asio::buffer(data, 8),
+				boost::bind(
+					&SickScanCommonTcp::handleRead,
+					this,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred
+				));
+
+			do io_service_.run_one(); while (ec_ == boost::asio::error::would_block);
+
+			for (int i = 4; i < 8; i++)
+			{
+				int relOffset = i - 4;
+				dataLen |= data[i] << (8 * (7 - i));
+			}
+
+			dataLen += 1; // wg. CRC
+			std::vector<unsigned char> payLoad;
+			payLoad.resize(dataLen);
+
+			boost::asio::async_read(socket_,
+				boost::asio::buffer(&(payLoad[0]), dataLen),
+				boost::asio::transfer_all(),
+				boost::bind(
+					&SickScanCommonTcp::handleRead,
+					this,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred
+				)
+			);
+
+			do io_service_.run_one(); while (ec_ == boost::asio::error::would_block);
+
+			std::ostream os(&input_buffer_);
+			// os << "Hello, World!\n";
+			for (int i = 0; i < 8; i++)
+			{
+				os << data[i];
+			}
+			for (int i = 0; i < dataLen; i++)
+			{
+				os << payLoad[i];
+			}
+#endif
+			//	input_buffer_.prepare(8 + dataLen);
+
+			//	input_buffer_.commit(8 + dataLen);
+
+#if 0
+			if (ec_ == boost::asio::error::would_block)
+			{
+				if (bytes_transfered_ > 8)
+				{
+					for (int i = 0; i < 8; i++)
+					{
+						if (i < 4)
+						{
+							if (input_buffer_[i] == 0x02)
+							{
+
+								// OK
+							}
+							else
+							{
+								ROS_ERROR("sendSOPASCommand: expecting 4-times 0x02, but received: 0x%0x02", headerData[i]);
+							}
+						}
+						else
+						{
+							int relOffset = i - 4;
+							dataLen |= input_buffer_[i] << (8 * (7 - i));
+						}
+					}
+					input_buffer_.consume(8);
+					bytes_transfered_ -= 8;
+				}
+				if (dataLen > 0)
+				{
+					to_read = bytes_transfered_ > buffer_size - 1 ? buffer_size - 1 : bytes_transfered_;
+				}
+			}
+#endif
+		}
+		else
+		{
+			// Read until 0x03 ending indicator
+			boost::asio::async_read_until(
+				socket_,
+				input_buffer_,
+				end_delim,
+				boost::bind(
+					&SickScanCommonTcp::handleRead,
+					this,
+					boost::asio::placeholders::error,
+					boost::asio::placeholders::bytes_transferred
+				)
+			);
+
+
+			do io_service_.run_one(); while (ec_ == boost::asio::error::would_block);
+		}
 		if (ec_)
 		{
 			// would_block means the connectio is ok, but nothing came in in time.
@@ -267,9 +683,18 @@ namespace sick_scan
 		}
 
 		// Avoid a buffer overflow by limiting the data we read
-		size_t to_read = bytes_transfered_ > buffer_size - 1 ? buffer_size - 1 : bytes_transfered_;
+		to_read = bytes_transfered_ > buffer_size - 1 ? buffer_size - 1 : bytes_transfered_;
 		size_t i = 0;
 		std::istream istr(&input_buffer_);
+
+		if ((to_read > 1000) && (to_read != 0xEE7))
+		{
+			printf("Stop!");
+		}
+		if (to_read != 0xEE7)
+		{
+		// printf("READ %d bytes\n", to_read);
+		}
 		if (buffer != 0)
 		{
 			istr.read(buffer, to_read);
@@ -296,7 +721,7 @@ namespace sick_scan
 	/**
 	 * Send a SOPAS command to the device and print out the response to the console.
 	 */
-	int SickScanCommonTcp::sendSOPASCommand(const char* request, std::vector<unsigned char> * reply)
+	int SickScanCommonTcp::sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen)
 	{
 		if (!socket_.is_open()) {
 			ROS_ERROR("sendSOPASCommand: socket not open");
@@ -306,11 +731,11 @@ namespace sick_scan
 
 		int sLen = 0;
 		int preambelCnt = 0;
-		bool cmdIsAscii = true;
+		bool cmdIsBinary = false;
 
 		if (request != NULL)
 		{
-			sLen = strlen(request);
+			sLen = cmdLen;
 			preambelCnt = 0; // count 0x02 bytes to decide between ascii and binary command
 			if (sLen >= 4)
 			{
@@ -323,14 +748,15 @@ namespace sick_scan
 			}
 
 			if (preambelCnt < 4) {
-				cmdIsAscii = true;
+				cmdIsBinary = false;
 			}
 			else
 			{
-				cmdIsAscii = false;
+				cmdIsBinary = true;
 			}
 			int msgLen = 0;
-			if (cmdIsAscii == true) {
+			if (cmdIsBinary == false)
+			{
 				msgLen = strlen(request);
 			}
 			else
@@ -361,7 +787,7 @@ namespace sick_scan
 		const int BUF_SIZE = 1000;
 		char buffer[BUF_SIZE];
 		int bytes_read;
-		if (readWithTimeout(1000, buffer, BUF_SIZE, &bytes_read, 0) == ExitError)
+		if (readWithTimeout(20000, buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
 		{
 			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after 1s");
 			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after 5 s.");
@@ -377,7 +803,7 @@ namespace sick_scan
 		return ExitSuccess;
 	}
 
-	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length)
+	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 	{
 		if (!socket_.is_open()) {
 			ROS_ERROR("get_datagram: socket not open");
@@ -391,12 +817,12 @@ namespace sick_scan
 		std::vector<unsigned char> reply;
 
 		// Wait at most 5000ms for a new scan
-		size_t timeout = 5000;
+		size_t timeout = 30000;
 		bool exception_occured = false;
 
 		char *buffer = reinterpret_cast<char *>(receiveBuffer);
 
-		if (readWithTimeout(timeout, buffer, bufferSize, actual_length, &exception_occured) != ExitSuccess)
+		if (readWithTimeout(timeout, buffer, bufferSize, actual_length, &exception_occured, isBinaryProtocol) != ExitSuccess)
 		{
 			ROS_ERROR_THROTTLE(1.0, "get_datagram: no data available for read after %zu ms", timeout);
 			diagnostics_.broadcast(getDiagnosticErrorCode(), "get_datagram: no data available for read after timeout.");
