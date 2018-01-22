@@ -74,6 +74,27 @@
 
 #include <map>
 
+#include <climits>
+
+template <typename T>
+T swap_endian(T u)
+{
+	static_assert (CHAR_BIT == 8, "CHAR_BIT != 8");
+
+	union
+	{
+		T u;
+		unsigned char u8[sizeof(T)];
+	} source, dest;
+
+	source.u = u;
+
+	for (size_t k = 0; k < sizeof(T); k++)
+		dest.u8[k] = source.u8[sizeof(T) - k - 1];
+
+	return dest.u;
+}
+
 static int getDiagnosticErrorCode() // workaround due to compiling error under Visual C++
 {
 #ifdef _MSC_VER
@@ -1486,8 +1507,8 @@ namespace sick_scan
 				switch (cmdId)
 				{
 				case CMD_START_SCANDATA:
-					ROS_DEBUG("Sleeping for a couple of seconds of start measurement\n");
-					ros::Duration(10.0).sleep();
+					// ROS_DEBUG("Sleeping for a couple of seconds of start measurement\n");
+					// ros::Duration(10.0).sleep();
 					break;
 				}
 			}
@@ -1752,6 +1773,7 @@ namespace sick_scan
 				bool publishPointCloud = true;
 				if (useBinaryProtocol)
 				{
+					// if binary protocol used then parse binary message
 					std::vector<unsigned char> receiveBufferVec = std::vector<unsigned char>(receiveBuffer, receiveBuffer + actual_length);
 					if (receiveBufferVec.size() > 8)
 					{
@@ -1763,6 +1785,90 @@ namespace sick_scan
 						{
 							if (lenVal < actual_length)
 							{
+								short elevAngleX200;  // signed short (F5 B2  -> Layer 24 
+								                      // F5B2h -> -2638/200= -13.19° 
+								int scanFrequencyX100;
+								double elevAngle;
+								double scanFrequency = 0.0;
+								long measurementFrequencyDiv100; // multiply with 100
+								int numberOf16BitChannels = 0;
+
+								memcpy(&elevAngleX200, receiveBuffer + 50, 2);
+								elevAngleX200 = swap_endian<unsigned short>(elevAngleX200);
+								
+								memcpy(&scanFrequencyX100, receiveBuffer + 5, 4);
+								scanFrequencyX100 = swap_endian<unsigned long>(scanFrequencyX100);
+
+								memcpy(&measurementFrequencyDiv100, receiveBuffer + 56, 4);
+								measurementFrequencyDiv100 = swap_endian<unsigned long>(measurementFrequencyDiv100);
+
+								memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
+								numberOf16BitChannels = swap_endian<unsigned short>(numberOf16BitChannels);
+
+								bool parsePacket = true;
+								int  parseOff = 64;
+								do 
+								{
+									char szChannel[6] = { 0 };
+									float scaleFactor = 1.0;
+									float scaleFactorOffset = 0.0;
+									long startAngleDiv10000 = 1;
+									long sizeOfSingleAngularStepDiv10000 = 1;
+									double startAngle = 0.0;
+									double sizeOfSingleAngularStep = 0.0;
+									short numberOfItems = 0;
+									strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
+									if (strcmp(szChannel, "DIST1") == 0)
+									{
+										// For 12.5 is the pattern 0x41 0x48 0x00 0x00
+										memcpy(&scaleFactor,        receiveBuffer + parseOff + 5, 4);
+										memcpy(&scaleFactorOffset,  receiveBuffer + parseOff + 9, 4);
+										memcpy(&startAngleDiv10000, receiveBuffer + parseOff + 13, 4);
+										memcpy(&sizeOfSingleAngularStepDiv10000, receiveBuffer + parseOff + 17, 2);
+										memcpy(&numberOfItems,      receiveBuffer + parseOff + 19, 2);
+
+										scaleFactor = swap_endian<float>(scaleFactor);
+										scaleFactorOffset = swap_endian<float>(scaleFactorOffset);
+										startAngleDiv10000 = swap_endian<unsigned long>(startAngleDiv10000);
+										sizeOfSingleAngularStepDiv10000 = swap_endian<unsigned short>(sizeOfSingleAngularStepDiv10000);
+										numberOfItems = swap_endian<unsigned short>(numberOfItems);
+
+										startAngle = startAngleDiv10000 / 10000.00;
+										sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
+										numEchos = 1;
+										echoMask = 1;
+										msg.angle_min = startAngle;
+										msg.angle_increment = sizeOfSingleAngularStep;
+										msg.angle_max = startAngle + (numberOfItems - 1) * sizeOfSingleAngularStep;
+										msg.ranges.clear();
+										msg.intensities.clear();
+
+										msg.ranges.resize(numberOfItems);
+										msg.intensities.resize(numberOfItems);
+
+										unsigned short *distData = (unsigned short *)(receiveBuffer + parseOff + 23);
+
+										unsigned char *swapPtr = (unsigned char *)distData;
+										for (int i = 0; i < numberOfItems * 2; i+= 2)
+										{
+											unsigned char tmp;
+											tmp = swapPtr[i+1];
+											swapPtr[i + 1] = swapPtr[i];
+											swapPtr[i] = tmp;
+										}
+										for (int i = 0; i < numberOfItems; i++)
+										{
+											msg.ranges[i] = (float)distData[i] / scaleFactor + scaleFactorOffset;
+										}
+										// 30° --> 0 04 93 E0h
+									}
+									parsePacket = false; // HIER WEITERMACHEN!!!
+								} while (parsePacket);
+									
+
+								elevAngle = elevAngleX200 / 200.0;
+								scanFrequency = scanFrequencyX100 / 100.0;
+								
 								/*
 								HIER WEITERMACHEN!!!!
 								*/
