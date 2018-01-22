@@ -6,7 +6,7 @@
 #define ERRORHANDLER_HPP
 
 
-#include "../BasicDatatypes.hpp"
+#include "sick_scan/tcp/BasicDatatypes.hpp"
 #include <stdexcept>	// for throw
 
 

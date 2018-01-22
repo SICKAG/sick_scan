@@ -3,10 +3,10 @@
 //
 
 
-#include "Time.hpp"
+#include "sick_scan/tcp/Time.hpp"
 #include <sys/time.h>
 #include <time.h>
-#include "toolbox.hpp"	// fuer "::toString()"
+#include "sick_scan/tcp/toolbox.hpp"	// fuer "::toString()"
 
 //
 // Duration

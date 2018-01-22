@@ -5,7 +5,7 @@
 #ifndef MUTEX_HPP
 #define MUTEX_HPP
 
-#include "../BasicDatatypes.hpp"
+#include "sick_scan/tcp/BasicDatatypes.hpp"
 #include <pthread.h>
 
 

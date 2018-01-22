@@ -2,8 +2,8 @@
  * \file Mutex.cpp
  */
 
-#include "Mutex.hpp"
-#include "errorhandler.hpp"
+#include "sick_scan/tcp/Mutex.hpp"
+#include "sick_scan/tcp/errorhandler.hpp"
 
 // ****************************************************************************
 //  ScopedLock

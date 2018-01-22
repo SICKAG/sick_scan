@@ -2,7 +2,7 @@
 // SickThread.cpp
 //
 
-#include "SickThread.hpp"
+#include "sick_scan/tcp/SickThread.hpp"
 
 void* wrapper_prerun(void* state)
 {

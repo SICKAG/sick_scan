@@ -8,7 +8,7 @@
 #ifndef TIME_HPP
 #define TIME_HPP
 
-#include "../BasicDatatypes.hpp"
+#include "sick_scan/tcp/BasicDatatypes.hpp"
 #include <sys/time.h>
 #include <time.h>
 

@@ -5,7 +5,7 @@
 #ifndef SICKTHREAD_HPP
 #define SICKTHREAD_HPP
 
-#include "../BasicDatatypes.hpp"
+#include "sick_scan/tcp/BasicDatatypes.hpp"
 #include <pthread.h>
 #include <unistd.h>
 

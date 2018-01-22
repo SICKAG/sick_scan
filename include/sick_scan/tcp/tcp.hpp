@@ -16,11 +16,11 @@
 #ifndef TCP_HPP
 #define TCP_HPP
 
-#include "../BasicDatatypes.hpp"
+#include "sick_scan/tcp/BasicDatatypes.hpp"
 #include <sys/socket.h> /* for socket(), bind(), and connect() */
 #include <arpa/inet.h>  /* for sockaddr_in and inet_ntoa() */
-#include "../tools/Mutex.hpp"
-#include "../tools/SickThread.hpp"
+#include "sick_scan/tcp/Mutex.hpp"
+#include "sick_scan/tcp/SickThread.hpp"
 #include <list>
 
 

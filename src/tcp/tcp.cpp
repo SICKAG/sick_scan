@@ -4,9 +4,9 @@
 // TCP-Client.
 //
 
-#include "tcp.hpp"
-#include "../tools/errorhandler.hpp"
-#include "../tools/toolbox.hpp"
+#include "sick_scan/tcp/tcp.hpp"
+#include "sick_scan/tcp/errorhandler.hpp"
+#include "sick_scan/tcp/toolbox.hpp"
 #include <stdio.h>      // for sprintf()
 
 #include <sys/socket.h> // for socket(), bind(), and connect()

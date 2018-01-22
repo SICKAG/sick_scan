@@ -7,11 +7,11 @@
 #include <arpa/inet.h>  /* for sockaddr_in and inet_ntoa() */
 #include <stdlib.h>     /* for atoi() and exit() */
 #include <string.h>     /* for memset() */
-#include "toolbox.hpp"
+#include "sick_scan/tcp/toolbox.hpp"
 #include <iostream>
 #include <iomanip>		// for std::setprecision
 #include <sstream>		// for std::stringstream
-#include "errorhandler.hpp"
+#include "sick_scan/tcp/errorhandler.hpp"
 
 //
 // Write a binary trace output, e.g. of buffer contents.

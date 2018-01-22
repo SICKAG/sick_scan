@@ -19,15 +19,21 @@ catkin_package(
     DEPENDS Boost libusb
     CATKIN_DEPENDS roscpp sensor_msgs diagnostic_updater dynamic_reconfigure
     LIBRARIES sick_scan_lib
-    INCLUDE_DIRS include)
+    INCLUDE_DIRS include )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${libusb_INCLUDE_DIRS})
+include_directories(include include/tcp ${catkin_INCLUDE_DIRS} ${libusb_INCLUDE_DIRS})
 
 add_library(sick_scan_lib
     src/sick_scan_common.cpp
     src/sick_scan_common_usb.cpp
     src/sick_scan_common_mockup.cpp
     src/abstract_parser.cpp
+	src/tcp/tcp.cpp
+	src/tcp/Mutex.cpp
+	src/tcp/SickThread.cpp
+    src/tcp/errorhandler.cpp
+    src/tcp/toolbox.cpp
+    src/tcp/Time.cpp
 	src/binPrintf.cpp
 	src/binScanf.cpp)
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
