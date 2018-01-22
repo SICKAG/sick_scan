@@ -3,12 +3,12 @@
 //
 // (c) 2011 SICK AG, Hamburg, Germany
 
-#include "colaa.hpp"
+#include "sick_scan/tcp/colaa.hpp"
 #include <cstring>
 #include <cassert>
 #include <stdexcept>
-#include "../tools/toolbox.hpp"	// for "toString"
-#include "../tools/errorhandler.hpp"
+#include "sick_scan/tcp/toolbox.hpp"	// for "toString"
+#include "sick_scan/tcp/errorhandler.hpp"
 #include <stdlib.h>
 #include <limits>
 // #include "Trace.hpp"

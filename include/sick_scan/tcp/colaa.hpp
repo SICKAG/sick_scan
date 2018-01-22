@@ -7,7 +7,7 @@
 #ifndef COLAA_HPP
 #define COLAA_HPP
 
-#include "../BasicDatatypes.hpp"
+#include "sick_scan/tcp/BasicDatatypes.hpp"
 // #include <boost/tokenizer.hpp>
 
 /**

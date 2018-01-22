@@ -3,7 +3,7 @@
 //
 // (c) 2010 SICK AG, Hamburg, Germany
 
-#include "colab.hpp"
+#include "sick_scan/tcp/colab.hpp"
 #include <cstring>
 #include <cassert>
 #include <stdexcept>

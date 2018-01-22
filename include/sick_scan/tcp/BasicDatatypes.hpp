@@ -36,8 +36,8 @@ typedef unsigned char BYTE;
 #ifndef deg2rad
 	#define deg2rad 0.01745329251994329576923690768 	// (PI / 180.0)
 #endif
-#ifndef rad2deg
-	#define rad2deg 57.29577951308232087679815481		// (180.0 / PI)
+#ifndef rad2degMultiplier
+	#define rad2degMultiplier 57.29577951308232087679815481		// (180.0 / PI)
 #endif
 
 

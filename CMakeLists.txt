@@ -30,8 +30,9 @@ add_library(sick_scan_lib
 	src/tcp/SickThread.cpp
     src/tcp/errorhandler.cpp
     src/tcp/toolbox.cpp
-    src/tcp/SopasBase.cpp
     src/tcp/Time.cpp
+    src/tcp/colaa.cpp
+    src/tcp/colab.cpp
 	src/binPrintf.cpp
 	src/binScanf.cpp)
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
@@ -42,7 +43,7 @@ add_executable(sick_generic_caller
     src/sick_generic_laser.cpp
     src/sick_generic_caller.cpp
     src/sick_scan_common_tcp.cpp
-    src/sick_generic_parser.cpp)
+    src/sick_generic_parser.cpp src/sick_scan_common_nw.cpp src/sick_scan_common_nw.h)
 target_link_libraries(sick_generic_caller sick_scan_lib)
 
 add_executable(sick_tim_datagram_test

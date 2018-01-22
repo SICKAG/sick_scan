@@ -59,6 +59,7 @@
 #include <sick_scan/SickScanConfig.h>
 #endif
 #include "sick_scan/sick_generic_parser.h"
+#include "sick_scan/sick_scan_common_nw.h"
 
 namespace sick_scan
 {

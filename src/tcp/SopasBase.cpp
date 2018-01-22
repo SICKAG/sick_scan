@@ -5,13 +5,11 @@
 //      Author: sick
 //
 
-#include "SopasBase.hpp"
-
-
-#include "../manager.hpp"
-#include "../tools/errorhandler.hpp"
-#include "../tools/toolbox.hpp"
-#include "../tools/Mutex.hpp"
+#include "sick_scan/tcp/SopasBase.hpp"
+// #include "../manager.hpp"
+#include "sick_scan/tcp/errorhandler.hpp"
+#include "sick_scan/tcp/toolbox.hpp"
+#include "sick_scan/tcp/Mutex.hpp"
 
 namespace devices
 {
@@ -136,7 +134,7 @@ bool SopasBase::connect()
 
 	// Establish connection here
 	// Set the data input callback for our TCP connection
-	m_tcp.setReadCallbackFunction(&SopasBase::readCallbackFunctionS, this);	// , this, _1, _2));
+ 	m_tcp.setReadCallbackFunction(&SopasBase::readCallbackFunctionS, this);	// , this, _1, _2));
 
 	bool success = openTcpConnection();
 	if (success == true)

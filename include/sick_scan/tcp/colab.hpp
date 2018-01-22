@@ -7,7 +7,7 @@
 #ifndef COLAB_HPP
 #define COLAB_HPP
 
-#include "../BasicDatatypes.hpp"
+#include "sick_scan/tcp/BasicDatatypes.hpp"
 #include <memory.h>	// for memread<>
 
 //
