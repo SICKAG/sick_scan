@@ -251,11 +251,89 @@ namespace sick_scan
       }
     }
 
-    int SickScanCommonTcp::init_device()
+		void SickScanCommonTcp::readCallbackFunctionS(void* obj, UINT8* buffer, UINT32& numOfBytes)
+		{
+			((SickScanCommonTcp*)obj)->readCallbackFunction(buffer, numOfBytes);
+		}
+
+
+/**
+ * Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
+ * hereingekommen sind.
+ */
+		void SickScanCommonTcp::readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
+		{
+			printf("Received: %d\n", numOfBytes);
+#if 0
+			bool beVerboseHere = false;
+			printInfoMessage("SopasBase::readCallbackFunction(): Called with " + toString(numOfBytes) + " available bytes.", beVerboseHere);
+
+			ScopedLock lock(&m_receiveDataMutex); // Mutex for access to the input buffer
+			UINT32 remainingSpace = sizeof(m_receiveBuffer) - m_numberOfBytesInReceiveBuffer;
+			UINT32 bytesToBeTransferred = numOfBytes;
+			if (remainingSpace < numOfBytes)
+			{
+				bytesToBeTransferred = remainingSpace;
+				printWarning("SopasBase::readCallbackFunction(): Input buffer space is to small, transferring only " +
+										 ::toString(bytesToBeTransferred) + " of " + ::toString(numOfBytes) + " bytes.");
+			}
+			else
+			{
+				printInfoMessage("SopasBase::readCallbackFunction(): Transferring " + ::toString(bytesToBeTransferred) +
+												 " bytes from TCP to input buffer.", beVerboseHere);
+			}
+
+			if (bytesToBeTransferred > 0)
+			{
+				// Data can be transferred into our input buffer
+				memcpy(&(m_receiveBuffer[m_numberOfBytesInReceiveBuffer]), buffer, bytesToBeTransferred);
+				m_numberOfBytesInReceiveBuffer += bytesToBeTransferred;
+
+				UINT32 size = 0;
+
+				while (1)
+				{
+					// Now work on the input buffer until all received datasets are processed
+					SopasEventMessage frame = findFrameInReceiveBuffer();
+
+					size = frame.size();
+					if (size == 0)
+					{
+						// Framesize = 0: There is no valid frame in the buffer. The buffer is either empty or the frame
+						// is incomplete, so leave the loop
+						printInfoMessage("SopasBase::readCallbackFunction(): No complete frame in input buffer, we are done.", beVerboseHere);
+
+						// Leave the loop
+						break;
+					}
+					else
+					{
+						// A frame was found in the buffer, so process it now.
+						printInfoMessage("SopasBase::readCallbackFunction(): Processing a frame of length " + ::toString(frame.size()) + " bytes.", beVerboseHere);
+						processFrame(frame);
+					}
+				}
+			}
+			else
+			{
+				// There was input data from the TCP interface, but our input buffer was unable to hold a single byte.
+				// Either we have not read data from our buffer for a long time, or something has gone wrong. To re-sync,
+				// we clear the input buffer here.
+				m_numberOfBytesInReceiveBuffer = 0;
+			}
+
+			printInfoMessage("SopasBase::readCallbackFunction(): Leaving. Current input buffer fill level is " +
+											 ::toString(m_numberOfBytesInReceiveBuffer) + " bytes.", beVerboseHere);
+#endif
+		}
+
+
+		int SickScanCommonTcp::init_device()
     {
       int portInt;
       sscanf(port_.c_str(),"%d", &portInt);
       m_nw.init(hostname_, portInt, disconnectFunctionS, (void*)this);
+			m_nw.setReadCallbackFunction(readCallbackFunctionS,(void*)this);
       m_nw.connect();
       return ExitSuccess;
     }

@@ -54,6 +54,14 @@ public:
   static void disconnectFunctionS(void *obj);
   SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser* parser);
   virtual ~SickScanCommonTcp();
+  static void readCallbackFunctionS(void* obj, UINT8* buffer, UINT32& numOfBytes);
+  void readCallbackFunction(UINT8* buffer, UINT32& numOfBytes);
+
+
+/**
+ * Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
+ * hereingekommen sind.
+ */
 
 protected:
   void disconnectFunction();

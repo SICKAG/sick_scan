@@ -44,6 +44,8 @@ public:
               unsigned short portNumber,
               Tcp::DisconnectFunction disconnectFunction,
               void* obj);
+    bool setReadCallbackFunction(Tcp::ReadFunction readFunction,
+                                                   void* obj);
 
     /// Connects to a sensor via tcp and reads the device name.
     bool connect();

@@ -68,11 +68,16 @@ bool SickScanCommonNw::disconnect()
       m_ipAddress = ipAddress;
       m_portNumber = portNumber;
       m_tcp.setDisconnectCallbackFunction(disconnectFunction, obj);
-
       return true;
     }
 
 
+    bool SickScanCommonNw::setReadCallbackFunction(Tcp::ReadFunction readFunction,
+                                                   void* obj)
+    {
+          m_tcp.setReadCallbackFunction(readFunction, obj);
+          return(true);
+    }
 //
 // Verbinde mit dem unter init() eingestellten Geraet, und pruefe die Verbindung
 // durch einen DeviceIdent-Aufruf.
@@ -90,7 +95,7 @@ bool SickScanCommonNw::disconnect()
 
       // Establish connection here
       // Set the data input callback for our TCP connection
-      m_tcp.setReadCallbackFunction(&SickScanCommonNw::readCallbackFunctionS, this);	// , this, _1, _2));
+      // m_tcp.setReadCallbackFunction(&SickScanCommonNw::readCallbackFunctionS, this);	// , this, _1, _2));
 
       bool success = openTcpConnection();
       if (success == true)
