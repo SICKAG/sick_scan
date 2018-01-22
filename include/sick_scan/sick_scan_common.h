@@ -53,6 +53,8 @@
 
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <diagnostic_updater/publisher.h>
+#include <sick_scan/sick_scan_common_nw.h>
+
 
 #ifndef _MSC_VER
 #include <dynamic_reconfigure/server.h>
@@ -140,6 +142,7 @@ namespace sick_scan
 		bool stopMeasurement();
 		bool run();
 		bool startMeasurement();
+      SickScanCommonNw m_nw;
 	protected:
 		virtual int init_device() = 0;
 		virtual int init_scanner();
@@ -192,6 +195,7 @@ namespace sick_scan
 		diagnostic_updater::Updater diagnostics_;
 
 	private:
+
 		// ROS
 		ros::NodeHandle nh_;
 		ros::Publisher pub_;

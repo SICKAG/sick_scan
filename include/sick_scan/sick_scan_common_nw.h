@@ -59,6 +59,7 @@ public:
      * \return True if the device is now in the CONSTRUCTED state
      */
     bool disconnect();
+    void sendCommandBuffer(UINT8* buffer, UINT16 len);
 
 private:
     // TCP
@@ -96,7 +97,6 @@ private:
     SopasProtocol m_protocol;
 
 
-    void sendCommandBuffer(UINT8* buffer, UINT16 len);
     void copyFrameToResposeBuffer(UINT32 frameLength);
     void removeFrameFromReceiveBuffer(UINT32 frameLength);
 protected:

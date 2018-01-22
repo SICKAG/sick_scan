@@ -54,6 +54,8 @@
 #endif
 
 #include <sick_scan/sick_scan_common_tcp.h>
+
+
 #include <boost/asio.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <algorithm>
@@ -236,6 +238,29 @@ namespace sick_scan
 		return(0);
 	}
 
+    void SickScanCommonTcp::disconnectFunction()
+    {
+
+    }
+
+    void SickScanCommonTcp::disconnectFunctionS(void *obj)
+    {
+      if (obj != NULL)
+      {
+        ((SickScanCommonTcp *)(obj))->disconnectFunction();
+      }
+    }
+
+    int SickScanCommonTcp::init_device()
+    {
+      int portInt;
+      sscanf(port_.c_str(),"%d", &portInt);
+      m_nw.init(hostname_, portInt, disconnectFunctionS, (void*)this);
+      m_nw.connect();
+      return ExitSuccess;
+    }
+
+    #if 0
 	int SickScanCommonTcp::init_device()
 	{
 		// Resolve the supplied hostname
@@ -296,6 +321,7 @@ namespace sick_scan
 
 		return ExitSuccess;
 	}
+#endif
 
 	int SickScanCommonTcp::close_device()
 	{
@@ -723,12 +749,13 @@ namespace sick_scan
 	 */
 	int SickScanCommonTcp::sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen)
 	{
+#if 0
 		if (!socket_.is_open()) {
 			ROS_ERROR("sendSOPASCommand: socket not open");
 			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: socket not open.");
 			return ExitError;
 		}
-
+#endif
 		int sLen = 0;
 		int preambelCnt = 0;
 		bool cmdIsBinary = false;
@@ -768,6 +795,10 @@ namespace sick_scan
 				}
 				msgLen = 8 + dataLen + 1; // 8 Msg. Header + Packet +
 			}
+#if 1
+      m_nw.sendCommandBuffer((UINT8*)request, msgLen);
+#else
+
 			/*
 			 * Write a SOPAS variable read request to the device.
 			 */
@@ -781,6 +812,7 @@ namespace sick_scan
 				diagnostics_.broadcast(getDiagnosticErrorCode(), "Write error for sendSOPASCommand.");
 				return ExitError;
 			}
+#endif
 		}
 
 		// Set timeout in 5 seconds

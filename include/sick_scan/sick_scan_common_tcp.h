@@ -51,10 +51,12 @@ namespace sick_scan
 class SickScanCommonTcp : public SickScanCommon
 {
 public:
+  static void disconnectFunctionS(void *obj);
   SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser* parser);
   virtual ~SickScanCommonTcp();
 
 protected:
+  void disconnectFunction();
   virtual int init_device();
   virtual int close_device();
 
