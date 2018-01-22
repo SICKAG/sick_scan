@@ -79,6 +79,100 @@ static int getDiagnosticErrorCode()
 namespace sick_scan
 {
 
+#if 0
+	/**
+	* Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
+	* hereingekommen sind.
+	*/
+#define RECEIVE_BUFFER_SIZE (100000)
+	int m_receiveBufferIdx = 0;
+	void readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
+	{
+		bool m_beVerbose = false;
+		if (m_beVerbose == true)
+		{
+		//	traceNote(m_traceVersion) << "readCallbackFunction(): Called with " << numOfBytes << " available bytes." << std::endl;
+		}
+
+		UINT32 remainingSpace = RECEIVE_BUFFER_SIZE - m_receiveBufferIdx;
+		UINT32 bytesToBeTransferred = numOfBytes;
+		if (remainingSpace < numOfBytes)
+		{
+			bytesToBeTransferred = remainingSpace;
+			// traceWarning(m_traceVersion) << "readCallbackFunction(): Input buffer space is to small, transferring only "
+			// 	<< bytesToBeTransferred << " from " << numOfBytes << " bytes." << std::endl;
+		}
+		else
+		{
+			if (m_beVerbose == true)
+			{
+				//  traceNote(m_traceVersion) << "readCallbackFunction(): Transferring " << bytesToBeTransferred
+				// 	<< " bytes from TCP to input buffer." << std::endl;
+			}
+		}
+
+		if (bytesToBeTransferred > 0)
+		{
+			{
+#if 0
+				boost::mutex::scoped_lock lock(m_receiveDataMutex); // Mutex for access to the input buffer
+																	// Data can be transferred into our input buffer
+				memcpy(&(m_receiveBuffer[m_receiveBufferIdx]), buffer, bytesToBeTransferred);
+				m_receiveBufferIdx += bytesToBeTransferred;
+#endif
+			}
+
+			UINT32 size = 0;
+
+			while (1)
+			{
+				// Now work on the input buffer until all received datasets are processed
+
+			//	size = findFrameInReceiveBuffer();
+				if (size == 0)
+				{
+					// Framesize = 0: There is no valid frame in the buffer. The buffer is either empty or the frame
+					// is incomplete, so leave the loop
+					if (m_beVerbose == true)
+					{
+//						traceNote(m_traceVersion) << "readCallbackFunction(): No complete frame in input buffer, we are done." << std::endl;
+					}
+
+					// Leave the loop
+					break;
+				}
+				else
+				{
+#if 0
+					processInputData(size);
+
+					if (!isRunning())
+					{
+						//					traceDebug(m_traceVersion) << "set sensor to running" << std::endl;
+						DeviceStateWatchdog::setRunning();
+					}
+#endif
+				}
+			}
+		}
+		else
+		{
+			// There was input data from the TCP interface, but our input buffer was unable to hold a single byte.
+			// Either we have not read data from our buffer for a long time, or something has gone wrong. To re-sync,
+			// we clear the input buffer here.
+			m_receiveBufferIdx = 0;
+		}
+
+		if (m_beVerbose == true)
+		{
+			// traceNote(m_traceVersion) << "readCallbackFunction(): Leaving. Current input buffer fill level is "
+			// 	<< m_receiveBufferIdx << " bytes." << std::endl;
+		}
+	}
+
+#endif
+
+
 	SickScanCommonTcp::SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser* parser)
 		:
 		SickScanCommon(parser),
@@ -88,6 +182,8 @@ namespace sick_scan
 		port_(port),
 		timelimit_(timelimit)
 	{
+		// io_service_.setReadCallbackFunction(boost::bind(&SopasDevice::readCallbackFunction, this, _1, _2));
+
 		// Set up the deadline actor to implement timeouts.
 		// Based on blocking TCP example on:
 		// http://www.boost.org/doc/libs/1_46_0/doc/html/boost_asio/example/timeouts/blocking_tcp_client.cpp
@@ -385,6 +481,7 @@ namespace sick_scan
 				}
 				else
 				{
+					// out of sync - what shell we do now?
 					numToRead = 0;  // invalid packet - cancle reading
 				}
 			}
@@ -426,7 +523,7 @@ namespace sick_scan
 		{
 			int numBytes = 0;
 
-
+#if 1
 			boost::asio::async_read(socket_,
 
 				boost::asio::buffer(exampleData, 65536),
@@ -437,6 +534,8 @@ namespace sick_scan
 					boost::asio::placeholders::error,
 					boost::asio::placeholders::bytes_transferred
 				));
+#endif
+
 
 			do io_service_.run_one();
 
@@ -444,10 +543,8 @@ namespace sick_scan
 
 			std::ostream os(&input_buffer_);
 			// os << "Hello, World!\n";
-			for (int i = 0; i < receivedDataLen; i++)
-			{
-				os << exampleData[i];
-			}
+			const char *ptr = (const char *)(&(exampleData[0]));
+			os.write(ptr,  receivedDataLen);
 
 
 #if 0
