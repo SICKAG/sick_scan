@@ -218,7 +218,7 @@ namespace sick_scan
 		std::vector<std::string> sopasCmdVec;
 		std::vector<std::string> sopasCmdMaskVec;
 		std::vector<std::string> sopasReplyVec;
-		std::vector<std::vector<unsigned char>> sopasReplyBinVec;
+		std::vector<std::vector<unsigned char> > sopasReplyBinVec;
 		std::vector<std::string> sopasReplyStrVec;
 		std::vector<std::string> sopasCmdErrMsg;
 		std::vector<int> sopasCmdChain;

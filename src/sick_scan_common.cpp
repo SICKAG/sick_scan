@@ -79,7 +79,6 @@
 template <typename T>
 T swap_endian(T u)
 {
-	static_assert (CHAR_BIT == 8, "CHAR_BIT != 8");
 
 	union
 	{
@@ -942,7 +941,7 @@ namespace sick_scan
 					int scanDataLen0 = binScanfGuessDataLenFromMask(scanMask0);
 					int scanDataLen1 = binScanfGuessDataLenFromMask(scanMask1); // should be: 2
 					binScanfVec(&replyDummy, scanMask0, &dummy0, &dummy1, &identLen);
-					printf("IdentLen: %d\n", identLen);
+					printf("IdentLen: %ld\n", identLen);
 					std::string identStr = binScanfGetStringFromVec(&replyDummy, scanDataLen0, identLen);
 					int off = scanDataLen0 + identLen; // consuming header + fixed part + ident
 
