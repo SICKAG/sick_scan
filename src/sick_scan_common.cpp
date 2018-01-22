@@ -868,7 +868,7 @@ namespace sick_scan
 		}
 		for (int i = 0; i < this->sopasCmdChain.size(); i++)
 		{
-			ros::Duration(2.0).sleep();   // could maybe removed
+			ros::Duration(0.2).sleep();   // could maybe removed
 
 			int cmdId = sopasCmdChain[i]; // get next command
 			std::string sopasCmd = sopasCmdVec[cmdId];
@@ -1482,6 +1482,14 @@ namespace sick_scan
 				this->convertAscii2BinaryCmd(sopasCmd.c_str(), &reqBinary);
 				result = sendSopasAndCheckAnswer(reqBinary, &replyDummy);
 				sopasReplyBinVec[cmdId] = replyDummy;
+
+				switch (cmdId)
+				{
+				case CMD_START_SCANDATA:
+					ROS_DEBUG("Sleeping for a couple of seconds of start measurement\n");
+					ros::Duration(10.0).sleep();
+					break;
+				}
 			}
 			else
 			{
