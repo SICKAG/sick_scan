@@ -537,8 +537,10 @@ namespace sick_scan
 #endif
 
 
-			do io_service_.run_one();
-
+			do
+			{
+				io_service_.run_one();
+			}
 			while (ec_ == boost::asio::error::would_block);
 
 			std::ostream os(&input_buffer_);
@@ -785,7 +787,7 @@ namespace sick_scan
 		const int BUF_SIZE = 1000;
 		char buffer[BUF_SIZE];
 		int bytes_read;
-		if (readWithTimeout(1000, buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
+		if (readWithTimeout(20000, buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
 		{
 			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after 1s");
 			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after 5 s.");
@@ -815,7 +817,7 @@ namespace sick_scan
 		std::vector<unsigned char> reply;
 
 		// Wait at most 5000ms for a new scan
-		size_t timeout = 5000;
+		size_t timeout = 30000;
 		bool exception_occured = false;
 
 		char *buffer = reinterpret_cast<char *>(receiveBuffer);
