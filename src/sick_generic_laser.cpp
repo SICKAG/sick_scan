@@ -54,10 +54,8 @@
 #ifndef _MSC_VER
 
 
-#include <sick_scan/sick_scan_common_usb.h>
 #endif
 #include <sick_scan/sick_scan_common_tcp.h>
-#include <sick_scan/sick_scan_common_mockup.h>
 
 #include <sick_scan/sick_generic_parser.h>
 
@@ -165,9 +163,7 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 	{
 		// attempt to connect/reconnect
 		delete s;
-		if (subscribe_datagram)
-			s = new sick_scan::SickScanCommonMockup(parser);
-		else if (useTCP)
+    if (useTCP)
 			s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser);
 
 
@@ -184,8 +180,6 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 		if (result == sick_scan::ExitFatal)
 			return result;
 
-		if (ros::ok() && !subscribe_datagram && !useTCP)
-			ros::Duration(1.0).sleep(); // Only attempt USB connections once per second
 	}
 
 	delete s;
