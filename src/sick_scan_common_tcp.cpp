@@ -82,100 +82,6 @@ static int getDiagnosticErrorCode()
 namespace sick_scan
 {
 
-#if 0
-	/**
-	* Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
-	* hereingekommen sind.
-	*/
-#define RECEIVE_BUFFER_SIZE (100000)
-	int m_receiveBufferIdx = 0;
-	void readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
-	{
-		bool m_beVerbose = false;
-		if (m_beVerbose == true)
-		{
-		//	traceNote(m_traceVersion) << "readCallbackFunction(): Called with " << numOfBytes << " available bytes." << std::endl;
-		}
-
-		UINT32 remainingSpace = RECEIVE_BUFFER_SIZE - m_receiveBufferIdx;
-		UINT32 bytesToBeTransferred = numOfBytes;
-		if (remainingSpace < numOfBytes)
-		{
-			bytesToBeTransferred = remainingSpace;
-			// traceWarning(m_traceVersion) << "readCallbackFunction(): Input buffer space is to small, transferring only "
-			// 	<< bytesToBeTransferred << " from " << numOfBytes << " bytes." << std::endl;
-		}
-		else
-		{
-			if (m_beVerbose == true)
-			{
-				//  traceNote(m_traceVersion) << "readCallbackFunction(): Transferring " << bytesToBeTransferred
-				// 	<< " bytes from TCP to input buffer." << std::endl;
-			}
-		}
-
-		if (bytesToBeTransferred > 0)
-		{
-			{
-#if 0
-				boost::mutex::scoped_lock lock(m_receiveDataMutex); // Mutex for access to the input buffer
-																	// Data can be transferred into our input buffer
-				memcpy(&(m_receiveBuffer[m_receiveBufferIdx]), buffer, bytesToBeTransferred);
-				m_receiveBufferIdx += bytesToBeTransferred;
-#endif
-			}
-
-			UINT32 size = 0;
-
-			while (1)
-			{
-				// Now work on the input buffer until all received datasets are processed
-
-			//	size = findFrameInReceiveBuffer();
-				if (size == 0)
-				{
-					// Framesize = 0: There is no valid frame in the buffer. The buffer is either empty or the frame
-					// is incomplete, so leave the loop
-					if (m_beVerbose == true)
-					{
-//						traceNote(m_traceVersion) << "readCallbackFunction(): No complete frame in input buffer, we are done." << std::endl;
-					}
-
-					// Leave the loop
-					break;
-				}
-				else
-				{
-#if 0
-					processInputData(size);
-
-					if (!isRunning())
-					{
-						//					traceDebug(m_traceVersion) << "set sensor to running" << std::endl;
-						DeviceStateWatchdog::setRunning();
-					}
-#endif
-				}
-			}
-		}
-		else
-		{
-			// There was input data from the TCP interface, but our input buffer was unable to hold a single byte.
-			// Either we have not read data from our buffer for a long time, or something has gone wrong. To re-sync,
-			// we clear the input buffer here.
-			m_receiveBufferIdx = 0;
-		}
-
-		if (m_beVerbose == true)
-		{
-			// traceNote(m_traceVersion) << "readCallbackFunction(): Leaving. Current input buffer fill level is "
-			// 	<< m_receiveBufferIdx << " bytes." << std::endl;
-		}
-	}
-
-#endif
-
-
 	SickScanCommonTcp::SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser* parser)
 		:
 		SickScanCommon(parser),
@@ -242,20 +148,18 @@ namespace sick_scan
 		void SickScanCommonTcp::readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
 		{
       // should be member variable in the future
-      UINT32 m_alreadyReceivedBytes;
-      UINT32 m_lastPacketSize;
-      UINT8  m_packetBuffer[480000];
+
+
+#if 0
 
       this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-      return;
 
-      printf("Received: %d\n", numOfBytes);
       if (this->getReplyMode() == 0)
       {
         this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
         return;
       }
-
+#endif
         if (numOfBytes < 9)
         {
           return;
@@ -269,7 +173,15 @@ namespace sick_scan
           UINT32 numberBytes = numOfBytes;
           if (m_alreadyReceivedBytes == 0)
           {
+            const char *packetKeyWord = "sSN LMDscandata";
             m_lastPacketSize = colab::getIntegerFromBuffer<UINT32>(buffer, nextData);
+
+            if (strncmp((char *)(buffer + 8),packetKeyWord, strlen(packetKeyWord)) != 0)
+            {
+              this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
+              return;
+            }
+
             // probably a scan
             if (m_lastPacketSize > 4000)
             {
@@ -280,7 +192,7 @@ namespace sick_scan
               if (layerAngle == topmostLayerAngle)
               {
                 // wait for all 24 layers
-                m_lastPacketSize = m_lastPacketSize * 24;
+                // m_lastPacketSize = m_lastPacketSize * 24;
 
                 // traceDebug(MRS6xxxB_VERSION) << "Received new scan" << std::endl;
               }
@@ -298,7 +210,8 @@ namespace sick_scan
           }
 
           m_alreadyReceivedBytes = 0;
-
+          recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + numOfBytes));
+#if 0
           command = colab::getCommandStringFromBuffer(m_packetBuffer);
           UINT32 packetSize = colab::getIntegerFromBuffer<UINT32>(m_packetBuffer, nextData);
           std::string identifier = colab::getIdentifierFromBuffer(m_packetBuffer, nextData, m_lastPacketSize);
@@ -307,8 +220,9 @@ namespace sick_scan
           if ((command.compare("SN") == 0) && (identifier.compare("LMDscandata") == 0))
           {
             // if we have collected all 24 scans from all layers
-            if (m_lastPacketSize > packetSize)
+            if (m_lastPacketSize > packetSize) // more data received then necessary for one scan packet
             {
+              // iterate through layer
               for (UINT32 index = 0; index < 24; ++index)
               {
                 UINT32 startPos = index * (packetSize + 2 * sizeof(UINT32) + sizeof(UINT8)); // magic word + packetsize + crc
@@ -335,6 +249,7 @@ namespace sick_scan
               // was successful
             }
           }
+#endif
         }
 
 

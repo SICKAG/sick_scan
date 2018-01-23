@@ -66,7 +66,9 @@ public:
     int getReplyMode();
 
     Queue<std::vector<unsigned char> > recvQueue;
-
+    UINT32 m_alreadyReceivedBytes;
+    UINT32 m_lastPacketSize;
+    UINT8  m_packetBuffer[480000];
 /**
  * Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
  * hereingekommen sind.
