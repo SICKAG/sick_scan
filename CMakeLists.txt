@@ -44,7 +44,8 @@ add_executable(sick_generic_caller
     src/sick_generic_caller.cpp
     src/sick_scan_common_tcp.cpp
     src/sick_generic_parser.cpp
-	src/sick_scan_common_nw.cpp)
+	src/sick_scan_common_nw.cpp
+	)
 target_link_libraries(sick_generic_caller sick_scan_lib)
 
 add_executable(sick_tim_datagram_test

@@ -44,7 +44,7 @@
 
 #include "sick_scan_common.h"
 #include "sick_generic_parser.h"
-
+#include "template_queue.h"
 namespace sick_scan
 {
 
@@ -56,7 +56,7 @@ public:
   virtual ~SickScanCommonTcp();
   static void readCallbackFunctionS(void* obj, UINT8* buffer, UINT32& numOfBytes);
   void readCallbackFunction(UINT8* buffer, UINT32& numOfBytes);
-
+  Queue<std::vector<unsigned char> > recvQueue;
 
 /**
  * Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle

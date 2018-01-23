@@ -263,7 +263,14 @@ namespace sick_scan
  */
 		void SickScanCommonTcp::readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
 		{
+      static int cnt;
 			printf("Received: %d\n", numOfBytes);
+      recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
+      cnt++;
+      if (1 == cnt)
+      {
+        // printf("Test\n");
+      }
 #if 0
 			bool beVerboseHere = false;
 			printInfoMessage("SopasBase::readCallbackFunction(): Called with " + toString(numOfBytes) + " available bytes.", beVerboseHere);
@@ -624,9 +631,12 @@ namespace sick_scan
 		size_t to_read;
 
 		if (isBinary)
-		{
-			int numBytes = 0;
-
+    {
+      int numBytes = 0;
+      std::vector<unsigned char> recvData = this->recvQueue.pop();
+      *bytes_read = recvData.size();
+      memcpy(buffer, &(recvData[0]), recvData.size());
+      return(ExitSuccess);
 #if 1
 			boost::asio::async_read(socket_,
 
