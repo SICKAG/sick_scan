@@ -80,22 +80,16 @@
 
 #include <climits>
 
-template <typename T>
-T swap_endian(T u)
+void swap_endian(void *ptr, int numBytes)
 {
-
-	union
+  unsigned char *buf = (unsigned char*)(ptr);
+	unsigned char tmpChar;
+	for (int i = 0; i < numBytes/2; i++)
 	{
-		T u;
-		unsigned char u8[sizeof(T)];
-	} source, dest;
-
-	source.u = u;
-
-	for (size_t k = 0; k < sizeof(T); k++)
-		dest.u8[k] = source.u8[sizeof(T) - k - 1];
-
-	return dest.u;
+     tmpChar = buf[numBytes - 1 - i];
+		 buf[numBytes - 1 - i] =  buf[i];
+		buf[i] = tmpChar;
+	}
 }
 
 static int getDiagnosticErrorCode() // workaround due to compiling error under Visual C++
@@ -1752,7 +1746,30 @@ namespace sick_scan
 			bool useBinaryProtocol = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
 
 
-			int result = get_datagram(receiveBuffer, 65536, &actual_length, useBinaryProtocol);
+		int result = get_datagram(receiveBuffer, 65536, &actual_length, useBinaryProtocol);
+#if 0
+      {
+      static int fileCnt = 0;
+      char szFileName[255] = {0};
+      sprintf(szFileName,"/tmp/dg%06d.bin",fileCnt);
+      fileCnt++;
+      FILE *fin;
+      fin = fopen(szFileName,"rb");
+      fseek(fin,0, SEEK_END);
+      int fileSize = ftell(fin);
+      fseek(fin,0, SEEK_SET);
+      actual_length = fileSize;
+      fread(receiveBuffer, actual_length, 1, fin );
+      fclose(fin);
+      actual_length += 9; // muss eigentlich korrigiert werden.
+        if (fileCnt == 72)
+        {
+         fileCnt = 0;
+        }
+      }
+      int result = 0;
+#endif
+
 			if (result != 0)
 			{
 				ROS_ERROR("Read Error when getting datagram: %i.", result);
@@ -1780,7 +1797,7 @@ namespace sick_scan
 			 */
 			char* buffer_pos = (char*)receiveBuffer;
 			char *dstart, *dend;
-			bool dumpDbg = true;
+			bool dumpDbg = false;
 			bool dataToProcess = true;
 			while (dataToProcess)
 			{
@@ -1799,9 +1816,11 @@ namespace sick_scan
 					std::vector<unsigned char> receiveBufferVec = std::vector<unsigned char>(receiveBuffer, receiveBuffer + actual_length);
 					if (receiveBufferVec.size() > 8)
 					{
-						long idVal;
-						long lenVal;
-						binScanfVec(&receiveBufferVec, "%4y%4y", &idVal, &lenVal);
+						long idVal = 0;
+						long lenVal = 0;
+						memcpy(&idVal,  receiveBuffer + 0, 4);
+						memcpy(&lenVal, receiveBuffer + 4, 4);
+						swap_endian(&lenVal, 4);
 
 						if (idVal == 0x02020202)
 						{
@@ -1816,16 +1835,18 @@ namespace sick_scan
 								int numberOf16BitChannels = 0;
 
 								memcpy(&elevAngleX200, receiveBuffer + 50, 2);
-								elevAngleX200 = swap_endian<unsigned short>(elevAngleX200);
-								
-								memcpy(&scanFrequencyX100, receiveBuffer + 5, 4);
-								scanFrequencyX100 = swap_endian<unsigned long>(scanFrequencyX100);
+								swap_endian(&elevAngleX200, sizeof(unsigned short));
+
+
+								msg.header.seq = elevAngleX200;
+								memcpy(&scanFrequencyX100, receiveBuffer + 52, 4);
+								swap_endian(&scanFrequencyX100, sizeof(unsigned long));
 
 								memcpy(&measurementFrequencyDiv100, receiveBuffer + 56, 4);
-								measurementFrequencyDiv100 = swap_endian<unsigned long>(measurementFrequencyDiv100);
+								swap_endian(&measurementFrequencyDiv100, sizeof(unsigned long));
 
 								memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
-								numberOf16BitChannels = swap_endian<unsigned short>(numberOf16BitChannels);
+								swap_endian(&numberOf16BitChannels, sizeof(unsigned short));
 
 								bool parsePacket = true;
 								int  parseOff = 64;
@@ -1849,14 +1870,15 @@ namespace sick_scan
 										memcpy(&sizeOfSingleAngularStepDiv10000, receiveBuffer + parseOff + 17, 2);
 										memcpy(&numberOfItems,      receiveBuffer + parseOff + 19, 2);
 
-										scaleFactor = swap_endian<float>(scaleFactor);
-										scaleFactorOffset = swap_endian<float>(scaleFactorOffset);
-										startAngleDiv10000 = swap_endian<unsigned long>(startAngleDiv10000);
-										sizeOfSingleAngularStepDiv10000 = swap_endian<unsigned short>(sizeOfSingleAngularStepDiv10000);
-										numberOfItems = swap_endian<unsigned short>(numberOfItems);
+										swap_endian(&scaleFactor, sizeof(float));
+										swap_endian(&scaleFactorOffset, sizeof(float));
+										swap_endian(&startAngleDiv10000, sizeof(unsigned long));
+										swap_endian(&sizeOfSingleAngularStepDiv10000, sizeof(unsigned short));
+										swap_endian(&numberOfItems, sizeof(unsigned short));
 
 										startAngle = startAngleDiv10000 / 10000.00;
 										sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
+                    sizeOfSingleAngularStep *= ( M_PI/180.0);
 										numEchos = 1;
 										echoMask = 1;
 										msg.angle_min = startAngle;
@@ -1909,8 +1931,9 @@ namespace sick_scan
 							}
 						}
 					}
+
+					success = ExitSuccess;
 					// change Parsing Mode
-					success = ExitError; // !!! D.h. derzeit werden noch keine Daten publiziert AENDERN!!!!
 					dataToProcess = false; // only one package allowed - no chaining
 				}
 				else
@@ -2080,7 +2103,7 @@ namespace sick_scan
 							// 0.0436332 /*2.5 degrees*/;
 							break;
 						case 24: // Preparation for MRS6000
-							printf("Seq: %d\n", msg.header.seq);
+							// printf("Seq: %d\n", msg.header.seq);
 							baseLayer = -1;
 							// -26.38
 							// 
@@ -2139,7 +2162,7 @@ namespace sick_scan
 
 						}
 						// if ( (msg.header.seq == 0) || (layerOff == 0)) // FIXEN!!!!
-						if (msg.header.seq == 0)
+						if ( (msg.header.seq == 0) || ( msg.header.seq == 237) )
 						{  // pulish, if seq == 0 // true for every TIM5xx scan, true for every 4th for LMS1000 and MRS1104
 						  //							cloud_.header.frame_id = msg.header.frame_id;
 #ifndef _MSC_VER

@@ -175,7 +175,8 @@ namespace sick_scan
           {
             const char *packetKeyWord = "sSN LMDscandata";
             m_lastPacketSize = colab::getIntegerFromBuffer<UINT32>(buffer, nextData);
-
+						//
+						m_lastPacketSize += 9; // Magic number + CRC
 
 						// Check for "normal" command reply
             if (strncmp((char *)(buffer + 8),packetKeyWord, strlen(packetKeyWord)) != 0)
@@ -855,7 +856,8 @@ namespace sick_scan
     memcpy(receiveBuffer, &(dataBuffer[0]), size);
     *actual_length = size;
 
-		static int cnt;
+#if 0
+		static int cnt = 0;
 		char szFileName[255];
 		sprintf(szFileName,"/tmp/dg%06d.bin", cnt++);
 
@@ -867,7 +869,7 @@ namespace sick_scan
 			fwrite(receiveBuffer, size, 1, fout);
 			fclose(fout);
 		}
-
+#endif
     return ExitSuccess;
 
 		if (!socket_.is_open()) {
