@@ -33,8 +33,7 @@ add_library(sick_scan_lib
     src/tcp/Time.cpp
     src/tcp/colaa.cpp
     src/tcp/colab.cpp
-	src/binPrintf.cpp
-	src/binScanf.cpp)
+	src/binScanf.cpp	)
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
 target_link_libraries(sick_scan_lib
     ${catkin_LIBRARIES})

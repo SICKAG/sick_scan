@@ -49,53 +49,69 @@ namespace sick_scan
 {
 
 class SickScanCommonTcp : public SickScanCommon
-{
+    {
 public:
-  static void disconnectFunctionS(void *obj);
-  SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser* parser);
-  virtual ~SickScanCommonTcp();
-  static void readCallbackFunctionS(void* obj, UINT8* buffer, UINT32& numOfBytes);
-  void readCallbackFunction(UINT8* buffer, UINT32& numOfBytes);
-  Queue<std::vector<unsigned char> > recvQueue;
+    static void disconnectFunctionS(void *obj);
+
+    SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser *parser);
+
+    virtual ~SickScanCommonTcp();
+
+    static void readCallbackFunctionS(void *obj, UINT8 *buffer, UINT32 &numOfBytes);
+
+    void readCallbackFunction(UINT8 *buffer, UINT32 &numOfBytes);
+
+    void setReplyMode(int _mode);
+
+    int getReplyMode();
+
+    Queue<std::vector<unsigned char> > recvQueue;
 
 /**
  * Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
  * hereingekommen sind.
  */
 
-protected:
-  void disconnectFunction();
-  virtual int init_device();
-  virtual int close_device();
+    protected:
+        void disconnectFunction();
 
-  /// Send a SOPAS command to the device and print out the response to the console.
-  virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen);
+        virtual int init_device();
 
-  /// Read a datagram from the device.
-  /**
-   * \param [in] receiveBuffer data buffer to fill
-   * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
-   * \param [out] actual_length the actual amount of data written
-   */
-  virtual int get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol);
- 
-  // Helpers for boost asio
-  int readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read = 0, bool *exception_occured = 0,  bool isBinary = false);
-  void handleRead(boost::system::error_code error, size_t bytes_transfered);
-  void checkDeadline();
+        virtual int close_device();
 
-private:
-  boost::asio::io_service io_service_;
-  boost::asio::ip::tcp::socket socket_;
-  boost::asio::deadline_timer deadline_;
-  boost::asio::streambuf input_buffer_;
-  boost::system::error_code ec_;
-  size_t bytes_transfered_;
+        /// Send a SOPAS command to the device and print out the response to the console.
+        virtual int sendSOPASCommand(const char *request, std::vector<unsigned char> *reply, int cmdLen);
 
-  std::string hostname_;
-  std::string port_;
-  int timelimit_;
-};
+        /// Read a datagram from the device.
+        /**
+         * \param [in] receiveBuffer data buffer to fill
+         * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
+         * \param [out] actual_length the actual amount of data written
+         */
+        virtual int
+        get_datagram(unsigned char *receiveBuffer, int bufferSize, int *actual_length, bool isBinaryProtocol);
+
+        // Helpers for boost asio
+        int readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read = 0,
+                            bool *exception_occured = 0, bool isBinary = false);
+
+        void handleRead(boost::system::error_code error, size_t bytes_transfered);
+
+        void checkDeadline();
+
+    private:
+        boost::asio::io_service io_service_;
+        boost::asio::ip::tcp::socket socket_;
+        boost::asio::deadline_timer deadline_;
+        boost::asio::streambuf input_buffer_;
+        boost::system::error_code ec_;
+        size_t bytes_transfered_;
+
+        std::string hostname_;
+        std::string port_;
+        int timelimit_;
+        int m_replyMode;
+        };
 
 
 } /* namespace sick_scan */

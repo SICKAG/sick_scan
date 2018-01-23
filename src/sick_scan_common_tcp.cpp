@@ -54,14 +54,15 @@
 #endif
 
 #include <sick_scan/sick_scan_common_tcp.h>
-
+#include <sick_scan/tcp/colaa.hpp>
+#include <sick_scan/tcp/colab.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <algorithm>
 #include <iterator>
 #include <boost/lexical_cast.hpp>
-
+#include <vector>
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
@@ -184,6 +185,7 @@ namespace sick_scan
 		port_(port),
 		timelimit_(timelimit)
 	{
+    this->setReplyMode(0);
 		// io_service_.setReadCallbackFunction(boost::bind(&SopasDevice::readCallbackFunction, this, _1, _2));
 
 		// Set up the deadline actor to implement timeouts.
@@ -191,6 +193,7 @@ namespace sick_scan
 		// http://www.boost.org/doc/libs/1_46_0/doc/html/boost_asio/example/timeouts/blocking_tcp_client.cpp
 		deadline_.expires_at(boost::posix_time::pos_infin);
 		checkDeadline();
+
 	}
 
 	SickScanCommonTcp::~SickScanCommonTcp()
@@ -203,40 +206,6 @@ namespace sick_scan
 	using boost::lambda::var;
 	using boost::lambda::_1;
 
-
-	// Prepare for further use - broadcast, if there no responding scanner
-	bool tryBroadCastForMoreInfo(void)
-	{
-		boost::system::error_code error;
-		boost::asio::io_service my_io_service;
-		boost::asio::ip::udp::socket socket(my_io_service);
-		// both the header and the data in a single write operation.
-
-		int port = 30718;
-		socket.open(boost::asio::ip::udp::v4(), error);
-		if (!error)
-		{
-			unsigned char dataArray[] = { 0x10,0x00,0x00,0x080,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x0c, 0xa1, 0x99, 0xc0, 0x01, 0x02, 0xc0, 0xa8, 0x00, 0x64, 0xff, 0xff, 0xff, 0x00 };
-			socket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
-			socket.set_option(boost::asio::socket_base::broadcast(true));
-
-			boost::asio::ip::udp::endpoint senderEndpoint(boost::asio::ip::address_v4::broadcast(), port);
-			boost::asio::const_buffer firstBuf(dataArray, 24);
-
-			std::vector<boost::asio::const_buffer> buffers;
-			buffers.push_back(boost::asio::buffer(firstBuf));
-
-			socket.send_to(buffers, senderEndpoint);
-			boost::asio::mutable_buffer buf;
-			const int max_length = 10000;
-			char data_[max_length];
-
-			socket.receive_from(boost::asio::buffer(data_, max_length), senderEndpoint);
-			socket.close(error);
-		}
-
-		return(0);
-	}
 
     void SickScanCommonTcp::disconnectFunction()
     {
@@ -257,81 +226,118 @@ namespace sick_scan
 		}
 
 
-/**
+    void SickScanCommonTcp::setReplyMode(int _mode)
+    {
+      m_replyMode = _mode;
+    }
+    int SickScanCommonTcp::getReplyMode()
+    {
+      return(m_replyMode);
+    }
+
+    /**
  * Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
  * hereingekommen sind.
  */
 		void SickScanCommonTcp::readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
 		{
-      static int cnt;
-			printf("Received: %d\n", numOfBytes);
-      recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-      cnt++;
-      if (1 == cnt)
+      // should be member variable in the future
+      UINT32 m_alreadyReceivedBytes;
+      UINT32 m_lastPacketSize;
+      UINT8  m_packetBuffer[480000];
+
+      this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
+      return;
+
+      printf("Received: %d\n", numOfBytes);
+      if (this->getReplyMode() == 0)
       {
-        // printf("Test\n");
+        this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
+        return;
       }
-#if 0
-			bool beVerboseHere = false;
-			printInfoMessage("SopasBase::readCallbackFunction(): Called with " + toString(numOfBytes) + " available bytes.", beVerboseHere);
 
-			ScopedLock lock(&m_receiveDataMutex); // Mutex for access to the input buffer
-			UINT32 remainingSpace = sizeof(m_receiveBuffer) - m_numberOfBytesInReceiveBuffer;
-			UINT32 bytesToBeTransferred = numOfBytes;
-			if (remainingSpace < numOfBytes)
-			{
-				bytesToBeTransferred = remainingSpace;
-				printWarning("SopasBase::readCallbackFunction(): Input buffer space is to small, transferring only " +
-										 ::toString(bytesToBeTransferred) + " of " + ::toString(numOfBytes) + " bytes.");
-			}
-			else
-			{
-				printInfoMessage("SopasBase::readCallbackFunction(): Transferring " + ::toString(bytesToBeTransferred) +
-												 " bytes from TCP to input buffer.", beVerboseHere);
-			}
+        if (numOfBytes < 9)
+        {
+          return;
+        }
 
-			if (bytesToBeTransferred > 0)
-			{
-				// Data can be transferred into our input buffer
-				memcpy(&(m_receiveBuffer[m_numberOfBytesInReceiveBuffer]), buffer, bytesToBeTransferred);
-				m_numberOfBytesInReceiveBuffer += bytesToBeTransferred;
+        // check magic word for cola B
+        if ((buffer[0] == 0x02 && buffer[1] == 0x02 && buffer[2] == 0x02 && buffer[3] == 0x02) || m_alreadyReceivedBytes > 0)
+        {
+          std::string command;
+          UINT16 nextData = 4;
+          UINT32 numberBytes = numOfBytes;
+          if (m_alreadyReceivedBytes == 0)
+          {
+            m_lastPacketSize = colab::getIntegerFromBuffer<UINT32>(buffer, nextData);
+            // probably a scan
+            if (m_lastPacketSize > 4000)
+            {
+              INT16 topmostLayerAngle = 1350 * 2 - 62; // for identification of first layer of a scan
+              UINT16 layerPos = 24 + 26;
+              INT16 layerAngle = colab::getIntegerFromBuffer<INT16>(buffer, layerPos);
 
-				UINT32 size = 0;
+              if (layerAngle == topmostLayerAngle)
+              {
+                // wait for all 24 layers
+                m_lastPacketSize = m_lastPacketSize * 24;
 
-				while (1)
-				{
-					// Now work on the input buffer until all received datasets are processed
-					SopasEventMessage frame = findFrameInReceiveBuffer();
+                // traceDebug(MRS6xxxB_VERSION) << "Received new scan" << std::endl;
+              }
+            }
+          }
 
-					size = frame.size();
-					if (size == 0)
-					{
-						// Framesize = 0: There is no valid frame in the buffer. The buffer is either empty or the frame
-						// is incomplete, so leave the loop
-						printInfoMessage("SopasBase::readCallbackFunction(): No complete frame in input buffer, we are done.", beVerboseHere);
+          // copy
+          memcpy(m_packetBuffer + m_alreadyReceivedBytes, buffer, numOfBytes);
+          m_alreadyReceivedBytes += numberBytes;
 
-						// Leave the loop
-						break;
-					}
-					else
-					{
-						// A frame was found in the buffer, so process it now.
-						printInfoMessage("SopasBase::readCallbackFunction(): Processing a frame of length " + ::toString(frame.size()) + " bytes.", beVerboseHere);
-						processFrame(frame);
-					}
-				}
-			}
-			else
-			{
-				// There was input data from the TCP interface, but our input buffer was unable to hold a single byte.
-				// Either we have not read data from our buffer for a long time, or something has gone wrong. To re-sync,
-				// we clear the input buffer here.
-				m_numberOfBytesInReceiveBuffer = 0;
-			}
+          if (m_alreadyReceivedBytes < m_lastPacketSize)
+          {
+            // wait for completeness of packet
+            return;
+          }
 
-			printInfoMessage("SopasBase::readCallbackFunction(): Leaving. Current input buffer fill level is " +
-											 ::toString(m_numberOfBytesInReceiveBuffer) + " bytes.", beVerboseHere);
-#endif
+          m_alreadyReceivedBytes = 0;
+
+          command = colab::getCommandStringFromBuffer(m_packetBuffer);
+          UINT32 packetSize = colab::getIntegerFromBuffer<UINT32>(m_packetBuffer, nextData);
+          std::string identifier = colab::getIdentifierFromBuffer(m_packetBuffer, nextData, m_lastPacketSize);
+
+          // scan event
+          if ((command.compare("SN") == 0) && (identifier.compare("LMDscandata") == 0))
+          {
+            // if we have collected all 24 scans from all layers
+            if (m_lastPacketSize > packetSize)
+            {
+              for (UINT32 index = 0; index < 24; ++index)
+              {
+                UINT32 startPos = index * (packetSize + 2 * sizeof(UINT32) + sizeof(UINT8)); // magic word + packetsize + crc
+                unsigned char *startPtr = &m_packetBuffer[startPos + nextData];
+                unsigned char *endPtr = startPtr + packetSize - nextData;
+
+                recvQueue.push(std::vector<unsigned char>(startPtr, endPtr));
+                // readAndDecodeMRS6xxxScan(&m_packetBuffer[startPos + nextData], packetSize - nextData);
+              }
+            }
+            else
+            {
+              unsigned char *startPtr = &m_packetBuffer[nextData];
+              unsigned char *endPtr = startPtr + packetSize - nextData;
+              //  readAndDecodeMRS6xxxScan(&m_packetBuffer[nextData], packetSize - nextData);
+              recvQueue.push(std::vector<unsigned char>(startPtr, endPtr));
+            }
+          }
+            // answer to register scan event
+          else if ((command.compare(0, 2, "EA") == 0) && (identifier.compare(0, 11, "LMDscandata") == 0))
+          {
+            if (m_packetBuffer[nextData] == 1)
+            {
+              // was successful
+            }
+          }
+        }
+
+
 		}
 
 
@@ -925,6 +931,13 @@ namespace sick_scan
 
 	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 	{
+    this->setReplyMode(1);
+    std::vector<unsigned char> dataBuffer = this->recvQueue.pop();
+    long size = dataBuffer.size();
+    memcpy(receiveBuffer, &(dataBuffer[0]), size);
+    *actual_length = size;
+    return ExitSuccess;
+
 		if (!socket_.is_open()) {
 			ROS_ERROR("get_datagram: socket not open");
 			diagnostics_.broadcast(getDiagnosticErrorCode(), "get_datagram: socket not open.");

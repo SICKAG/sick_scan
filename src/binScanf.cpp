@@ -382,7 +382,7 @@ int binScanfGuessDataLenFromMask(const char *scanfMask)
 						for (tc = s; isdigit(*s); s++);
 						strncpy(tmp, tc, s - tc);
 						tmp[s - tc] = '\0';
-						binAtob((unsigned long *)&width, tmp, 10);
+						sscanf(tmp,"%d", &width);
 						retLen += width;
 					}
 				}

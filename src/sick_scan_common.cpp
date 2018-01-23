@@ -60,7 +60,7 @@
 #endif
 
 #include "sick_scan/binScanf.hpp"
-#include "sick_scan/binPrintf.hpp"
+// #include "sick_scan/binPrintf.hpp"
 
 
 #include <cstdio>
@@ -72,6 +72,9 @@
 #ifndef rad2deg
 #define rad2deg(x) ((x) / M_PI * 180.0)
 #endif
+
+#include "sick_scan/tcp/colaa.hpp"
+#include "sick_scan/tcp/colab.hpp"
 
 #include <map>
 
@@ -937,8 +940,10 @@ namespace sick_scan
 				else
 				{
 					long dummy0, dummy1, identLen, versionLen;
+
 					const char *scanMask0 = "%04y%04ysRA DeviceIdent %02y";
 					const char *scanMask1 = "%02y";
+          unsigned char* replyPtr = &(replyDummy[0]);
 					int scanDataLen0 = binScanfGuessDataLenFromMask(scanMask0);
 					int scanDataLen1 = binScanfGuessDataLenFromMask(scanMask1); // should be: 2
 					binScanfVec(&replyDummy, scanMask0, &dummy0, &dummy1, &identLen);
@@ -1214,15 +1219,31 @@ namespace sick_scan
 
 			if (useBinaryCmd)
 			{
-				std::vector<unsigned char> reqBinary;
+        unsigned char tmpBuffer[255] = {0};
+        unsigned char sendBuffer[255] = {0};
+        UINT16 sendLen;
+        std::vector<unsigned char> reqBinary;
 				int iStatus = 1;
-				const char *askOutputAngularRangeBinMask = "%4y%4ysWN LMPoutputRange %2y%4y%4y%4y";
-				int askOutputAngularRangeBinLen = binScanfGuessDataLenFromMask(askOutputAngularRangeBinMask);
-				askOutputAngularRangeBinLen -= 8;  // due to header and length identifier
-				binSprintfVec(&reqBinary, askOutputAngularRangeBinMask, 0x02020202, askOutputAngularRangeBinLen, iStatus, angleRes10000th, angleStart10000th, angleEnd10000th);
+//				const char *askOutputAngularRangeBinMask = "%4y%4ysWN LMPoutputRange %2y%4y%4y%4y";
+				// int askOutputAngularRangeBinLen = binScanfGuessDataLenFromMask(askOutputAngularRangeBinMask);
+				// askOutputAngularRangeBinLen -= 8;  // due to header and length identifier
 
-				unsigned char sickCrc = sick_crc8((unsigned char *)(&(reqBinary)[8]), reqBinary.size() - 8);
-				reqBinary.push_back(sickCrc);
+        strcpy((char*)tmpBuffer,"WN LMPoutputRange ");
+        unsigned short orgLen = strlen((char *)tmpBuffer);
+        colab::addIntegerToBuffer<UINT16>(tmpBuffer, orgLen, iStatus);
+        colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
+        colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
+        colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
+        sendLen = orgLen;
+        colab::addFrameToBuffer(sendBuffer, tmpBuffer, &sendLen);
+
+        #if 0
+#endif
+				// binSprintfVec(&reqBinary, askOutputAngularRangeBinMask, 0x02020202, askOutputAngularRangeBinLen, iStatus, angleRes10000th, angleStart10000th, angleEnd10000th);
+
+				// unsigned char sickCrc = sick_crc8((unsigned char *)(&(reqBinary)[8]), reqBinary.size() - 8);
+				// reqBinary.push_back(sickCrc);
+        reqBinary = std::vector<unsigned char>(sendBuffer, sendBuffer + sendLen);
 				// Here we must build a more complex binaryRequest
 
 				// this->convertAscii2BinaryCmd(requestOutputAngularRange, &reqBinary);
@@ -1729,6 +1750,7 @@ namespace sick_scan
 			int actual_length = 0;
 			static unsigned int iteration_count = 0;
 			bool useBinaryProtocol = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
+
 
 			int result = get_datagram(receiveBuffer, 65536, &actual_length, useBinaryProtocol);
 			if (result != 0)
