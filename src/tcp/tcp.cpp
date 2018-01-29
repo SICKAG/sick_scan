@@ -51,8 +51,11 @@ bool Tcp::write(UINT8* buffer, UINT32 numberOfBytes)
 	INT32* socketPtr = &m_connectionSocket;
 	
 	// Sende Daten an das Socket
+#ifdef _MSC_VER
+	bytesSent = ::send(*socketPtr, (const char*)buffer, numberOfBytes, 0);
+#else
 	bytesSent = ::send(*socketPtr, buffer, numberOfBytes, 0);
-	
+#endif	
 	if (bytesSent != (INT32)numberOfBytes)
 	{
 		printWarning("Tcp::write: Failed to send data to socket.");
@@ -156,7 +159,11 @@ bool Tcp::open(std::string ipAddress, UINT16 port, bool enableVerboseDebugOutput
 	server = gethostbyname(ipAddress.c_str());
 	memset(&addr, 0, sizeof(addr));     		// Zero out structure
 	addr.sin_family = AF_INET;
+#ifdef _MSC_VER
+	memcpy((char *)&addr.sin_addr.s_addr, (char *)server->h_addr,  server->h_length);
+#else
 	bcopy((char *)server->h_addr, (char *)&addr.sin_addr.s_addr, server->h_length);
+#endif
 	addr.sin_port = htons(port);				// Host-2-Network byte order
 	result = connect(m_connectionSocket, (sockaddr*)(&addr), sizeof(addr));
 	if (result < 0)
@@ -229,7 +236,11 @@ INT32 Tcp::readInputData()
 	}
 		
 	// Read some data, if any
+#ifdef _MSC_VER
+	recvMsgSize = recv(m_connectionSocket, (char *)inBuffer, max_length, 0);
+#else
 	recvMsgSize = recv(m_connectionSocket, inBuffer, max_length, 0);
+#endif
 	if (recvMsgSize < 0)
 	{
 		// Fehler

@@ -414,8 +414,9 @@ bool SickScanCommonNw::disconnect()
  */
     void SickScanCommonNw::sendCommandBuffer(UINT8* buffer, UINT16 len)
     {
-      UINT8 sendBuffer[1024];
 #if 0 // !!!
+      UINT8 sendBuffer[1024];
+
       assert (len < 1000);
       assert (m_tcp.isOpen() == true);
 

@@ -91,7 +91,8 @@ namespace sick_scan
 		port_(port),
 		timelimit_(timelimit)
 	{
-    this->setReplyMode(0);
+		m_alreadyReceivedBytes = 0;
+		this->setReplyMode(0);
 		// io_service_.setReadCallbackFunction(boost::bind(&SopasDevice::readCallbackFunction, this, _1, _2));
 
 		// Set up the deadline actor to implement timeouts.
@@ -113,164 +114,184 @@ namespace sick_scan
 	using boost::lambda::_1;
 
 
-    void SickScanCommonTcp::disconnectFunction()
-    {
+	void SickScanCommonTcp::disconnectFunction()
+	{
 
-    }
+	}
 
-    void SickScanCommonTcp::disconnectFunctionS(void *obj)
-    {
-      if (obj != NULL)
-      {
-        ((SickScanCommonTcp *)(obj))->disconnectFunction();
-      }
-    }
-
-		void SickScanCommonTcp::readCallbackFunctionS(void* obj, UINT8* buffer, UINT32& numOfBytes)
+	void SickScanCommonTcp::disconnectFunctionS(void *obj)
+	{
+		if (obj != NULL)
 		{
-			((SickScanCommonTcp*)obj)->readCallbackFunction(buffer, numOfBytes);
+			((SickScanCommonTcp *)(obj))->disconnectFunction();
 		}
+	}
+
+	void SickScanCommonTcp::readCallbackFunctionS(void* obj, UINT8* buffer, UINT32& numOfBytes)
+	{
+		((SickScanCommonTcp*)obj)->readCallbackFunction(buffer, numOfBytes);
+	}
 
 
-    void SickScanCommonTcp::setReplyMode(int _mode)
-    {
-      m_replyMode = _mode;
-    }
-    int SickScanCommonTcp::getReplyMode()
-    {
-      return(m_replyMode);
-    }
+	void SickScanCommonTcp::setReplyMode(int _mode)
+	{
+		m_replyMode = _mode;
+	}
+	int SickScanCommonTcp::getReplyMode()
+	{
+		return(m_replyMode);
+	}
 
-    /**
+	/**
  * Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
  * hereingekommen sind.
  */
-		void SickScanCommonTcp::readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
+	void SickScanCommonTcp::readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
+	{
+		// should be member variable in the future
+
+
+#if 0
+
+		this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
+
+		if (this->getReplyMode() == 0)
 		{
-      // should be member variable in the future
-
-
-#if 0
-
-      this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-
-      if (this->getReplyMode() == 0)
-      {
-        this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-        return;
-      }
+			this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
+			return;
+		}
 #endif
-        if (numOfBytes < 9)
-        {
-          return;
-        }
 
-        // check magic word for cola B
-        if ((buffer[0] == 0x02 && buffer[1] == 0x02 && buffer[2] == 0x02 && buffer[3] == 0x02) || m_alreadyReceivedBytes > 0)
-        {
-          std::string command;
-          UINT16 nextData = 4;
-          UINT32 numberBytes = numOfBytes;
-          if (m_alreadyReceivedBytes == 0)
-          {
-            const char *packetKeyWord = "sSN LMDscandata";
-            m_lastPacketSize = colab::getIntegerFromBuffer<UINT32>(buffer, nextData);
-						//
-						m_lastPacketSize += 9; // Magic number + CRC
+		// starting with 0x02 - but no magic word -> ASCII-Command-Reply
+		if ((numOfBytes < 2) && (m_alreadyReceivedBytes == 0))
+		{
+			return;
+		}
+		if ((buffer[0] == 0x02) && (buffer[1] != 0x02)) // no magic word -> Ascii reply
+		{
+			if (numOfBytes > 0)
+			{
+				char lastChar = buffer[numOfBytes - 1];  // check last for 0x03
+				if (lastChar == 0x03)
+				{
+					memcpy(m_packetBuffer, buffer, numOfBytes);
+					m_alreadyReceivedBytes = numOfBytes;
+					recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + m_lastPacketSize));
+					m_alreadyReceivedBytes = 0;
+				}
+			}
+		}
 
-						// Check for "normal" command reply
-            if (strncmp((char *)(buffer + 8),packetKeyWord, strlen(packetKeyWord)) != 0)
-            {
-							// normal command reply
-              this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-              return;
-            }
-
-            // probably a scan
-            if (m_lastPacketSize > 4000)
-            {
-              INT16 topmostLayerAngle = 1350 * 2 - 62; // for identification of first layer of a scan
-              UINT16 layerPos = 24 + 26;
-              INT16 layerAngle = colab::getIntegerFromBuffer<INT16>(buffer, layerPos);
-
-              if (layerAngle == topmostLayerAngle)
-              {
-                // wait for all 24 layers
-                // m_lastPacketSize = m_lastPacketSize * 24;
-
-                // traceDebug(MRS6xxxB_VERSION) << "Received new scan" << std::endl;
-              }
-            }
-          }
-
-          // copy
-          memcpy(m_packetBuffer + m_alreadyReceivedBytes, buffer, numOfBytes);
-          m_alreadyReceivedBytes += numberBytes;
-
-          if (m_alreadyReceivedBytes < m_lastPacketSize)
-          {
-            // wait for completeness of packet
-            return;
-          }
-
-          m_alreadyReceivedBytes = 0;
-          recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + m_lastPacketSize));
-#if 0
-          command = colab::getCommandStringFromBuffer(m_packetBuffer);
-          UINT32 packetSize = colab::getIntegerFromBuffer<UINT32>(m_packetBuffer, nextData);
-          std::string identifier = colab::getIdentifierFromBuffer(m_packetBuffer, nextData, m_lastPacketSize);
-
-          // scan event
-          if ((command.compare("SN") == 0) && (identifier.compare("LMDscandata") == 0))
-          {
-            // if we have collected all 24 scans from all layers
-            if (m_lastPacketSize > packetSize) // more data received then necessary for one scan packet
-            {
-              // iterate through layer
-              for (UINT32 index = 0; index < 24; ++index)
-              {
-                UINT32 startPos = index * (packetSize + 2 * sizeof(UINT32) + sizeof(UINT8)); // magic word + packetsize + crc
-                unsigned char *startPtr = &m_packetBuffer[startPos + nextData];
-                unsigned char *endPtr = startPtr + packetSize - nextData;
-
-                recvQueue.push(std::vector<unsigned char>(startPtr, endPtr));
-                // readAndDecodeMRS6xxxScan(&m_packetBuffer[startPos + nextData], packetSize - nextData);
-              }
-            }
-            else
-            {
-              unsigned char *startPtr = &m_packetBuffer[nextData];
-              unsigned char *endPtr = startPtr + packetSize - nextData;
-              //  readAndDecodeMRS6xxxScan(&m_packetBuffer[nextData], packetSize - nextData);
-              recvQueue.push(std::vector<unsigned char>(startPtr, endPtr));
-            }
-          }
-            // answer to register scan event
-          else if ((command.compare(0, 2, "EA") == 0) && (identifier.compare(0, 11, "LMDscandata") == 0))
-          {
-            if (m_packetBuffer[nextData] == 1)
-            {
-              // was successful
-            }
-          }
-#endif
-        }
-
-
+		if ((numOfBytes < 9) && (m_alreadyReceivedBytes == 0))
+		{
+			return;
 		}
 
 
-		int SickScanCommonTcp::init_device()
-    {
-      int portInt;
-      sscanf(port_.c_str(),"%d", &portInt);
-      m_nw.init(hostname_, portInt, disconnectFunctionS, (void*)this);
-			m_nw.setReadCallbackFunction(readCallbackFunctionS,(void*)this);
-      m_nw.connect();
-      return ExitSuccess;
-    }
+		// check magic word for cola B
+		if ((m_alreadyReceivedBytes > 0) || (buffer[0] == 0x02 && buffer[1] == 0x02 && buffer[2] == 0x02 && buffer[3] == 0x02))
+		{
+			std::string command;
+			UINT16 nextData = 4;
+			UINT32 numberBytes = numOfBytes;
+			if (m_alreadyReceivedBytes == 0)
+			{
+				const char *packetKeyWord = "sSN LMDscandata";
+				m_lastPacketSize = colab::getIntegerFromBuffer<UINT32>(buffer, nextData);
+				//
+				m_lastPacketSize += 9; // Magic number + CRC
 
-    #if 0
+				// Check for "normal" command reply
+				if (strncmp((char *)(buffer + 8), packetKeyWord, strlen(packetKeyWord)) != 0)
+				{
+					// normal command reply
+					this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
+					return;
+				}
+
+				// probably a scan
+				if (m_lastPacketSize > 4000)
+				{
+					INT16 topmostLayerAngle = 1350 * 2 - 62; // for identification of first layer of a scan
+					UINT16 layerPos = 24 + 26;
+					INT16 layerAngle = colab::getIntegerFromBuffer<INT16>(buffer, layerPos);
+
+					if (layerAngle == topmostLayerAngle)
+					{
+						// wait for all 24 layers
+						// m_lastPacketSize = m_lastPacketSize * 24;
+
+						// traceDebug(MRS6xxxB_VERSION) << "Received new scan" << std::endl;
+					}
+				}
+			}
+
+			// copy
+			memcpy(m_packetBuffer + m_alreadyReceivedBytes, buffer, numOfBytes);
+			m_alreadyReceivedBytes += numberBytes;
+
+			if (m_alreadyReceivedBytes < m_lastPacketSize)
+			{
+				// wait for completeness of packet
+				return;
+			}
+
+			m_alreadyReceivedBytes = 0;
+			recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + m_lastPacketSize));
+#if 0
+			command = colab::getCommandStringFromBuffer(m_packetBuffer);
+			UINT32 packetSize = colab::getIntegerFromBuffer<UINT32>(m_packetBuffer, nextData);
+			std::string identifier = colab::getIdentifierFromBuffer(m_packetBuffer, nextData, m_lastPacketSize);
+
+			// scan event
+			if ((command.compare("SN") == 0) && (identifier.compare("LMDscandata") == 0))
+			{
+				// if we have collected all 24 scans from all layers
+				if (m_lastPacketSize > packetSize) // more data received then necessary for one scan packet
+				{
+					// iterate through layer
+					for (UINT32 index = 0; index < 24; ++index)
+					{
+						UINT32 startPos = index * (packetSize + 2 * sizeof(UINT32) + sizeof(UINT8)); // magic word + packetsize + crc
+						unsigned char *startPtr = &m_packetBuffer[startPos + nextData];
+						unsigned char *endPtr = startPtr + packetSize - nextData;
+
+						recvQueue.push(std::vector<unsigned char>(startPtr, endPtr));
+						// readAndDecodeMRS6xxxScan(&m_packetBuffer[startPos + nextData], packetSize - nextData);
+					}
+				}
+				else
+				{
+					unsigned char *startPtr = &m_packetBuffer[nextData];
+					unsigned char *endPtr = startPtr + packetSize - nextData;
+					//  readAndDecodeMRS6xxxScan(&m_packetBuffer[nextData], packetSize - nextData);
+					recvQueue.push(std::vector<unsigned char>(startPtr, endPtr));
+				}
+			}
+			// answer to register scan event
+			else if ((command.compare(0, 2, "EA") == 0) && (identifier.compare(0, 11, "LMDscandata") == 0))
+			{
+				if (m_packetBuffer[nextData] == 1)
+				{
+					// was successful
+				}
+			}
+#endif
+		}
+	}
+
+
+	int SickScanCommonTcp::init_device()
+	{
+		int portInt;
+		sscanf(port_.c_str(), "%d", &portInt);
+		m_nw.init(hostname_, portInt, disconnectFunctionS, (void*)this);
+		m_nw.setReadCallbackFunction(readCallbackFunctionS, (void*)this);
+		m_nw.connect();
+		return ExitSuccess;
+	}
+
+#if 0
 	int SickScanCommonTcp::init_device()
 	{
 		// Resolve the supplied hostname
@@ -556,12 +577,12 @@ namespace sick_scan
 		size_t to_read;
 
 		if (isBinary)
-    {
-      int numBytes = 0;
-      std::vector<unsigned char> recvData = this->recvQueue.pop();
-      *bytes_read = recvData.size();
-      memcpy(buffer, &(recvData[0]), recvData.size());
-      return(ExitSuccess);
+		{
+			int numBytes = 0;
+			std::vector<unsigned char> recvData = this->recvQueue.pop();
+			*bytes_read = recvData.size();
+			memcpy(buffer, &(recvData[0]), recvData.size());
+			return(ExitSuccess);
 #if 1
 			boost::asio::async_read(socket_,
 
@@ -579,13 +600,12 @@ namespace sick_scan
 			do
 			{
 				io_service_.run_one();
-			}
-			while (ec_ == boost::asio::error::would_block);
+			} while (ec_ == boost::asio::error::would_block);
 
 			std::ostream os(&input_buffer_);
 			// os << "Hello, World!\n";
 			const char *ptr = (const char *)(&(exampleData[0]));
-			os.write(ptr,  receivedDataLen);
+			os.write(ptr, receivedDataLen);
 
 
 #if 0
@@ -732,7 +752,7 @@ namespace sick_scan
 		}
 		if (to_read != 0xEE7)
 		{
-		// printf("READ %d bytes\n", to_read);
+			// printf("READ %d bytes\n", to_read);
 		}
 		if (buffer != 0)
 		{
@@ -809,7 +829,7 @@ namespace sick_scan
 				msgLen = 8 + dataLen + 1; // 8 Msg. Header + Packet +
 			}
 #if 1
-      m_nw.sendCommandBuffer((UINT8*)request, msgLen);
+			m_nw.sendCommandBuffer((UINT8*)request, msgLen);
 #else
 
 			/*
@@ -850,27 +870,27 @@ namespace sick_scan
 
 	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 	{
-    this->setReplyMode(1);
-    std::vector<unsigned char> dataBuffer = this->recvQueue.pop();
-    long size = dataBuffer.size();
-    memcpy(receiveBuffer, &(dataBuffer[0]), size);
-    *actual_length = size;
+		this->setReplyMode(1);
+		std::vector<unsigned char> dataBuffer = this->recvQueue.pop();
+		long size = dataBuffer.size();
+		memcpy(receiveBuffer, &(dataBuffer[0]), size);
+		*actual_length = size;
 
 #if 0
 		static int cnt = 0;
 		char szFileName[255];
-		sprintf(szFileName,"/tmp/dg%06d.bin", cnt++);
+		sprintf(szFileName, "/tmp/dg%06d.bin", cnt++);
 
 		FILE *fout;
 
-		fout = fopen(szFileName,"wb");
+		fout = fopen(szFileName, "wb");
 		if (fout != NULL)
 		{
 			fwrite(receiveBuffer, size, 1, fout);
 			fclose(fout);
 		}
 #endif
-    return ExitSuccess;
+		return ExitSuccess;
 
 		if (!socket_.is_open()) {
 			ROS_ERROR("get_datagram: socket not open");

@@ -59,10 +59,10 @@
 
 #define MAX_NAME_LEN (1024)
 
+// 001.001.000 Switch to multithreaded processing of data
 #define SICK_GENERIC_MAJOR_VER "001"
-#define SICK_GENERIC_MINOR_VER "000"
+#define SICK_GENERIC_MINOR_VER "001"  
 #define SICK_GENERIC_PATCH_LEVEL "000"
-
 
 
 int main(int argc, char **argv)

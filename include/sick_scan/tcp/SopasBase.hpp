@@ -8,14 +8,14 @@
 #ifndef SOPASBASE_H
 #define SOPASBASE_H
 
-#include "../BasicDatatypes.hpp"
-#include "../datatypes/Scan.hpp"
-#include "../interfaces/tcp.hpp"
+#include "sick_scan/tcp/BasicDatatypes.hpp"
+// #include "sick_scan/tcp/datatypes/Scan.hpp"
+#include "sick_scan/tcp/interfaces/tcp.hpp"
 
 #include "colaa.hpp"
 #include "colab.hpp"
 #include <map>	// for std::map
-#include "../tools/Mutex.hpp"
+#include "sick_scan/tcp/tools/Mutex.hpp"
 
 namespace devices
 {

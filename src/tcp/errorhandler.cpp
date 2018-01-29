@@ -6,10 +6,8 @@
 #include <stdlib.h>     // for atoi() and exit()
 // #include <string.h>     // for memset()
 //#include <backward/iostream.h>	// fuer cout()
-
+#include "pthread.h"
 #include "sick_scan/tcp/errorhandler.hpp"
-#include "sick_scan/tcp/Time.hpp"
-
 // Print mutex to print thread-safe
 pthread_mutex_t m_printMutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -46,13 +44,16 @@ void infoMessage(std::string message, bool print)
 {
 	if (print == true)
 	{
+#ifndef _MSC_VER
 		Time t = Time::now();
-	
+#endif	
 		// Mutex setzen
 		pthread_mutex_lock(&m_printMutex);
 		
 		// Nachricht schreiben
-		printf ("%s ", t.toString().c_str());
+#ifndef _MSC_VER
+		printf("%s ", t.toString().c_str());
+#endif	
 		printf ("Info: %s\n", message.c_str());
 		fflush(0);
 
@@ -68,12 +69,15 @@ void infoMessage(std::string message, bool print)
 //
 void printWarning(std::string message)
 {
+#ifndef _MSC_VER
 	Time t = Time::now();
-	
+#endif	
 	// Mutex setzen
 	pthread_mutex_lock(&m_printMutex);
 		
+#ifndef _MSC_VER
 	printf ("%s ", t.toString().c_str());
+#endif
 	printf ("Warning: %s\n", message.c_str());
 	fflush(0);
 		
@@ -86,12 +90,16 @@ void printWarning(std::string message)
 //
 void printError(std::string message)
 {
+#ifndef _MSC_VER
 	Time t = Time::now();
+#endif	
 	
 	// Mutex setzen
 	pthread_mutex_lock(&m_printMutex);
 		
-	printf ("%s ", t.toString().c_str());
+#ifndef _MSC_VER
+	printf("%s ", t.toString().c_str());
+#endif
 	printf ("ERROR: %s\n", message.c_str());
 	fflush(0);
 	

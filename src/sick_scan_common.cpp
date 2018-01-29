@@ -109,7 +109,6 @@ static int getDiagnosticErrorCode() // workaround due to compiling error under V
 
 const std::string binScanfGetStringFromVec(std::vector<unsigned char>* replyDummy, int off, long len)
 {
-	int i;
 	std::string s;
 	s = "";
 	for (int i = 0; i < len; i++)
@@ -1347,7 +1346,6 @@ namespace sick_scan
 
 		if (result == 0)
 		{
-			int askTmpAngleRes10000th, askTmpAngleStart10000th, askTmpAngleEnd10000th;
 			char dummy0[MAX_STR_LEN] = { 0 };
 			char dummy1[MAX_STR_LEN] = { 0 };
 			int  dummyInt = 0;
@@ -1427,7 +1425,10 @@ namespace sick_scan
 		{
 			outputChannelFlagId |= ((outputChannelFlag[i] == true) << i);
 		}
-		outputChannelFlagId = std::max(outputChannelFlagId, 1); // at least one channel must be set
+		if (outputChannelFlagId < 1)
+		{
+			outputChannelFlagId = 1;  // at least one channel must be set
+		}
 
 
 
