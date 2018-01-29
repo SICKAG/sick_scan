@@ -3,20 +3,18 @@
   <name>sick_scan</name>
   <version>0.0.11</version>
   <description>
-    A ROS driver for the SICK TiM series of laser scanners.
+    A ROS driver for the SICK TiM and SICK MRS series of laser scanners.
     This package is based on the original sick_tim-repository of Martin Günther et al.
   </description>
 
   <maintainer email="michael.lehning@lehning.de">Michael Lehning</maintainer>
+  <author email="michael.lehning@lehning.de">Michael Lehning</author>
   <author email="ros@jochen.sprickerhof.de">Jochen Sprickerhof</author>
   <author email="martin.guenther@dfki.de">Martin Günther</author>
-  <author email="michael.lehning@lehning.de">Michael Lehning</author>
 
   <license>BSD</license>
-  <!-- ML: have to be changed to SICK github-repository -->
-  <!-- ML: see obligations of SICK AG -->
-  <url type="website">http://wiki.ros.org/sick_tim</url>
-  <url type="repository">https://github.com/uos/sick_tim</url>
+  <url type="website">http://wiki.ros.org/sick_scan</url>
+  <url type="repository">https://github.com/SICKAG/sick_scan</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
