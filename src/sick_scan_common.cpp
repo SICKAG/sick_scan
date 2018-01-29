@@ -80,6 +80,11 @@
 
 #include <climits>
 
+/*
+  Universal swapping function
+  void *ptr: Point to variable, which should be swapped.
+  numBytes : size of variable in bytes
+*/
 void swap_endian(void *ptr, int numBytes)
 {
   unsigned char *buf = (unsigned char*)(ptr);
