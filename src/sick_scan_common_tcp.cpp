@@ -176,7 +176,7 @@ namespace sick_scan
 				{
 					memcpy(m_packetBuffer, buffer, numOfBytes);
 					m_alreadyReceivedBytes = numOfBytes;
-					recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + m_lastPacketSize));
+					recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + numOfBytes));
 					m_alreadyReceivedBytes = 0;
 				}
 			}
