@@ -165,19 +165,31 @@ namespace sick_scan
 		// starting with 0x02 - but no magic word -> ASCII-Command-Reply
 		if ((numOfBytes < 2) && (m_alreadyReceivedBytes == 0))
 		{
-			return;
+			return;  // ultra short message (only 1 byte) must be nonsense 
 		}
-		if ((buffer[0] == 0x02) && (buffer[1] != 0x02)) // no magic word -> Ascii reply
+		if ((buffer[0] == 0x02) && (buffer[1] != 0x02)) // no magic word, but received initial 0x02 -> guess Ascii reply
 		{
 			if (numOfBytes > 0)
 			{
+				// check last character of message - must be 0x03 
 				char lastChar = buffer[numOfBytes - 1];  // check last for 0x03
-				if (lastChar == 0x03)
+				if (lastChar == 0x03)  
 				{
 					memcpy(m_packetBuffer, buffer, numOfBytes);
 					m_alreadyReceivedBytes = numOfBytes;
 					recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + numOfBytes));
 					m_alreadyReceivedBytes = 0;
+				}
+				else
+				{
+
+					ROS_WARN("Dropping packages???\n");
+					FILE *fout = fopen("/tmp/package.bin", "wb");
+					if (fout != NULL)
+					{
+						fwrite(m_packetBuffer, 1, numOfBytes, fout);
+						fclose(fout);
+					}
 				}
 			}
 		}
@@ -238,45 +250,6 @@ namespace sick_scan
 
 			m_alreadyReceivedBytes = 0;
 			recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + m_lastPacketSize));
-#if 0
-			command = colab::getCommandStringFromBuffer(m_packetBuffer);
-			UINT32 packetSize = colab::getIntegerFromBuffer<UINT32>(m_packetBuffer, nextData);
-			std::string identifier = colab::getIdentifierFromBuffer(m_packetBuffer, nextData, m_lastPacketSize);
-
-			// scan event
-			if ((command.compare("SN") == 0) && (identifier.compare("LMDscandata") == 0))
-			{
-				// if we have collected all 24 scans from all layers
-				if (m_lastPacketSize > packetSize) // more data received then necessary for one scan packet
-				{
-					// iterate through layer
-					for (UINT32 index = 0; index < 24; ++index)
-					{
-						UINT32 startPos = index * (packetSize + 2 * sizeof(UINT32) + sizeof(UINT8)); // magic word + packetsize + crc
-						unsigned char *startPtr = &m_packetBuffer[startPos + nextData];
-						unsigned char *endPtr = startPtr + packetSize - nextData;
-
-						recvQueue.push(std::vector<unsigned char>(startPtr, endPtr));
-						// readAndDecodeMRS6xxxScan(&m_packetBuffer[startPos + nextData], packetSize - nextData);
-					}
-				}
-				else
-				{
-					unsigned char *startPtr = &m_packetBuffer[nextData];
-					unsigned char *endPtr = startPtr + packetSize - nextData;
-					//  readAndDecodeMRS6xxxScan(&m_packetBuffer[nextData], packetSize - nextData);
-					recvQueue.push(std::vector<unsigned char>(startPtr, endPtr));
-				}
-			}
-			// answer to register scan event
-			else if ((command.compare(0, 2, "EA") == 0) && (identifier.compare(0, 11, "LMDscandata") == 0))
-			{
-				if (m_packetBuffer[nextData] == 1)
-				{
-					// was successful
-				}
-			}
-#endif
 		}
 	}
 
@@ -290,69 +263,6 @@ namespace sick_scan
 		m_nw.connect();
 		return ExitSuccess;
 	}
-
-#if 0
-	int SickScanCommonTcp::init_device()
-	{
-		// Resolve the supplied hostname
-		tcp::resolver::iterator iterator;
-		try
-		{
-			tcp::resolver resolver(io_service_);
-			tcp::resolver::query query(hostname_, port_);
-			iterator = resolver.resolve(query);
-		}
-		catch (boost::system::system_error &e)
-		{
-			ROS_FATAL("Could not resolve host: ... (%d)(%s)", e.code().value(), e.code().message().c_str());
-			diagnostics_.broadcast(getDiagnosticErrorCode(), "Could not resolve host.");
-
-			return ExitError;
-		}
-
-		// Try to connect to all possible endpoints
-		boost::system::error_code ec;
-		bool success = false;
-		for (; iterator != tcp::resolver::iterator(); ++iterator)
-		{
-			std::string repr = boost::lexical_cast<std::string>(iterator->endpoint());
-			socket_.close();
-
-			// Set the time out length
-			ROS_INFO("Waiting %i seconds for device to connect.", timelimit_);
-			deadline_.expires_from_now(boost::posix_time::seconds(timelimit_));
-
-			ec = boost::asio::error::would_block;
-			ROS_DEBUG("Attempting to connect to %s", repr.c_str());
-			socket_.async_connect(iterator->endpoint(), boost::lambda::var(ec) = _1);
-
-			// Wait until timeout
-			do io_service_.run_one(); while (ec == boost::asio::error::would_block);
-
-			if (!ec && socket_.is_open())
-			{
-				success = true;
-				ROS_INFO("Succesfully connected to %s", repr.c_str());
-				break;
-			}
-
-			// tryBroadCastForMoreInfo();
-			ROS_ERROR("Failed to connect to %s", repr.c_str());
-		}
-
-		// Check if connecting succeeded
-		if (!success)
-		{
-			ROS_FATAL("Could not connect to host %s:%s", hostname_.c_str(), port_.c_str());
-			diagnostics_.broadcast(getDiagnosticErrorCode(), "Could not connect to host.");
-			return ExitError;
-		}
-
-		input_buffer_.consume(input_buffer_.size());
-
-		return ExitSuccess;
-	}
-#endif
 
 	int SickScanCommonTcp::close_device()
 	{
