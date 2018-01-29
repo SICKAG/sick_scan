@@ -117,6 +117,7 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 	if (doInternalDebug)
 	{
 #ifdef _MSC_VER
+		nhPriv.setParam("name", scannerName);
 		rossimu_settings(nhPriv);  // just for tiny simulations under Visual C++
 #endif
 	}

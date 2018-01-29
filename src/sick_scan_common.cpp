@@ -1597,11 +1597,12 @@ namespace sick_scan
 							{
 								this->convertAscii2BinaryCmd(sopasCmd.c_str(), &reqBinary);
 								result = sendSopasAndCheckAnswer(reqBinary, &replyDummy);
-								sopasReplyBinVec[cmdId] = replyDummy;
+								sopasReplyBinVec[CMD_DEVICE_STATE] = replyDummy;
 							}
 							else
 							{
 								result = sendSopasAndCheckAnswer(sopasCmd.c_str(), &replyDummy);
+								sopasReplyStrVec[CMD_DEVICE_STATE] = replyToString(replyDummy);
 							}
 
 
@@ -1627,6 +1628,10 @@ namespace sick_scan
 							ROS_INFO("Waiting for scanner ready state since %d secs", i);
 							ros::Duration(shortSleepTime).sleep();
 
+							if (scannerReady)
+							{
+								break;
+							}
 						}
 					}
 				}
