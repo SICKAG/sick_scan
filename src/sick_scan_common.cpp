@@ -1947,7 +1947,10 @@ namespace sick_scan
 				else
 				{
 					dstart = strchr(buffer_pos, 0x02);
-					dend = strchr(dstart + 1, 0x03);
+					if (dstart != NULL)
+					{
+						dend = strchr(dstart + 1, 0x03);
+					}
 					if ((dstart != NULL) && (dend != NULL))
 					{
 						dataToProcess = true; // continue parasing
