@@ -426,7 +426,9 @@ namespace sick_scan
 			}
 		}
 
-
+        /*!
+         * Map that defines expected answer identifiers
+         */
 		std::map<std::string, std::string> keyWordMap;
 		keyWordMap["sWN"] = "sWA";
 		keyWordMap["sRN"] = "sRA";

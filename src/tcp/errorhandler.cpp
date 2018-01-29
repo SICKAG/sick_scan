@@ -8,6 +8,8 @@
 //#include <backward/iostream.h>	// fuer cout()
 #include "pthread.h"
 #include "sick_scan/tcp/errorhandler.hpp"
+#include "sick_scan/tcp/Time.hpp"
+
 // Print mutex to print thread-safe
 pthread_mutex_t m_printMutex = PTHREAD_MUTEX_INITIALIZER;
 

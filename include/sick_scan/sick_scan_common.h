@@ -108,9 +108,29 @@ namespace sick_scan
 		virtual ~SickScanCommon();
 		int setIpAddress(std::string ipAddress);
 		int setParticleFilter(bool _active, int _particleThreshold);//actualy only 500 mm is working.
+        /*! Changes the Identifier of a commandstr. to its expected answer counterpart
+         *
+         * @param requestStr sended request string
+         * @return Expected answer
+         */
 		std::string generateExpectedAnswerString(const std::vector<unsigned char> requestStr);
+        /*! Sends a SPOAS command over TCP and checks answer for plausibility
+         *
+         * @param request
+         * @param reply
+         * @param cmdId
+         * @return
+         */
 		int sendSopasAndCheckAnswer(std::string request, std::vector<unsigned char> *reply, int cmdId);
+        /*! Sends a SPOAS command vector over TCP and checks answer for plausibility
+         *
+         * @param request
+         * @param reply
+         * @param cmdId
+         * @return
+         */
 		int sendSopasAndCheckAnswer(std::vector<unsigned char> request, std::vector<unsigned char> *reply, int cmdId);
+
 		int setAligmentMode(int _AligmentMode);
 		int setMeanFilter(bool _active, int _numberOfScans);
 		int setApplicationMode(bool _active, int _mode); //0=RANG (Ranging) 1=FEVL (Field Application).
@@ -135,14 +155,38 @@ namespace sick_scan
 		 * \returns true if reboot command was accepted, false otherwise
 		 */
 		virtual bool rebootScanner();
-
+		/// Send a SOPAS command to the scanner that logs in the authorized client
+		/**
+		 * \returns true if user change was accepted, false otherwise
+		 */
 		bool switchToAuthorizeClient();
+		/// Send a SOPAS command to the scanner that stops measurement data Output "sEN LMDscandata 0"
+		/**
+		 * \returns true if command was accepted, false otherwise
+		 */
 		bool stopScanData();
+		/// Send a SOPAS command to the scanner that srats measurement data Output "sEN LMDscandata 1"
+		/**
+		 * \returns true if command was accepted, false otherwise
+		 */
 		bool startScanData();
+		/// Send a SOPAS command to the scanner that stops measurement"sMN LMCstopmeas"
+		/**
+		 * \returns true if command was accepted, false otherwise
+		 */
 		bool stopMeasurement();
+
+		/** Send a SOPAS command to the scanner that loggs out the service user and changes the state to running.
+		 * Use this command to leave after setup "sMN Run"
+		 * \returns true if command was accepted, false otherwise
+		 */
 		bool run();
+		/// Send a SOPAS command to the scanner that start active measurement and rotation/laser "sMN LMCstartmeas"
+		/**
+		 * \returns true if command was accepted, false otherwise
+		 */
 		bool startMeasurement();
-      SickScanCommonNw m_nw;
+		SickScanCommonNw m_nw;
 	protected:
 		virtual int init_device() = 0;
 		virtual int init_scanner();

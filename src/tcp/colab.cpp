@@ -48,13 +48,10 @@ std::string getStringFromBuffer(BYTE*& buffer, UINT16 length)
 }
 
 
-
 std::string getCommandStringFromBuffer(UINT8* buffer)
 {
 	return std::string((char*) &buffer[9], 2);
 }
-
-
 
 std::string getIdentifierFromBuffer(UINT8* buffer, UINT16& nextData, UINT16 bufferLength)
 {
@@ -94,8 +91,6 @@ std::string getIdentifierFromBuffer(UINT8* buffer, UINT16& nextData, UINT16 buff
 	return std::string((char*) &buffer[start], length);
 }
 
-
-
 void addFrameToBuffer(UINT8* sendBuffer, UINT8* cmdBuffer, UINT16* len)
 {
 	UINT16 pos = 0;
@@ -125,9 +120,7 @@ void addFrameToBuffer(UINT8* sendBuffer, UINT8* cmdBuffer, UINT16* len)
 	*len = pos;
 }
 
-//
-//  Returns the requested value. pos points then to the first byte of the next data field.
-//
+
 double getDoubleFromBuffer(UINT8* buffer, UINT16& pos)
 {
 	UINT16 width = sizeof(double);	// 8
