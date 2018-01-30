@@ -28,7 +28,8 @@ class SopasAnswer;
 enum SopasProtocol
     {
     CoLa_A, ///< Command Language ASCI
-    CoLa_B  ///< Command Language binary
+    CoLa_B,  ///< Command Language binary
+	CoLa_Unknown  ///< Unknown Command Language
     };
 
 
@@ -156,7 +157,8 @@ public:
     /// contains 's' + command string(2 byte) + content(payload length - 3)
     BYTE* getPayLoad();
 
-    /// Returns the index of a variable (answer to read variable by index). In case of error a negative value will be returned
+	BYTE* getRawData();
+	/// Returns the index of a variable (answer to read variable by index). In case of error a negative value will be returned
     INT32 getVariableIndex();
 
     /// Returns the name of a variable (answer to read variable by name). In case of error an empty value will be returned

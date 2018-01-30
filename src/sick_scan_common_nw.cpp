@@ -594,6 +594,13 @@ bool SickScanCommonNw::disconnect()
       return bufferPos;
     }
 
+	BYTE* SopasEventMessage::getRawData()
+	{
+		BYTE* bufferPos = NULL;
+		bufferPos = &m_buffer[0];
+		return bufferPos;
+	}
+
 
 
     INT32 SopasEventMessage::getVariableIndex()

@@ -53,7 +53,7 @@ class SickScanCommonTcp : public SickScanCommon
 public:
     static void disconnectFunctionS(void *obj);
 
-    SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser *parser);
+    SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser *parser, char cola_dialect_id);
 
     virtual ~SickScanCommonTcp();
 
@@ -65,7 +65,9 @@ public:
 
     int getReplyMode();
 
-    Queue<std::vector<unsigned char> > recvQueue;
+	SopasEventMessage findFrameInReceiveBuffer();
+	void processFrame(SopasEventMessage& frame);
+	Queue<std::vector<unsigned char> > recvQueue;
     UINT32 m_alreadyReceivedBytes;
     UINT32 m_lastPacketSize;
     UINT8  m_packetBuffer[480000];
@@ -77,7 +79,8 @@ public:
     protected:
         void disconnectFunction();
 
-        virtual int init_device();
+		void readCallbackFunctionOld(UINT8* buffer, UINT32& numOfBytes);
+		virtual int init_device();
 
         virtual int close_device();
 
@@ -102,6 +105,21 @@ public:
         void checkDeadline();
 
     private:
+
+
+
+		// Response buffer
+		UINT32 m_numberOfBytesInResponseBuffer; ///< Number of bytes in buffer
+		UINT8 m_responseBuffer[1024]; ///< Receive buffer for everything except scan data and eval case data.
+		Mutex m_receiveDataMutex; ///< Access mutex for buffer
+
+								  // Receive buffer
+		UINT32 m_numberOfBytesInReceiveBuffer; ///< Number of bytes in buffer
+		UINT8 m_receiveBuffer[480000]; ///< Low-Level receive buffer for all data 
+
+		SopasProtocol m_protocol;
+		bool m_beVerbose;
+
         boost::asio::io_service io_service_;
         boost::asio::ip::tcp::socket socket_;
         boost::asio::deadline_timer deadline_;

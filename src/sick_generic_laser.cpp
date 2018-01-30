@@ -143,6 +143,8 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 	sick_scan::SickGenericParser* parser = new sick_scan::SickGenericParser(scannerName);
 
 	double param;
+	char colaDialectId = 'A'; // A or B (Ascii or Binary)
+
 	if (nhPriv.getParam("range_min", param))
 	{
 		parser->set_range_min(param);
@@ -156,6 +158,14 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 		parser->set_time_increment(param);
 	}
 
+	if (parser->getCurrentParamPtr()->getUseBinaryProtocol())
+	{
+		colaDialectId = 'B';
+	}
+	else
+	{
+		colaDialectId = 'A';
+	}
 
 	sick_scan::SickScanCommon* s = NULL;
 
@@ -165,7 +175,7 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 		// attempt to connect/reconnect
 		delete s;
     if (useTCP)
-			s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser);
+			s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser, colaDialectId);
 
 
 		result = s->init();

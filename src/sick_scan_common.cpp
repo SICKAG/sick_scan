@@ -943,7 +943,7 @@ namespace sick_scan
 
 					const char *scanMask0 = "%04y%04ysRA DeviceIdent %02y";
 					const char *scanMask1 = "%02y";
-          unsigned char* replyPtr = &(replyDummy[0]);
+					unsigned char* replyPtr = &(replyDummy[0]);
 					int scanDataLen0 = binScanfGuessDataLenFromMask(scanMask0);
 					int scanDataLen1 = binScanfGuessDataLenFromMask(scanMask1); // should be: 2
 					binScanfVec(&replyDummy, scanMask0, &dummy0, &dummy1, &identLen);

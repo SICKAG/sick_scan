@@ -36,8 +36,8 @@
  *
  */
 
-#ifndef SICK_TIM3XX_COMMON_H_
-#define SICK_TIM3XX_COMMON_H_
+#ifndef SICK_SCAN_COMMON_H_
+#define SICK_SCAN_COMMON_H_
 
 #include <stdio.h>
 #include <stdlib.h>

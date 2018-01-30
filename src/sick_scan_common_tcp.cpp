@@ -82,7 +82,7 @@ static int getDiagnosticErrorCode()
 namespace sick_scan
 {
 
-	SickScanCommonTcp::SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser* parser)
+	SickScanCommonTcp::SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser* parser, char cola_dialect_id)
 		:
 		SickScanCommon(parser),
 		socket_(io_service_),
@@ -91,6 +91,20 @@ namespace sick_scan
 		port_(port),
 		timelimit_(timelimit)
 	{
+		m_protocol = CoLa_Unknown;
+		if ((cola_dialect_id == 'a') || (cola_dialect_id == 'A'))
+		{
+			m_protocol = CoLa_A;
+		}
+
+		if ((cola_dialect_id == 'b') || (cola_dialect_id == 'B'))
+		{
+			m_protocol = CoLa_B;
+		}
+
+		assert(m_protocol != CoLa_Unknown);
+
+		m_numberOfBytesInReceiveBuffer = 0;
 		m_alreadyReceivedBytes = 0;
 		this->setReplyMode(0);
 		// io_service_.setReadCallbackFunction(boost::bind(&SopasDevice::readCallbackFunction, this, _1, _2));
@@ -142,11 +156,270 @@ namespace sick_scan
 		return(m_replyMode);
 	}
 
+
+	//
+	// Look for 23-frame (STX/ETX) in receive buffer.
+	// Move frame to start of buffer
+	//
+	// Return: 0 : No (complete) frame found
+	//        >0 : Frame length
+	//
+	SopasEventMessage SickScanCommonTcp::findFrameInReceiveBuffer()
+	{
+		UINT32 frameLen = 0;
+		UINT32 i;
+
+		// Depends on protocol...
+		if (m_protocol == CoLa_A)
+		{
+			//
+			// COLA-A
+			//
+			// Must start with STX (0x02)
+			if (m_receiveBuffer[0] != 0x02)
+			{
+				// Look for starting STX (0x02)
+				for (i = 1; i < m_numberOfBytesInReceiveBuffer; i++)
+				{
+					if (m_receiveBuffer[i] == 0x02)
+					{
+						break;
+					}
+				}
+
+				// Found beginning of frame?
+				if (i >= m_numberOfBytesInReceiveBuffer)
+				{
+					// No start found, everything can be discarded
+					m_numberOfBytesInReceiveBuffer = 0; // Invalidate buffer
+					return SopasEventMessage(); // No frame found
+				}
+
+				// Move frame start to index 0
+				UINT32 newLen = m_numberOfBytesInReceiveBuffer - i;
+				memmove(&(m_receiveBuffer[0]), &(m_receiveBuffer[i]), newLen);
+				m_numberOfBytesInReceiveBuffer = newLen;
+			}
+
+			// Look for ending ETX (0x03)
+			for (i = 1; i < m_numberOfBytesInReceiveBuffer; i++)
+			{
+				if (m_receiveBuffer[i] == 0x03)
+				{
+					break;
+				}
+			}
+
+			// Found end?
+			if (i >= m_numberOfBytesInReceiveBuffer)
+			{
+				// No end marker found, so it's not a complete frame (yet)
+				return SopasEventMessage(); // No frame found
+			}
+
+			// Calculate frame length in byte
+			frameLen = i + 1;
+
+			return SopasEventMessage(m_receiveBuffer, CoLa_A, frameLen);
+		}
+		else if (m_protocol == CoLa_B)
+		{
+			UINT32 magicWord;
+			UINT32 payloadlength;
+
+			if (m_numberOfBytesInReceiveBuffer < 4)
+			{
+				return SopasEventMessage();
+			}
+			UINT16 pos = 0;
+			magicWord = colab::getIntegerFromBuffer<UINT32>(m_receiveBuffer, pos);
+			if (magicWord != 0x02020202)
+			{
+				// Look for starting STX (0x02020202)
+				for (i = 1; i <= m_numberOfBytesInReceiveBuffer - 4; i++)
+				{
+					pos = i; // this is needed, as the position value is updated by getIntegerFromBuffer
+					magicWord = colab::getIntegerFromBuffer<UINT32>(m_receiveBuffer, pos);
+					if (magicWord == 0x02020202)
+					{
+						// found magic word
+						break;
+					}
+				}
+
+				// Found beginning of frame?
+				if (i > m_numberOfBytesInReceiveBuffer - 4)
+				{
+					// No start found, everything can be discarded
+					m_numberOfBytesInReceiveBuffer = 0; // Invalidate buffer
+					return SopasEventMessage(); // No frame found
+				}
+				else
+				{
+					// Move frame start to index
+					UINT32 bytesToMove = m_numberOfBytesInReceiveBuffer - i;
+					memmove(&(m_receiveBuffer[0]), &(m_receiveBuffer[i]), bytesToMove); // payload+magic+length+s+checksum
+					m_numberOfBytesInReceiveBuffer = bytesToMove;
+				}
+			}
+
+			// Pruefe Laenge des Pufferinhalts
+			if (m_numberOfBytesInReceiveBuffer < 9)
+			{
+				// Es sind nicht genug Daten fuer einen Frame
+				printInfoMessage("SickScanCommonNw::findFrameInReceiveBuffer: Frame cannot be decoded yet, only " +
+					::toString(m_numberOfBytesInReceiveBuffer) + " bytes in the buffer.", m_beVerbose);
+				return SopasEventMessage();
+			}
+
+			// Read length of payload
+			pos = 4;
+			payloadlength = colab::getIntegerFromBuffer<UINT32>(m_receiveBuffer, pos);
+			printInfoMessage("SickScanCommonNw::findFrameInReceiveBuffer: Decoded payload length is " + ::toString(payloadlength) + " bytes.", m_beVerbose);
+
+			// Ist die Datenlaenge plausibel und wuede in den Puffer passen?
+			if (payloadlength > (sizeof(m_receiveBuffer) - 9))
+			{
+				// magic word + length + checksum = 9
+				printWarning("SickScanCommonNw::findFrameInReceiveBuffer: Frame too big for receive buffer. Frame discarded with length:"
+					+ ::toString(payloadlength) + ".");
+				m_numberOfBytesInReceiveBuffer = 0;
+				return SopasEventMessage();
+			}
+			if ((payloadlength + 9) > m_numberOfBytesInReceiveBuffer)
+			{
+				// magic word + length + s + checksum = 10
+				printInfoMessage("SickScanCommonNw::findFrameInReceiveBuffer: Frame not complete yet. Waiting for the rest of it (" +
+					::toString(payloadlength + 9 - m_numberOfBytesInReceiveBuffer) + " bytes missing).", m_beVerbose);
+				return SopasEventMessage(); // frame not complete
+			}
+
+			// Calculate the total frame length in bytes: Len = Frame (9 bytes) + Payload
+			frameLen = payloadlength + 9;
+
+			//
+			// test checksum of payload
+			//
+			UINT8 temp = 0;
+			UINT8 temp_xor = 0;
+			UINT8 checkSum;
+
+			// Read original checksum
+			pos = frameLen - 1;
+			checkSum = colab::getIntegerFromBuffer<UINT8>(m_receiveBuffer, pos);
+
+			// Erzeuge die Pruefsumme zum Vergleich
+			for (UINT16 i = 8; i < (frameLen - 1); i++)
+			{
+				pos = i;
+				temp = colab::getIntegerFromBuffer<UINT8>(m_receiveBuffer, pos);
+				temp_xor = temp_xor ^ temp;
+			}
+
+			// Vergleiche die Pruefsummen
+			if (temp_xor != checkSum)
+			{
+				printWarning("SickScanCommonNw::findFrameInReceiveBuffer: Wrong checksum, Frame discarded.");
+				m_numberOfBytesInReceiveBuffer = 0;
+				return SopasEventMessage();
+			}
+
+			return SopasEventMessage(m_receiveBuffer, CoLa_B, frameLen);
+		}
+
+		// Return empty frame
+		return SopasEventMessage();
+	}
+
+
+
 	/**
  * Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
  * hereingekommen sind.
  */
+
+	void SickScanCommonTcp::processFrame(SopasEventMessage& frame)
+	{
+
+		if (m_protocol == CoLa_A)
+		{
+			printInfoMessage("SickScanCommonNw::processFrame: Calling processFrame_CoLa_A() with " + ::toString(frame.size()) + " bytes.", m_beVerbose);
+			// processFrame_CoLa_A(frame);
+		}
+		else if (m_protocol == CoLa_B)
+		{
+			printInfoMessage("SickScanCommonNw::processFrame: Calling processFrame_CoLa_B() with " + ::toString(frame.size()) + " bytes.", m_beVerbose);
+			// processFrame_CoLa_B(frame);
+		}
+
+		recvQueue.push(std::vector<unsigned char>(frame.getRawData(), frame.getRawData() + frame.size()));
+
+	}
 	void SickScanCommonTcp::readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
+	{
+		bool beVerboseHere = false;
+		printInfoMessage("SickScanCommonNw::readCallbackFunction(): Called with " + toString(numOfBytes) + " available bytes.", beVerboseHere);
+
+		ScopedLock lock(&m_receiveDataMutex); // Mutex for access to the input buffer
+		UINT32 remainingSpace = sizeof(m_receiveBuffer) - m_numberOfBytesInReceiveBuffer;
+		UINT32 bytesToBeTransferred = numOfBytes;
+		if (remainingSpace < numOfBytes)
+		{
+			bytesToBeTransferred = remainingSpace;
+			// printWarning("SickScanCommonNw::readCallbackFunction(): Input buffer space is to small, transferring only " +
+			//              ::toString(bytesToBeTransferred) + " of " + ::toString(numOfBytes) + " bytes.");
+		}
+		else
+		{
+			// printInfoMessage("SickScanCommonNw::readCallbackFunction(): Transferring " + ::toString(bytesToBeTransferred) +
+			//                   " bytes from TCP to input buffer.", beVerboseHere);
+		}
+
+		if (bytesToBeTransferred > 0)
+		{
+			// Data can be transferred into our input buffer
+			memcpy(&(m_receiveBuffer[m_numberOfBytesInReceiveBuffer]), buffer, bytesToBeTransferred);
+			m_numberOfBytesInReceiveBuffer += bytesToBeTransferred;
+
+			UINT32 size = 0;
+
+			while (1)
+			{
+				// Now work on the input buffer until all received datasets are processed
+				SopasEventMessage frame = findFrameInReceiveBuffer();
+
+				size = frame.size();
+				if (size == 0)
+				{
+					// Framesize = 0: There is no valid frame in the buffer. The buffer is either empty or the frame
+					// is incomplete, so leave the loop
+					printInfoMessage("SickScanCommonNw::readCallbackFunction(): No complete frame in input buffer, we are done.", beVerboseHere);
+
+					// Leave the loop
+					break;
+				}
+				else
+				{
+					// A frame was found in the buffer, so process it now.
+					printInfoMessage("SickScanCommonNw::readCallbackFunction(): Processing a frame of length " + ::toString(frame.size()) + " bytes.", beVerboseHere);
+					processFrame(frame);
+					UINT32 bytesToMove = m_numberOfBytesInReceiveBuffer - size;
+					memmove(&(m_receiveBuffer[0]), &(m_receiveBuffer[size]), bytesToMove); // payload+magic+length+s+checksum
+					m_numberOfBytesInReceiveBuffer = bytesToMove;
+
+				}
+			}
+		}
+		else
+		{
+			// There was input data from the TCP interface, but our input buffer was unable to hold a single byte.
+			// Either we have not read data from our buffer for a long time, or something has gone wrong. To re-sync,
+			// we clear the input buffer here.
+			m_numberOfBytesInReceiveBuffer = 0;
+		}
+	}
+
+	void SickScanCommonTcp::readCallbackFunctionOld(UINT8* buffer, UINT32& numOfBytes)
 	{
 		// should be member variable in the future
 
