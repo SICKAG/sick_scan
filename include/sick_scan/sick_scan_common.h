@@ -91,12 +91,14 @@ namespace sick_scan
 			CMD_GET_OUTPUT_RANGES,
 			CMD_RUN,
 			CMD_GET_PARTIAL_SCANDATA_CFG,
-        CMD_SET_PARTIAL_SCANDATA_CFG,
+			CMD_SET_PARTIAL_SCANDATA_CFG,
 			CMD_STOP_SCANDATA,
 			CMD_START_SCANDATA,
 			CMD_START_MEASUREMENT,
-        CMD_STOP_MEASUREMENT,
-        CMD_SET_ECHO_FILTER,
+			CMD_STOP_MEASUREMENT,
+			CMD_SET_ECHO_FILTER,
+			CMD_SET_TO_COLA_A_PROTOCOL,  //		sWN EIHstCola 1  // Cola B 	sWN EIHstCola 0  // Cola A 
+			CMD_SET_TO_COLA_B_PROTOCOL,  // 
 			// ML: Add above new CMD-Identifier
 			//
 			//
@@ -108,27 +110,27 @@ namespace sick_scan
 		virtual ~SickScanCommon();
 		int setIpAddress(std::string ipAddress);
 		int setParticleFilter(bool _active, int _particleThreshold);//actualy only 500 mm is working.
-        /*! Changes the Identifier of a commandstr. to its expected answer counterpart
-         *
-         * @param requestStr sended request string
-         * @return Expected answer
-         */
+		/*! Changes the Identifier of a commandstr. to its expected answer counterpart
+		 *
+		 * @param requestStr sent request string
+		 * @return Expected answer
+		 */
 		std::string generateExpectedAnswerString(const std::vector<unsigned char> requestStr);
-        /*! Sends a SPOAS command over TCP and checks answer for plausibility
-         *
-         * @param request
-         * @param reply
-         * @param cmdId
-         * @return
-         */
+		/*! Sends a SPOAS command over TCP and checks answer for plausibility
+		 *
+		 * @param request
+		 * @param reply
+		 * @param cmdId
+		 * @return
+		 */
 		int sendSopasAndCheckAnswer(std::string request, std::vector<unsigned char> *reply, int cmdId);
-        /*! Sends a SPOAS command vector over TCP and checks answer for plausibility
-         *
-         * @param request
-         * @param reply
-         * @param cmdId
-         * @return
-         */
+		/*! Sends a SPOAS command vector over TCP and checks answer for plausibility
+		 *
+		 * @param request
+		 * @param reply
+		 * @param cmdId
+		 * @return
+		 */
 		int sendSopasAndCheckAnswer(std::vector<unsigned char> request, std::vector<unsigned char> *reply, int cmdId);
 
 		int setAligmentMode(int _AligmentMode);
@@ -221,14 +223,14 @@ namespace sick_scan
 		unsigned long convertBigEndianCharArrayToUnsignedLong(const unsigned char *vecArr);
 		/**
 		* \param [in]   (unsigned) long value which should be converto to big endian
-		* \param [out]  Pointer to byte array, where we store the big endian conversion 
+		* \param [out]  Pointer to byte array, where we store the big endian conversion
 		* \returns      void
 		*/
 		void convertUnsignedLongToBigEndianCharArray(unsigned long val, unsigned char *vecArr);
 
 		/**
 		* \param [in] reply check reply whether is SOPAS-ASCII or SOPAS-Binary
-		*             
+		*
 		* \returns    -1 if ascii otherwise the length of data content following offset 8
 		*/
 		int checkForBinaryAnswer(const std::vector<unsigned char>* reply);
@@ -272,7 +274,7 @@ namespace sick_scan
 		std::vector<std::string> sopasCmdErrMsg;
 		std::vector<int> sopasCmdChain;
 
-    int  outputChannelFlagId;
+		int  outputChannelFlagId;
 	};
 
 } /* namespace sick_scan */

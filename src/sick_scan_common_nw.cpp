@@ -414,28 +414,6 @@ bool SickScanCommonNw::disconnect()
  */
     void SickScanCommonNw::sendCommandBuffer(UINT8* buffer, UINT16 len)
     {
-#if 0 // !!!
-      UINT8 sendBuffer[1024];
-
-      assert (len < 1000);
-      assert (m_tcp.isOpen() == true);
-
-      // Frame the string
-      if (m_protocol == CoLa_A)
-      {
-        colaa::addFrameToBuffer(sendBuffer, buffer, &len);
-      }
-      else if (m_protocol == CoLa_B)
-      {
-        colab::addFrameToBuffer(sendBuffer, buffer, &len);
-      }
-
-      // Debug: Print buffer
-//	traceBuffer("Cmd buffer contents:", sendBuffer, len);
-
-// Send command (blocking
-      m_tcp.write(sendBuffer, len);
-#endif
       m_tcp.write(buffer, len);
     }
 

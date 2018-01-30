@@ -65,6 +65,9 @@
 #define SICK_GENERIC_PATCH_LEVEL "000"
 
 
+#include <algorithm> // for std::min
+
+
 int main(int argc, char **argv)
 {
 	char nameId[] = "__name:=";

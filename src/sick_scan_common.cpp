@@ -741,8 +741,8 @@ namespace sick_scan
 		sopasCmdVec[CMD_STOP_MEASUREMENT] = "\x02sMN LMCstopmeas\x03";
 		sopasCmdVec[CMD_APPLICATION_MODE_FIELD_OFF] = "\x02sWN SetActiveApplications 1 FEVL 0\x03"; // <STX>sWN{SPC}SetActiveApplications{SPC}1{SPC}FEVL{SPC}1<ETX>
 		sopasCmdVec[CMD_APPLICATION_MODE_RANGING_ON] = "\x02sWN SetActiveApplications 1 RANG 1\x03";
-
-
+		sopasCmdVec[CMD_SET_TO_COLA_A_PROTOCOL] = "\x02sWN EIHstCola 0\x03";
+		sopasCmdVec[CMD_SET_TO_COLA_B_PROTOCOL] = "\x02sWN EIHstCola 1\x03";
 
 		// defining cmd mask for cmds with variable input
 		sopasCmdMaskVec[CMD_SET_PARTICLE_FILTER] = "\x02sWN LFPparticle %d %d\x03";
@@ -782,7 +782,16 @@ namespace sick_scan
 		// try for MRS1104
 
 		sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3);
-
+#if 0
+		if (parser_->getCurrentParamPtr()->getUseBinaryProtocol())
+		{
+			sopasCmdChain.push_back(CMD_SET_TO_COLA_B_PROTOCOL);
+		}
+		else
+		{
+			sopasCmdChain.push_back(CMD_SET_TO_COLA_A_PROTOCOL);
+		}
+#endif
 		if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
 		{
 			// do not stop measurement for TiM571 otherwise the scanner would not start after start measurement
