@@ -85,9 +85,9 @@
   void *ptr: Point to variable, which should be swapped.
   numBytes : size of variable in bytes
 */
-void swap_endian(void *ptr, int numBytes)
+void swap_endian(unsigned char *ptr, int numBytes)
 {
-  unsigned char *buf = (unsigned char*)(ptr);
+  unsigned char *buf = (ptr);
 	unsigned char tmpChar;
 	for (int i = 0; i < numBytes/2; i++)
 	{
@@ -1842,7 +1842,7 @@ namespace sick_scan
 						long lenVal = 0;
 						memcpy(&idVal,  receiveBuffer + 0, 4);
 						memcpy(&lenVal, receiveBuffer + 4, 4);
-						swap_endian(&lenVal, 4);
+						swap_endian((unsigned char*) &lenVal, 4);
 
 						if (idVal == 0x02020202)
 						{
@@ -1857,18 +1857,18 @@ namespace sick_scan
 								int numberOf16BitChannels = 0;
 
 								memcpy(&elevAngleX200, receiveBuffer + 50, 2);
-								swap_endian(&elevAngleX200, sizeof(unsigned short));
+								swap_endian((unsigned char*) &elevAngleX200, 2);
 
 
 								msg.header.seq = elevAngleX200;
 								memcpy(&scanFrequencyX100, receiveBuffer + 52, 4);
-								swap_endian(&scanFrequencyX100, sizeof(unsigned long));
+								swap_endian((unsigned char*) &scanFrequencyX100, 4);
 
 								memcpy(&measurementFrequencyDiv100, receiveBuffer + 56, 4);
-								swap_endian(&measurementFrequencyDiv100, sizeof(unsigned long));
+								swap_endian((unsigned char*) &measurementFrequencyDiv100, 4);
 
 								memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
-								swap_endian(&numberOf16BitChannels, sizeof(unsigned short));
+								swap_endian((unsigned char*)&numberOf16BitChannels, 2);
 
 								bool parsePacket = true;
 								int  parseOff = 64;
@@ -1892,11 +1892,11 @@ namespace sick_scan
 										memcpy(&sizeOfSingleAngularStepDiv10000, receiveBuffer + parseOff + 17, 2);
 										memcpy(&numberOfItems,      receiveBuffer + parseOff + 19, 2);
 
-										swap_endian(&scaleFactor, sizeof(float));
-										swap_endian(&scaleFactorOffset, sizeof(float));
-										swap_endian(&startAngleDiv10000, sizeof(unsigned long));
-										swap_endian(&sizeOfSingleAngularStepDiv10000, sizeof(unsigned short));
-										swap_endian(&numberOfItems, sizeof(unsigned short));
+										swap_endian((unsigned char*) &scaleFactor, 4);
+										swap_endian((unsigned char*) &scaleFactorOffset, 4);
+										swap_endian((unsigned char*) &startAngleDiv10000,4);
+										swap_endian((unsigned char*) &sizeOfSingleAngularStepDiv10000, 2);
+										swap_endian((unsigned char*) &numberOfItems, 2);
 
 										startAngle = startAngleDiv10000 / 10000.00;
 										sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
@@ -1924,7 +1924,7 @@ namespace sick_scan
 										}
 										for (int i = 0; i < numberOfItems; i++)
 										{
-											msg.ranges[i] = (float)distData[i] / scaleFactor + scaleFactorOffset;
+											msg.ranges[i] = (float)distData[i] *0.001*scaleFactor + scaleFactorOffset;
 										}
 										// 30° --> 0 04 93 E0h
 									}
@@ -2133,12 +2133,7 @@ namespace sick_scan
 							// -26.38
 							// 
 							layer = (msg.header.seq - (-2638)) / 125;
-							layer += -1;
-							/*							if (msg.header.seq == 250) layer = -1;
-														else if (msg.header.seq == 0) layer = 0;
-														else if (msg.header.seq == -250) layer = 1;
-														else if (msg.header.seq == -500) layer = 2;
-														*/
+							layer =(23-layer) -1;
 							elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
 							elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
 							// 0.0436332 /*2.5 degrees*/;

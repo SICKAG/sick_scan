@@ -176,7 +176,11 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 		delete s;
     if (useTCP)
 			s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser, colaDialectId);
-
+    else
+    {
+        ROS_ERROR("TCP is not switched on. Probably hostname or port not set. Use roslaunch to start node.");
+        exit(-1);
+    }
 
 		result = s->init();
 
