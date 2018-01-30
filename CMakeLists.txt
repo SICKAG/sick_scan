@@ -47,13 +47,6 @@ add_executable(sick_generic_caller
 	)
 target_link_libraries(sick_generic_caller sick_scan_lib)
 
-add_executable(sick_tim_datagram_test
-    test/sick_tim_datagram_test.cpp
-    src/sick_generic_parser.cpp
-    src/sick_scan_common_tcp.cpp
-	src/sick_scan_common_nw.cpp
-    src/abstract_parser.cpp)
-target_link_libraries(sick_tim_datagram_test sick_scan_lib)
 
 install(TARGETS sick_scan_lib
     DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
@@ -61,7 +54,6 @@ install(TARGETS sick_scan_lib
 install(
     TARGETS
         sick_generic_caller
-        sick_tim_datagram_test
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(FILES include/${PROJECT_NAME}/abstract_parser.h
