@@ -19,6 +19,12 @@ and will be finished until end of March 2018.
 
 ROS Device Driver for Sick Laserscanner - supported scanner types: 
 
+@-moz-document domain("github.com") {
+  .markdown-body table th, .markdown-body table td {
+    word-break: break-all;
+  }
+}
+
 | **device name**    |  **part no.**                                                                                                                | **description**                                | **tested?**     |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|:---------------:|
 | MRS6124            | unpublished                                                                                                                  | 24 layer (standard)                            | ✔ [experimental]|
