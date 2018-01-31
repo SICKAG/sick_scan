@@ -108,5 +108,6 @@ on behalf of SICKAG
 
 ------------------------------------------------------------------------
 
-![SICK Logo](img/Logo_SICK_AG_2009.png "SICK Logo")
+![SICK Logo](https://sick-syd.data.continum.net/static_2018013123/_ui/desktop/common/images/base/pics/logo.png "SICK Logo")
+![Lehning Logo] (http://www.lehning.de/style/banner.jpg "LEHNING Logo")
 
