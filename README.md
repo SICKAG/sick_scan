@@ -100,11 +100,11 @@ publish to point clound
 
 **Michael Lehning**
 
-- <https://www.lehning.de/>
+- <http://www.lehning.de>
 
 on behalf of SICKAG 
 
-- <http://www.sick.com
+- <http://www.sick.com>
 
 ------------------------------------------------------------------------
 
