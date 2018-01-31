@@ -14,11 +14,14 @@ and tested working on the MRS6124. The migration with the already publish sick_s
 and will be finished until end of March 2018.
 
 ROS Device Driver for Sick Laserscanner - supported scanner types: 
-[MRS6124] (unpublished)
-[MRS1104](https://www.sick.com/media/docs/1/51/551/quickstart_MRS1000_de_IM0073551.PDF),
-[TiM551](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF),
-[TiM561](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF),
-[TiM571](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF) 
+
+| **device name**    |  **part no.**                                                               | **description**                                | **tested?** |
+|--------------------|-----------------------------------------------------------------------------|------------------------------------------------|:-----------:|
+| MRS6124            | unpublished                                                                 | 24 layer (standard)                            | ✔ [experimental] |
+| MRS1104            | [1081208]  ( https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044 )   | 4 layer    |      ✔ [experimental]      |
+| TiM551             | [1060445]  (https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)           | 1 layer max. range: 10m, ang. resolution: 1.0 deg] Scan-Rate: 15 Hz                    |      ✔      |
+| TiM561             | [1071419]  (https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)      | 1 layer max. range: 10m, ang. resolution: 0.33 [deg] Scan-Rate: 15 Hz|             |
+| TiM571             | [1079742]  (https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)  | 1 layer max. range: 25m, ang. resolution: 0.33 [deg] Scan-Rate: 15 Hz|      ✔      |
 
 Use the following command to start ROS node:
 
