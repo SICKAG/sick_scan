@@ -51,6 +51,7 @@ roslaunch sick_scan sick_tim_5xx.launch
 - Binary mode: MRS6124 must be switched to binary mode to ensure transportation of scan data
 - Support of TiM-Series and MRS1124: Experimental and currently untested
 - Echo: Only one echo with no amplitude information supported
+- Coordinate transformation must be further tested
 
 
 ## Troubleshooting 
@@ -103,7 +104,7 @@ publish to point clound
 
 - <http://www.lehning.de>
 
-on behalf of SICKAG 
+on behalf of SICK AG 
 
 - <http://www.sick.com>
 
