@@ -1864,6 +1864,7 @@ namespace sick_scan
 				{
 					// if binary protocol used then parse binary message
 					std::vector<unsigned char> receiveBufferVec = std::vector<unsigned char>(receiveBuffer, receiveBuffer + actual_length);
+
 					if (receiveBufferVec.size() > 8)
 					{
 						long idVal = 0;
@@ -1911,6 +1912,39 @@ namespace sick_scan
 									double sizeOfSingleAngularStep = 0.0;
 									short numberOfItems = 0;
 									strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
+#if 0 // prepared for multiecho parsing
+									int channelCnt = 0;
+									int rssiCnt = 0;
+									bool bCont = true;
+									// try to get number of DIST and RSSI from binary data
+									do
+									{
+										szChannel[5] = '\0';
+										strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
+										bCont = false;
+										if (strstr(szChannel,"DIST") == szChannel) {
+											channelCnt++;
+											bCont = true;
+  										 memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+ 											swap_endian((unsigned char*) &numberOfItems, 2);
+											 parseOff += 21 + 2 * numberOfItems;
+										}
+										if (strstr(szChannel,"VANG") == szChannel) {
+											rssiCnt++;
+											bCont = true;
+											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+											swap_endian((unsigned char*) &numberOfItems, 2);
+											parseOff += 21 + 2 * numberOfItems;
+										}
+										if (strstr(szChannel,"RSSI") == szChannel) {
+											rssiCnt++;
+											bCont = true;
+											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+											swap_endian((unsigned char*) &numberOfItems, 2);
+											parseOff += 21 + 2 * numberOfItems;
+										}
+									} while (bCont);
+#endif
 									if (strcmp(szChannel, "DIST1") == 0)
 									{
 										// For 12.5 is the pattern 0x41 0x48 0x00 0x00
