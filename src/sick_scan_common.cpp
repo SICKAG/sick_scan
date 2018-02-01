@@ -1378,10 +1378,14 @@ namespace sick_scan
 						for (size_t i = 0; i < rangeNum; i++)
 						{
 							geometry_msgs::Point32 point;
-							float r = rangeTmp[iEcho * rangeNum + i];
-							point.x = cos(angle) * r;
-							point.y = sin(angle) * r;
-							point.z = sin(layer * elevationAngleDegree /*2.5 degrees*/) * sqrt(point.x * point.x + point.y * point.y);
+							float range_meter = rangeTmp[iEcho * rangeNum + i];
+              float phi = angle; // azimuth angle
+              float alpha = layer * elevationAngleDegree;
+
+              // Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
+              point.x = range_meter * cos(alpha) * cos(phi);
+              point.y = range_meter * cos(alpha) * sin(phi);
+              point.z = range_meter * sin(alpha);
 
 							//	cloud_.points[(layer - baseLayer) * msg.ranges.size() + i] = point;
 
