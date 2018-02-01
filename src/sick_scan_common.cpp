@@ -129,11 +129,8 @@ namespace sick_scan
 		{
 
 			unsigned char val = msgBlock[i];
-			printf("%02x ", val);
-
 			xorVal ^= val;
 		}
-		printf("\n%02x\n", xorVal);
 		return(xorVal);
 	}
 
@@ -501,7 +498,9 @@ namespace sick_scan
 
 		// send sopas cmd
 
-		// TODO!!!! ROS_INFO("Sending  : %s", stripControl(requestStr).c_str());
+		std::string reqStr = replyToString(requestStr);
+
+		ROS_INFO("Sending  : %s", stripControl(reqStr).c_str());
 		result = sendSOPASCommand(cmdStr.c_str(), reply, cmdLen);
 		std::string replyStr = replyToString(*reply);
 		replyStr = "<STX>" + replyStr + "<ETX>";
@@ -742,6 +741,7 @@ namespace sick_scan
 		sopasCmdVec[CMD_APPLICATION_MODE_FIELD_OFF] = "\x02sWN SetActiveApplications 1 FEVL 0\x03"; // <STX>sWN{SPC}SetActiveApplications{SPC}1{SPC}FEVL{SPC}1<ETX>
 		sopasCmdVec[CMD_APPLICATION_MODE_RANGING_ON] = "\x02sWN SetActiveApplications 1 RANG 1\x03";
 		sopasCmdVec[CMD_SET_TO_COLA_A_PROTOCOL] = "\x02sWN EIHstCola 0\x03";
+		sopasCmdVec[CMD_GET_PARTIAL_SCANDATA_CFG] = "\x02sRN LMDscandatacfg\x03";
 		sopasCmdVec[CMD_SET_TO_COLA_B_PROTOCOL] = "\x02sWN EIHstCola 1\x03";
 
 		// defining cmd mask for cmds with variable input
@@ -1449,19 +1449,40 @@ namespace sick_scan
 			)
 		{
 			char requestLMDscandatacfg[MAX_STR_LEN];
-			if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)
+				// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+			const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
+			sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0);
+      if (useBinaryCmd)
+      {
+        std::vector<unsigned char> reqBinary;
+        this->convertAscii2BinaryCmd(requestLMDscandatacfg, &reqBinary);
+        result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_PARTIAL_SCANDATA_CFG]);
+      }
+      else
+      {
+			std::vector<unsigned char> lmdScanDataCfgReply;
+			result = sendSopasAndCheckAnswer(requestLMDscandatacfg, &lmdScanDataCfgReply);
+      }
+
+
+			// check setting
+			char requestLMDscandatacfgRead[MAX_STR_LEN];
+			// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+
+			strcpy(requestLMDscandatacfgRead, sopasCmdVec[CMD_GET_PARTIAL_SCANDATA_CFG].c_str());
+			if (useBinaryCmd)
 			{
-				ROS_WARN("ECHO config for LMS 1000 not reliable\n");
+				std::vector<unsigned char> reqBinary;
+				this->convertAscii2BinaryCmd(requestLMDscandatacfgRead, &reqBinary);
+				result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_PARTIAL_SCANDATA_CFG]);
 			}
 			else
 			{
-				// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
-				const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
-				sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0);
-
-				std::vector<unsigned char> lmdScanDataCfgReply;
-				result = sendSopasAndCheckAnswer(requestLMDscandatacfg, &lmdScanDataCfgReply);
+				std::vector<unsigned char> lmdScanDataCfgReadReply;
+				result = sendSopasAndCheckAnswer(requestLMDscandatacfgRead, &lmdScanDataCfgReadReply);
 			}
+
+
 		}
 
 		// CONFIG ECHO-Filter (only for MRS1000 not available for TiM5xx
@@ -1667,9 +1688,12 @@ namespace sick_scan
 				it_start = reply.begin() + 8; // skip header and length id
 				it_end = reply.end() - 1; // skip CRC
 			}
+			bool inHexPrintMode = false;
 			for (std::vector<unsigned char>::const_iterator it = it_start; it != it_end; it++)
 			{
-				if (*it >= 0x20) // filter control characters for display
+				// inHexPrintMode means that we should continue printing hex value after we started with hex-Printing
+				// That is easier to debug for a human instead of switching between ascii binary and then back to ascii
+				if (*it >= 0x20 && (inHexPrintMode == false)) // filter control characters for display
 				{
 					reply_str.push_back(*it);
 				}
@@ -1679,6 +1703,7 @@ namespace sick_scan
 					{
 						char szTmp[255] = { 0 };
 						unsigned char val = *it;
+						inHexPrintMode = true;
 						sprintf(szTmp, "\\x%02x", val);
 						for (int ii = 0; ii < strlen(szTmp); ii++)
 						{
@@ -1706,6 +1731,7 @@ namespace sick_scan
 			int version_major = -1;
 			int version_minor = -1;
 
+      strcpy(device_string,"???");
 			// special for TiM3-Firmware
 			if (sscanf(identStr.c_str(), "sRA 0 6 %6s E V%d.%d", device_string,
 				&version_major, &version_minor) == 3
@@ -1739,7 +1765,9 @@ namespace sick_scan
 
 			}
 
-			if (identStr.find("MRS1xxx") != std::string::npos)  // received pattern contains 4 'x' but we check only for 3 'x' (MRS1104 should be MRS1xxx)
+			if(      (identStr.find("MRS1xxx") != std::string::npos)   // received pattern contains 4 'x' but we check only for 3 'x' (MRS1104 should be MRS1xxx)
+           ||   (identStr.find("LMS1xxx") != std::string::npos)
+              )
 			{
 				ROS_INFO("Deviceinfo %s found and supported by this driver.", identStr.c_str());
 				supported = true;
@@ -1912,7 +1940,7 @@ namespace sick_scan
 										msg.ranges.resize(numberOfItems);
 										msg.intensities.resize(numberOfItems);
 
-										unsigned short *distData = (unsigned short *)(receiveBuffer + parseOff + 23);
+										unsigned short *distData = (unsigned short *)(receiveBuffer + parseOff + 21);
 
 										unsigned char *swapPtr = (unsigned char *)distData;
 										for (int i = 0; i < numberOfItems * 2; i+= 2)
@@ -1925,6 +1953,7 @@ namespace sick_scan
 										for (int i = 0; i < numberOfItems; i++)
 										{
 											msg.ranges[i] = (float)distData[i] *0.001*scaleFactor + scaleFactorOffset;
+
 										}
 										// 30° --> 0 04 93 E0h
 									}

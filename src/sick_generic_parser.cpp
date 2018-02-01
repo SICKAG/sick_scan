@@ -359,19 +359,33 @@ namespace sick_scan
 		datagram_copy_vec.resize(datagram_length + 1); // to avoid using malloc. destructor frees allocated mem.
 		char* datagram_copy = &(datagram_copy_vec[0]);
 
+		if (verboseLevel > 0) {
+			ROS_WARN("Verbose LEVEL activated. Only for DEBUG.");
+		}
+
 		if (verboseLevel > 0)
 		{
+			static int cnt = 0;
+			char szDumpFileName[255] = {0};
+			char szDir[255] = {0};
+#ifdef _MSC_VER
+      strcpy(szDir,"C:\\temp\\");
+#else
+			strcpy(szDir,"/tmp/");
+#endif
+			sprintf(szDumpFileName,"%stmp%06d.bin", szDir, cnt);
 			bool isBinary = this->getCurrentParamPtr()->getUseBinaryProtocol();
 			if (isBinary)
 			{
 				FILE *ftmp;
-				ftmp = fopen("c:\\temp\\temp.bin", "wb");
+				ftmp = fopen(szDumpFileName,"wb");
 				if (ftmp != NULL)
 				{
 					fwrite(datagram, datagram_length, 1, ftmp);
 					fclose(ftmp);
 				}
 			}
+			cnt++;
 		}
 
 		strncpy(datagram_copy, datagram, datagram_length); // datagram will be changed by strtok
@@ -395,9 +409,19 @@ namespace sick_scan
 
 		if (verboseLevel > 0)
 		{
+			static int cnt = 0;
+			char szDumpFileName[255] = {0};
+			char szDir[255] = {0};
+#ifdef _MSC_VER
+			strcpy(szDir,"C:\\temp\\");
+#else
+			strcpy(szDir,"/tmp/");
+#endif
+			sprintf(szDumpFileName,"%stmp%06d.txt", szDir, cnt);
+			ROS_WARN("Verbose LEVEL activated. Only for DEBUG.");
 			FILE *ftmp;
-			ftmp = fopen("c:\\temp\\temp.txt", "w");
-			if (ftmp != NULL)
+			ftmp = fopen(szDumpFileName,"w");
+      if (ftmp != NULL)
 			{
 				int i;
 				for (i = 0; i < count; i++)
@@ -406,6 +430,7 @@ namespace sick_scan
 				}
 				fclose(ftmp);
 			}
+			cnt++;
 		}
 
 		// Validate header. Total number of tokens is highly unreliable as this may
@@ -570,74 +595,6 @@ namespace sick_scan
 		// This is already determined above in number_of_data
 		int index_min = 0;
 
-#if 0
-		// TODO: Winkelkonfiguration soll über SETUP gesetzt werden.
-
-		// adjust angle_min to min_ang config param
-		while (msg.angle_min + msg.angle_increment < config.min_ang)
-		{
-			msg.angle_min += msg.angle_increment;
-			index_min++;
-		}
-
-		// adjust angle_max to max_ang config param
-		int index_max = number_of_data - 1;
-		while (msg.angle_max - msg.angle_increment > config.max_ang)
-		{
-			msg.angle_max -= msg.angle_increment;
-			index_max--;
-		}
-
-		ROS_DEBUG("index_min: %d, index_max: %d", index_min, index_max);
-		// ROS_DEBUG("angular_step_width: %d, angle_increment: %f, angle_max: %f", angular_step_width, msg.angle_increment, msg.angle_max);
-
-  // MMMM double phi = scan.angle_min;
-  // MMMM   double alpha = (-layer/ 200.0) * M_PI / 180.0;
-		// 26..26 + n - 1: Data_1 .. Data_n
-		msg.ranges.resize(index_max - index_min + 1);
-		for (int j = index_min; j <= index_max; ++j)
-		{
-			unsigned short range;
-			sscanf(fields[j + 26], "%hx", &range);
-			msg.ranges[j - index_min] = range / 1000.0;
-
-			// MMM    *x_iter = range_meter * sin(M_PI_2 - alpha) * cos(phi);
-			// MMM    *y_iter = range_meter * sin(M_PI_2 - alpha) * sin(phi);
-			// MMM    *z_iter = range_meter * cos(M_PI_2 - alpha);
-
-		}
-
-		if (config.intensity) {
-			if (rssi)
-			{
-				// 26 + n: RSSI data included
-
-				//   26 + n + 1 = RSSI Measured Data Contents (RSSI1)
-				//   26 + n + 2 = RSSI scaling factor (3F80000)
-				//   26 + n + 3 = RSSI Scaling offset (0000000)
-				//   26 + n + 4 = RSSI starting angle (equal to Range starting angle)
-				//   26 + n + 5 = RSSI angular step width (equal to Range angular step width)
-				//   26 + n + 6 = RSSI number of data (equal to Range number of data)
-				//   26 + n + 7 .. 26 + n + 7 + n - 1: RSSI_Data_1 .. RSSI_Data_n
-				//   26 + n + 7 + n .. 26 + n + 7 + n + 2 = unknown (but seems to be [0, 1, B] always)
-				//   26 + n + 7 + n + 2 .. count - 4 = device label
-				//   count - 3 .. count - 1 = unknown (but seems to be 0 always)
-				//   <ETX> (\x03)
-				msg.intensities.resize(index_max - index_min + 1);
-				size_t offset = 26 + number_of_data + 7;
-				for (int j = index_min; j <= index_max; ++j)
-				{
-					unsigned short intensity;
-					sscanf(fields[j + offset], "%hx", &intensity);
-					msg.intensities[j - index_min] = intensity;
-				}
-			}
-			else {
-				ROS_WARN_ONCE("Intensity parameter is enabled, but the scanner is not configured to send RSSI values! "
-					"Please read the section 'Enabling intensity (RSSI) output' here: http://wiki.ros.org/sick_tim.");
-			}
-	}
-#endif
 #if 1  // neuer Ansatz
 		int distNum = 0;
 		int rssiNum = 0;
