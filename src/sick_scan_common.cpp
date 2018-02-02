@@ -34,10 +34,10 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 21st Dec 2017
+*  Last modified: 2nd Feb 2018
 *
 *      Authors:
-*              Michael Lehning <michael.lehning@lehning.de>
+*         Michael Lehning <michael.lehning@lehning.de>
 *         Jochen Sprickerhof <jochen@sprickerhof.de>
 *         Martin Günther <mguenthe@uos.de>
 *
@@ -60,7 +60,7 @@
 #endif
 
 #include "sick_scan/binScanf.hpp"
-// #include "sick_scan/binPrintf.hpp"
+
 
 
 #include <cstdio>
@@ -73,6 +73,7 @@
 #define rad2deg(x) ((x) / M_PI * 180.0)
 #endif
 
+#define deg2rad_const (0.017453292519943295769236907684886f)
 #include "sick_scan/tcp/colaa.hpp"
 #include "sick_scan/tcp/colab.hpp"
 
@@ -87,12 +88,12 @@
 */
 void swap_endian(unsigned char *ptr, int numBytes)
 {
-  unsigned char *buf = (ptr);
+	unsigned char *buf = (ptr);
 	unsigned char tmpChar;
-	for (int i = 0; i < numBytes/2; i++)
+	for (int i = 0; i < numBytes / 2; i++)
 	{
-     tmpChar = buf[numBytes - 1 - i];
-		 buf[numBytes - 1 - i] =  buf[i];
+		tmpChar = buf[numBytes - 1 - i];
+		buf[numBytes - 1 - i] = buf[i];
 		buf[i] = tmpChar;
 	}
 }
@@ -423,9 +424,9 @@ namespace sick_scan
 			}
 		}
 
-        /*!
-         * Map that defines expected answer identifiers
-         */
+		/*!
+		 * Map that defines expected answer identifiers
+		 */
 		std::map<std::string, std::string> keyWordMap;
 		keyWordMap["sWN"] = "sWA";
 		keyWordMap["sRN"] = "sRA";
@@ -1228,31 +1229,31 @@ namespace sick_scan
 
 			if (useBinaryCmd)
 			{
-        unsigned char tmpBuffer[255] = {0};
-        unsigned char sendBuffer[255] = {0};
-        UINT16 sendLen;
-        std::vector<unsigned char> reqBinary;
+				unsigned char tmpBuffer[255] = { 0 };
+				unsigned char sendBuffer[255] = { 0 };
+				UINT16 sendLen;
+				std::vector<unsigned char> reqBinary;
 				int iStatus = 1;
-//				const char *askOutputAngularRangeBinMask = "%4y%4ysWN LMPoutputRange %2y%4y%4y%4y";
-				// int askOutputAngularRangeBinLen = binScanfGuessDataLenFromMask(askOutputAngularRangeBinMask);
-				// askOutputAngularRangeBinLen -= 8;  // due to header and length identifier
+				//				const char *askOutputAngularRangeBinMask = "%4y%4ysWN LMPoutputRange %2y%4y%4y%4y";
+								// int askOutputAngularRangeBinLen = binScanfGuessDataLenFromMask(askOutputAngularRangeBinMask);
+								// askOutputAngularRangeBinLen -= 8;  // due to header and length identifier
 
-        strcpy((char*)tmpBuffer,"WN LMPoutputRange ");
-        unsigned short orgLen = strlen((char *)tmpBuffer);
-        colab::addIntegerToBuffer<UINT16>(tmpBuffer, orgLen, iStatus);
-        colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
-        colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
-        colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
-        sendLen = orgLen;
-        colab::addFrameToBuffer(sendBuffer, tmpBuffer, &sendLen);
+				strcpy((char*)tmpBuffer, "WN LMPoutputRange ");
+				unsigned short orgLen = strlen((char *)tmpBuffer);
+				colab::addIntegerToBuffer<UINT16>(tmpBuffer, orgLen, iStatus);
+				colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
+				colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
+				colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
+				sendLen = orgLen;
+				colab::addFrameToBuffer(sendBuffer, tmpBuffer, &sendLen);
 
-        #if 0
+#if 0
 #endif
 				// binSprintfVec(&reqBinary, askOutputAngularRangeBinMask, 0x02020202, askOutputAngularRangeBinLen, iStatus, angleRes10000th, angleStart10000th, angleEnd10000th);
 
 				// unsigned char sickCrc = sick_crc8((unsigned char *)(&(reqBinary)[8]), reqBinary.size() - 8);
 				// reqBinary.push_back(sickCrc);
-        reqBinary = std::vector<unsigned char>(sendBuffer, sendBuffer + sendLen);
+				reqBinary = std::vector<unsigned char>(sendBuffer, sendBuffer + sendLen);
 				// Here we must build a more complex binaryRequest
 
 				// this->convertAscii2BinaryCmd(requestOutputAngularRange, &reqBinary);
@@ -1446,23 +1447,29 @@ namespace sick_scan
 		// set scanning angle for tim5xx and for mrs1104
 		if ((this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
 			|| (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)
+			|| (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 24)
 			)
 		{
 			char requestLMDscandatacfg[MAX_STR_LEN];
-				// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+			// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
 			const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
 			sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0);
-      if (useBinaryCmd)
-      {
-        std::vector<unsigned char> reqBinary;
-        this->convertAscii2BinaryCmd(requestLMDscandatacfg, &reqBinary);
-        result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_PARTIAL_SCANDATA_CFG]);
-      }
-      else
-      {
-			std::vector<unsigned char> lmdScanDataCfgReply;
-			result = sendSopasAndCheckAnswer(requestLMDscandatacfg, &lmdScanDataCfgReply);
-      }
+			if (useBinaryCmd)
+			{
+				std::vector<unsigned char> reqBinary;
+				this->convertAscii2BinaryCmd(requestLMDscandatacfg, &reqBinary);
+				// FOR MRS6124 this should be
+				// like this:
+				// 0000  02 02 02 02 00 00 00 20 73 57 4e 20 4c 4d 44 73   .......sWN LMDs
+				// 0010  63 61 6e 64 61 74 61 63 66 67 20 1f 00 01 01 00   candatacfg .....
+				// 0020  00 00 00 00 00 00 00 01 5c                        
+				result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_PARTIAL_SCANDATA_CFG]);
+			}
+			else
+			{
+				std::vector<unsigned char> lmdScanDataCfgReply;
+				result = sendSopasAndCheckAnswer(requestLMDscandatacfg, &lmdScanDataCfgReply);
+			}
 
 
 			// check setting
@@ -1495,8 +1502,15 @@ namespace sick_scan
 			if (filterEchoSetting > 2) filterEchoSetting = 2;
 			// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
 			const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_ECHO_FILTER].c_str();
+			/*
+			First echo : 0
+			All echos : 1
+			Last echo : 2
+			*/
 			sprintf(requestEchoSetting, pcCmdMask, filterEchoSetting);
 			std::vector<unsigned char> outputFilterEchoRangeReply;
+
+
 
 			if (useBinaryCmd)
 			{
@@ -1731,7 +1745,7 @@ namespace sick_scan
 			int version_major = -1;
 			int version_minor = -1;
 
-      strcpy(device_string,"???");
+			strcpy(device_string, "???");
 			// special for TiM3-Firmware
 			if (sscanf(identStr.c_str(), "sRA 0 6 %6s E V%d.%d", device_string,
 				&version_major, &version_minor) == 3
@@ -1765,9 +1779,9 @@ namespace sick_scan
 
 			}
 
-			if(      (identStr.find("MRS1xxx") != std::string::npos)   // received pattern contains 4 'x' but we check only for 3 'x' (MRS1104 should be MRS1xxx)
-           ||   (identStr.find("LMS1xxx") != std::string::npos)
-              )
+			if ((identStr.find("MRS1xxx") != std::string::npos)   // received pattern contains 4 'x' but we check only for 3 'x' (MRS1104 should be MRS1xxx)
+				|| (identStr.find("LMS1xxx") != std::string::npos)
+				)
 			{
 				ROS_INFO("Deviceinfo %s found and supported by this driver.", identStr.c_str());
 				supported = true;
@@ -1796,28 +1810,28 @@ namespace sick_scan
 			bool useBinaryProtocol = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
 
 
-		int result = get_datagram(receiveBuffer, 65536, &actual_length, useBinaryProtocol);
+			int result = get_datagram(receiveBuffer, 65536, &actual_length, useBinaryProtocol);
 #if 0
-      {
-      static int fileCnt = 0;
-      char szFileName[255] = {0};
-      sprintf(szFileName,"/tmp/dg%06d.bin",fileCnt);
-      fileCnt++;
-      FILE *fin;
-      fin = fopen(szFileName,"rb");
-      fseek(fin,0, SEEK_END);
-      int fileSize = ftell(fin);
-      fseek(fin,0, SEEK_SET);
-      actual_length = fileSize;
-      fread(receiveBuffer, actual_length, 1, fin );
-      fclose(fin);
-      actual_length += 9; // muss eigentlich korrigiert werden.
-        if (fileCnt == 72)
-        {
-         fileCnt = 0;
-        }
-      }
-      int result = 0;
+			{
+				static int fileCnt = 0;
+				char szFileName[255] = { 0 };
+				sprintf(szFileName, "/tmp/dg%06d.bin", fileCnt);
+				fileCnt++;
+				FILE *fin;
+				fin = fopen(szFileName, "rb");
+				fseek(fin, 0, SEEK_END);
+				int fileSize = ftell(fin);
+				fseek(fin, 0, SEEK_SET);
+				actual_length = fileSize;
+				fread(receiveBuffer, actual_length, 1, fin);
+				fclose(fin);
+				actual_length += 9; // muss eigentlich korrigiert werden.
+				if (fileCnt == 72)
+				{
+					fileCnt = 0;
+				}
+			}
+			int result = 0;
 #endif
 
 			if (result != 0)
@@ -1842,6 +1856,8 @@ namespace sick_scan
 
 			sensor_msgs::LaserScan msg;
 
+
+			double elevationAngleInRad = 0.0;
 			/*
 			 * datagrams are enclosed in <STX> (0x02), <ETX> (0x03) pairs
 			 */
@@ -1849,6 +1865,8 @@ namespace sick_scan
 			char *dstart, *dend;
 			bool dumpDbg = false;
 			bool dataToProcess = true;
+			std::vector<float> vang_vec;
+			vang_vec.clear();
 			while (dataToProcess)
 			{
 				const int maxAllowedEchos = 5;
@@ -1869,16 +1887,16 @@ namespace sick_scan
 					{
 						long idVal = 0;
 						long lenVal = 0;
-						memcpy(&idVal,  receiveBuffer + 0, 4);
+						memcpy(&idVal, receiveBuffer + 0, 4);
 						memcpy(&lenVal, receiveBuffer + 4, 4);
-						swap_endian((unsigned char*) &lenVal, 4);
+						swap_endian((unsigned char*)&lenVal, 4);
 
 						if (idVal == 0x02020202)
 						{
 							if (lenVal < actual_length)
 							{
 								short elevAngleX200;  // signed short (F5 B2  -> Layer 24 
-								                      // F5B2h -> -2638/200= -13.19° 
+													  // F5B2h -> -2638/200= -13.19° 
 								int scanFrequencyX100;
 								double elevAngle;
 								double scanFrequency = 0.0;
@@ -1886,118 +1904,253 @@ namespace sick_scan
 								int numberOf16BitChannels = 0;
 
 								memcpy(&elevAngleX200, receiveBuffer + 50, 2);
-								swap_endian((unsigned char*) &elevAngleX200, 2);
+								swap_endian((unsigned char*)&elevAngleX200, 2);
 
-
+								elevationAngleInRad = -elevAngleX200 / 200.0 * deg2rad_const;
 								msg.header.seq = elevAngleX200;
+
 								memcpy(&scanFrequencyX100, receiveBuffer + 52, 4);
-								swap_endian((unsigned char*) &scanFrequencyX100, 4);
+								swap_endian((unsigned char*)&scanFrequencyX100, 4);
 
 								memcpy(&measurementFrequencyDiv100, receiveBuffer + 56, 4);
-								swap_endian((unsigned char*) &measurementFrequencyDiv100, 4);
+								swap_endian((unsigned char*)&measurementFrequencyDiv100, 4);
 
 								memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
 								swap_endian((unsigned char*)&numberOf16BitChannels, 2);
 
-								bool parsePacket = true;
+
+
+								char szChannel[255] = { 0 };
+								float scaleFactor = 1.0;
+								float scaleFactorOffset = 0.0;
+								long startAngleDiv10000 = 1;
+								long sizeOfSingleAngularStepDiv10000 = 1;
+								double startAngle = 0.0;
+								double sizeOfSingleAngularStep = 0.0;
+								short numberOfItems = 0;
 								int  parseOff = 64;
-								do 
+
+
+								enum datagram_parse_task
 								{
-									char szChannel[6] = { 0 };
-									float scaleFactor = 1.0;
-									float scaleFactorOffset = 0.0;
-									long startAngleDiv10000 = 1;
-									long sizeOfSingleAngularStepDiv10000 = 1;
-									double startAngle = 0.0;
-									double sizeOfSingleAngularStep = 0.0;
-									short numberOfItems = 0;
-									strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
-#if 0 // prepared for multiecho parsing
-									int channelCnt = 0;
-									int rssiCnt = 0;
+									process_dist,
+									process_vang,
+									process_rssi,
+									process_idle
+								};
+								for (int processLoop = 0; processLoop < 2; processLoop++)
+								{
+									int channelCnt;
+									int rssiCnt;
 									bool bCont = true;
+									int vangleCnt;
+									datagram_parse_task task = process_idle;
+									bool parsePacket = true;
+									parseOff = 64;
+									bool processData = false;
+
+									if (processLoop == 0)
+									{
+										channelCnt = 0;
+										rssiCnt = 0;
+										vangleCnt = 0;
+									}
+
+									if (processLoop == 1)
+									{
+										processData = true;
+										numEchos = channelCnt;
+										msg.ranges.resize(numberOfItems * numEchos);
+										if (rssiCnt > 0)
+										{
+											msg.intensities.resize(numberOfItems * rssiCnt);
+										}
+										else
+										{
+										}
+										if (vangleCnt > 0) // should be 0 or 1
+										{
+											vang_vec.resize(numberOfItems * vangleCnt);
+										}
+										else
+										{
+											vang_vec.clear();
+										}
+										echoMask = (1 << numEchos) - 1;
+
+										// reset count. We will use the counter for index calculation now.
+										channelCnt = 0;
+										rssiCnt = 0;
+										vangleCnt = 0;
+
+									}
+
+									szChannel[6] = { 0 };
+									scaleFactor = 1.0;
+									scaleFactorOffset = 0.0;
+									startAngleDiv10000 = 1;
+									sizeOfSingleAngularStepDiv10000 = 1;
+									startAngle = 0.0;
+									sizeOfSingleAngularStep = 0.0;
+									numberOfItems = 0;
+									strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
+#if 1 // prepared for multiecho parsing
+
+									bCont = true;
+									bool doVangVecProc = false;
 									// try to get number of DIST and RSSI from binary data
+									task = process_idle;
 									do
 									{
+										task = process_idle;
+										doVangVecProc = false;
+
 										szChannel[5] = '\0';
 										strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
 										bCont = false;
-										if (strstr(szChannel,"DIST") == szChannel) {
+										if (strstr(szChannel, "DIST") == szChannel) {
+											task = process_dist;
 											channelCnt++;
 											bCont = true;
-  										 memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
- 											swap_endian((unsigned char*) &numberOfItems, 2);
-											 parseOff += 21 + 2 * numberOfItems;
+											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+											swap_endian((unsigned char*)&numberOfItems, 2);
+
 										}
-										if (strstr(szChannel,"VANG") == szChannel) {
+										if (strstr(szChannel, "VANG") == szChannel) {
+											vangleCnt++;
+											task = process_vang;
+											bCont = true;
+											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+											swap_endian((unsigned char*)&numberOfItems, 2);
+
+											vang_vec.resize(numberOfItems);
+
+										}
+										if (strstr(szChannel, "RSSI") == szChannel) {
+											task = process_rssi;
 											rssiCnt++;
 											bCont = true;
 											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
-											swap_endian((unsigned char*) &numberOfItems, 2);
-											parseOff += 21 + 2 * numberOfItems;
+											swap_endian((unsigned char*)&numberOfItems, 2);
+
 										}
-										if (strstr(szChannel,"RSSI") == szChannel) {
-											rssiCnt++;
-											bCont = true;
+										if (bCont)
+										{
+											memcpy(&scaleFactor, receiveBuffer + parseOff + 5, 4);
+											memcpy(&scaleFactorOffset, receiveBuffer + parseOff + 9, 4);
+											memcpy(&startAngleDiv10000, receiveBuffer + parseOff + 13, 4);
+											memcpy(&sizeOfSingleAngularStepDiv10000, receiveBuffer + parseOff + 17, 2);
 											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
-											swap_endian((unsigned char*) &numberOfItems, 2);
+
+											swap_endian((unsigned char*)&scaleFactor, 4);
+											swap_endian((unsigned char*)&scaleFactorOffset, 4);
+											swap_endian((unsigned char*)&startAngleDiv10000, 4);
+											swap_endian((unsigned char*)&sizeOfSingleAngularStepDiv10000, 2);
+											swap_endian((unsigned char*)&numberOfItems, 2);
+
+											if (processData)
+											{
+												unsigned short *data = (unsigned short *)(receiveBuffer + parseOff + 21);
+
+												unsigned char *swapPtr = (unsigned char *)data;
+												for (int i = 0; i < numberOfItems * 2; i += 2)
+												{
+													unsigned char tmp;
+													tmp = swapPtr[i + 1];
+													swapPtr[i + 1] = swapPtr[i];
+													swapPtr[i] = tmp;
+												}
+												int idx = 0;
+												switch (task)
+												{
+
+												case process_dist:
+													msg.angle_min = startAngle;
+													msg.angle_increment = sizeOfSingleAngularStep;
+													msg.angle_max = startAngle + (numberOfItems - 1) * sizeOfSingleAngularStep;
+													for (int i = 0; i < numberOfItems; i++)
+													{
+														idx = i + numberOfItems * (channelCnt - 1);
+														msg.ranges[idx] = (float)data[i] * scaleFactor + scaleFactorOffset;
+													}
+													break;
+												case process_rssi:
+													for (int i = 0; i < numberOfItems; i++)
+													{
+														idx = i + numberOfItems * (rssiCnt - 1);
+														msg.intensities[idx] = (float)data[i] * scaleFactor + scaleFactorOffset;
+													}
+													break;
+
+												case process_vang:
+													for (int i = 0; i < numberOfItems; i++)
+													{
+														vang_vec[i] = (float)data[i] * scaleFactor + scaleFactorOffset;
+													}
+													break;
+												}
+											}
 											parseOff += 21 + 2 * numberOfItems;
 										}
 									} while (bCont);
+								}
 #endif
-									if (strcmp(szChannel, "DIST1") == 0)
+#if 0
+								parseOff = 64;
+								strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
+								if (strcmp(szChannel, "DIST1") == 0)
+								{
+									// For 12.5 is the pattern 0x41 0x48 0x00 0x00
+									memcpy(&scaleFactor, receiveBuffer + parseOff + 5, 4);
+									memcpy(&scaleFactorOffset, receiveBuffer + parseOff + 9, 4);
+									memcpy(&startAngleDiv10000, receiveBuffer + parseOff + 13, 4);
+									memcpy(&sizeOfSingleAngularStepDiv10000, receiveBuffer + parseOff + 17, 2);
+									memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+
+									swap_endian((unsigned char*)&scaleFactor, 4);
+									swap_endian((unsigned char*)&scaleFactorOffset, 4);
+									swap_endian((unsigned char*)&startAngleDiv10000, 4);
+									swap_endian((unsigned char*)&sizeOfSingleAngularStepDiv10000, 2);
+									swap_endian((unsigned char*)&numberOfItems, 2);
+
+									startAngle = startAngleDiv10000 / 10000.00;
+									sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
+									sizeOfSingleAngularStep *= (M_PI / 180.0);
+									numEchos = 1;
+									echoMask = 1;
+									msg.angle_min = startAngle;
+									msg.angle_increment = sizeOfSingleAngularStep;
+									msg.angle_max = startAngle + (numberOfItems - 1) * sizeOfSingleAngularStep;
+									msg.ranges.clear();
+									msg.intensities.clear();
+
+									msg.ranges.resize(numberOfItems);
+									msg.intensities.resize(numberOfItems);
+
+									unsigned short *distData = (unsigned short *)(receiveBuffer + parseOff + 21);
+
+									unsigned char *swapPtr = (unsigned char *)distData;
+									for (int i = 0; i < numberOfItems * 2; i += 2)
 									{
-										// For 12.5 is the pattern 0x41 0x48 0x00 0x00
-										memcpy(&scaleFactor,        receiveBuffer + parseOff + 5, 4);
-										memcpy(&scaleFactorOffset,  receiveBuffer + parseOff + 9, 4);
-										memcpy(&startAngleDiv10000, receiveBuffer + parseOff + 13, 4);
-										memcpy(&sizeOfSingleAngularStepDiv10000, receiveBuffer + parseOff + 17, 2);
-										memcpy(&numberOfItems,      receiveBuffer + parseOff + 19, 2);
-
-										swap_endian((unsigned char*) &scaleFactor, 4);
-										swap_endian((unsigned char*) &scaleFactorOffset, 4);
-										swap_endian((unsigned char*) &startAngleDiv10000,4);
-										swap_endian((unsigned char*) &sizeOfSingleAngularStepDiv10000, 2);
-										swap_endian((unsigned char*) &numberOfItems, 2);
-
-										startAngle = startAngleDiv10000 / 10000.00;
-										sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
-                    sizeOfSingleAngularStep *= ( M_PI/180.0);
-										numEchos = 1;
-										echoMask = 1;
-										msg.angle_min = startAngle;
-										msg.angle_increment = sizeOfSingleAngularStep;
-										msg.angle_max = startAngle + (numberOfItems - 1) * sizeOfSingleAngularStep;
-										msg.ranges.clear();
-										msg.intensities.clear();
-
-										msg.ranges.resize(numberOfItems);
-										msg.intensities.resize(numberOfItems);
-
-										unsigned short *distData = (unsigned short *)(receiveBuffer + parseOff + 21);
-
-										unsigned char *swapPtr = (unsigned char *)distData;
-										for (int i = 0; i < numberOfItems * 2; i+= 2)
-										{
-											unsigned char tmp;
-											tmp = swapPtr[i+1];
-											swapPtr[i + 1] = swapPtr[i];
-											swapPtr[i] = tmp;
-										}
-										for (int i = 0; i < numberOfItems; i++)
-										{
-											msg.ranges[i] = (float)distData[i] *0.001*scaleFactor + scaleFactorOffset;
-
-										}
-										// 30° --> 0 04 93 E0h
+										unsigned char tmp;
+										tmp = swapPtr[i + 1];
+										swapPtr[i + 1] = swapPtr[i];
+										swapPtr[i] = tmp;
 									}
-									parsePacket = false; // HIER WEITERMACHEN!!!
-								} while (parsePacket);
-									
+									for (int i = 0; i < numberOfItems; i++)
+									{
+										msg.ranges[i] = (float)distData[i] * 0.001*scaleFactor + scaleFactorOffset;
+
+									}
+									// 30° --> 0 04 93 E0h
+								}
+#endif
+
+
 
 								elevAngle = elevAngleX200 / 200.0;
 								scanFrequency = scanFrequencyX100 / 100.0;
-								
+
 								/*
 								HIER WEITERMACHEN!!!!
 								*/
@@ -2006,11 +2159,11 @@ namespace sick_scan
 								Offset 50: Layer als Vielfaches von 200 des Winkelwertes als Signed Short
 								Offset 52: 000003e8 // Typo in MANUAL!!
 								Offset 62: Output Channel 2
-								Offset 64: steht DIST1 
+								Offset 64: steht DIST1
 								Offset 69: Real-Value als Multipler
 								Offset 77: StartAngle 00 04 93 E0h
 								Offset 81: Winkelinkrement
-								Offset 83: Werteanzahl 03 9c (924 dec. Werte) 
+								Offset 83: Werteanzahl 03 9c (924 dec. Werte)
 								printf("Try to parse ...");
 								*/
 							}
@@ -2108,7 +2261,8 @@ namespace sick_scan
 							msg.ranges = std::vector<float>(
 								rangeTmp.begin() + startOffset,
 								rangeTmp.begin() + endOffset);
-							if (endOffset >= intensityTmp.size() && (intensityTmp.size() > 0))
+							// check also for MRS1104 
+							if (endOffset <= intensityTmp.size() && (intensityTmp.size() > 0))
 							{
 								msg.intensities = std::vector<float>(
 									intensityTmp.begin() + startOffset,
@@ -2134,16 +2288,17 @@ namespace sick_scan
 							if (sendMsg & 	outputChannelFlagId)  // publish only configured channels - workaround for cfg-bug MRS1104
 							{
 								diagnosticPub_->publish(msg);
-							}
+						}
 #else
 							printf("MSG received...");
 #endif
-						}
 					}
+				}
 
 
 					if (publishPointCloud == true)
 					{
+						bool elevationPreCalculated = false;
 						double elevationAngleDegree = 0.0;
 
 						const int numChannels = 4; // x y z i (for intensity)
@@ -2174,6 +2329,7 @@ namespace sick_scan
 						// Copy to pointcloud
 						int layer = 0;
 						int baseLayer = 0;
+						bool useGivenElevationAngle = true;
 						switch (numOfLayers)
 						{
 						case 1: // TIM571 etc.
@@ -2191,15 +2347,19 @@ namespace sick_scan
 							// 0.0436332 /*2.5 degrees*/;
 							break;
 						case 24: // Preparation for MRS6000
-							// printf("Seq: %d\n", msg.header.seq);
 							baseLayer = -1;
-							// -26.38
-							// 
+#if 0
 							layer = (msg.header.seq - (-2638)) / 125;
-							layer =(23-layer) -1;
+							layer = (23 - layer) - 1;
 							elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
 							elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
-							// 0.0436332 /*2.5 degrees*/;
+#endif
+							
+							elevationPreCalculated = true;
+							if (vang_vec.size() > 0)
+							{
+								useGivenElevationAngle = true;
+							}
 							break;
 						default:assert(0); break; // unsupported
 
@@ -2214,13 +2374,30 @@ namespace sick_scan
 							{
 								geometry_msgs::Point32 point;
 								float range_meter = rangeTmp[iEcho * rangeNum + i];
-                float phi = angle; // azimuth angle
-                float alpha = layer * elevationAngleDegree;
+								float phi = angle; // azimuth angle
+								float alpha = 0.0;  // elevation angle
 
-                // Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
-                point.x = range_meter * cos(alpha) * cos(phi);
-                point.y = range_meter * cos(alpha) * sin(phi);
-                point.z = range_meter * sin(alpha);
+								if (useGivenElevationAngle) // FOR MRS6124
+								{
+									alpha = -vang_vec[i] * deg2rad_const;
+								}
+								else
+								{
+									if (elevationPreCalculated) // FOR MRS6124 without VANGL
+									{
+										alpha = elevationAngleInRad;
+									}
+									else
+									{
+										alpha = layer * elevationAngleDegree; // for MRS1104
+									}
+								}
+
+
+								// Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
+								point.x = range_meter * cos(alpha) * cos(phi);
+								point.y = range_meter * cos(alpha) * sin(phi);
+								point.z = range_meter * sin(alpha);
 
 								//	cloud_.points[(layer - baseLayer) * msg.ranges.size() + i] = point;
 
@@ -2231,7 +2408,7 @@ namespace sick_scan
 								float intensity = 0.0;
 								if (config_.intensity)
 								{
-									intensity = msg.intensities[aiValidEchoIdx[iEcho] * rangeNum + i];
+									intensity = intensityTmp[aiValidEchoIdx[iEcho] * rangeNum + i];
 
 								}
 								memcpy(ptr + 0, &(point.x), sizeof(float));
@@ -2247,7 +2424,7 @@ namespace sick_scan
 
 						}
 						// if ( (msg.header.seq == 0) || (layerOff == 0)) // FIXEN!!!!
-						if ( (msg.header.seq == 0) || ( msg.header.seq == 237) )
+						if ((msg.header.seq == 0) || (msg.header.seq == 237))
 						{  // pulish, if seq == 0 // true for every TIM5xx scan, true for every 4th for LMS1000 and MRS1104
 						  //							cloud_.header.frame_id = msg.header.frame_id;
 #ifndef _MSC_VER
@@ -2255,12 +2432,12 @@ namespace sick_scan
 #else
 							printf("PUBLISH:\n");
 #endif
-						}
 					}
-				}
+			}
+		}
 				// Start Point
 				buffer_pos = dend + 1;
-			} // end of while loop
+} // end of while loop
 
 			return ExitSuccess; // return success to continue looping
 		}
@@ -2345,6 +2522,7 @@ namespace sick_scan
 			std::string keyWord0 = "sMN SetAccessMode";
 			std::string keyWord1 = "sWN FREchoFilter";
 			std::string keyWord2 = "sEN LMDscandata";
+			std::string keyWord3 = "sWN LMDscandatacfg";
 			std::string cmdAscii = requestAscii;
 			int copyUntilSpaceCnt = 2;
 			int spaceCnt = 0;
@@ -2382,10 +2560,37 @@ namespace sick_scan
 			if (cmdAscii.find(keyWord2) != std::string::npos)
 			{
 				int scanDataStatus = 0;
-				int keyWord1Len = keyWord1.length();
-				sscanf(requestAscii + keyWord1Len + 1, " %d", &scanDataStatus);
+				int keyWord2Len = keyWord2.length();
+				sscanf(requestAscii + keyWord2Len + 1, " %d", &scanDataStatus);
 				buffer[0] = (unsigned char)(0xFF & scanDataStatus);
 				bufferLen = 1;
+			}
+
+			if (cmdAscii.find(keyWord3) != std::string::npos)
+			{
+				int scanDataStatus = 0;
+				int keyWord3Len = keyWord3.length();
+				int dummyArr[12] = { 0 };
+				if (12 == sscanf(requestAscii + keyWord3Len + 1, " %d %d %d %d %d %d %d %d %d %d %d %d",
+					&dummyArr[0], &dummyArr[1], &dummyArr[2],
+					&dummyArr[3], &dummyArr[4], &dummyArr[5],
+					&dummyArr[6], &dummyArr[7], &dummyArr[8],
+					&dummyArr[9], &dummyArr[10], &dummyArr[11]))
+				{
+					for (int i = 0; i < 13; i++)
+					{
+						buffer[i] = 0x00;
+					}
+					buffer[0] = (unsigned char)(0xFF & (dummyArr[0]));
+					buffer[1] = 0x00;
+					buffer[2] = (unsigned char)(0xFF & dummyArr[2]);  // Remission
+					buffer[3] = 0x01; // for MRS6124 16bit-Remission-Data  - should always be true
+
+					buffer[12] = (unsigned char)(0xFF & (dummyArr[11]));  // nth-Scan
+
+					bufferLen = 13;
+				}
+
 			}
 
 
@@ -2402,7 +2607,7 @@ namespace sick_scan
 						c -= '0';
 					}
 #endif
-				}
+			}
 				requestBinary->push_back(c);
 				if (requestAscii[i] == 0x20) // space
 				{
@@ -2413,7 +2618,7 @@ namespace sick_scan
 					}
 				}
 
-			}
+		}
 
 			for (int i = 0; i < bufferLen; i++) // append variable data
 			{
