@@ -1,4 +1,8 @@
 /**
+* Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
+* Copyright (C) 2017, SICK AG, Waldkirch
+*
+* All rights reserved.
 * \class Network interface
 *
 * \brief Interface for TCP/IP 
