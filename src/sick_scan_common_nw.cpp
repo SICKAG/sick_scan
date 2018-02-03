@@ -1,6 +1,16 @@
-//
-// Created by michael on 1/22/18.
-//
+/**
+* \class Network interface
+*
+* \brief Interface for TCP/IP 
+*
+* This class provides an interface for TCP/IP communication. 
+* It also contains simple methods for accessing the essential contents of the SOPAS message 
+* (for example, determining the payload and the SOPAS command used).
+* It based on an example of SICK AG.
+*
+* Doxygen example: http://www-numi.fnal.gov/offline_software/srt_public_context/WebDocs/doxygen-howto.html
+*
+*/
 
 #include "sick_scan/sick_scan_common_nw.h"
 #include "sick_scan/tcp/colaa.hpp"
@@ -9,12 +19,6 @@
 #include "sick_scan/tcp/tcp.hpp"
 #include <map>	// for std::map
 
-//
-// SickScanCommonNw.cpp
-//
-//  Created on: 18.07.2011
-//      Author: sick
-//
 #include "sick_scan/tcp/tcp.hpp"
 #include "sick_scan/tcp/errorhandler.hpp"
 #include "sick_scan/tcp/toolbox.hpp"
@@ -27,10 +31,6 @@ SickScanCommonNw::SickScanCommonNw()
       m_beVerbose = false;
 
     }
-
-
-
-
 
 SickScanCommonNw::~SickScanCommonNw()
     {
@@ -84,6 +84,8 @@ bool SickScanCommonNw::disconnect()
 //
 // true = Erfolgreich.
 //
+
+
     bool SickScanCommonNw::connect()
     {
 
@@ -509,8 +511,7 @@ bool SickScanCommonNw::disconnect()
     SopasEventMessage::SopasEventMessage(BYTE* buffer, SopasProtocol protocol, UINT32 frameLength) :
             m_buffer(buffer), m_protocol(protocol), m_frameLength(frameLength)
     {
-//      detectEncoding();
-//      detectMessageType();
+//      Constructor
     }
 
 
@@ -532,7 +533,12 @@ bool SickScanCommonNw::disconnect()
     }
 
 
-
+	/** \brief Returns two character long command 
+	* \return string container command 
+	*
+	* Returns the core command of a sopas message (e.g. "WN") for ..sWN <whatever>
+	*
+	*/
     std::string SopasEventMessage::getCommandString() const
     {
       std::string commandString;
@@ -550,11 +556,14 @@ bool SickScanCommonNw::disconnect()
     }
 
 
-//
-// Returns a pointer to the first payload byte.
-// CoLa-A: Points beyond the leading "0x02" to the "s..." data.
-// CoLa-B: Points beyond the magic word and length bytes, to the "s..." data.
-//
+
+	/** \brief Returns a pointer to the first payload byte.
+	* \return Pointer to payload part of message
+	*
+	* Returns a pointer to the first payload byte.
+    * CoLa-A: Points beyond the leading "0x02" to the "s..." data.
+    * CoLa-B: Points beyond the magic word and length bytes, to the "s..." data.
+	*/
     BYTE* SopasEventMessage::getPayLoad()
     {
       BYTE* bufferPos = NULL;
@@ -572,6 +581,13 @@ bool SickScanCommonNw::disconnect()
       return bufferPos;
     }
 
+
+	/** \brief get SOPAS raw data include header and CRC
+	* \return Pointer to raw data message
+	*
+	* The raw data is stored in m_buffer.
+	* This function returns a pointer to this buffer.
+	*/
 	BYTE* SopasEventMessage::getRawData()
 	{
 		BYTE* bufferPos = NULL;
