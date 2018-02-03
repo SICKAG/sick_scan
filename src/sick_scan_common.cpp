@@ -74,16 +74,16 @@
 #endif
 
 #define deg2rad_const (0.017453292519943295769236907684886f)
+
 #include "sick_scan/tcp/colaa.hpp"
 #include "sick_scan/tcp/colab.hpp"
 
 #include <map>
-
 #include <climits>
 
 /*
   Universal swapping function
-  void *ptr: Point to variable, which should be swapped.
+  unsigned char *ptr: Point to variable, which should be swapped.
   numBytes : size of variable in bytes
 */
 void swap_endian(unsigned char *ptr, int numBytes)
@@ -1985,7 +1985,7 @@ namespace sick_scan
 
 									}
 
-									szChannel[6] = { 0 };
+									szChannel[6] = '\0';
 									scaleFactor = 1.0;
 									scaleFactorOffset = 0.0;
 									startAngleDiv10000 = 1;
@@ -2065,13 +2065,17 @@ namespace sick_scan
 												{
 
 												case process_dist:
+													startAngle = startAngleDiv10000 / 10000.00;
+													sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
+													sizeOfSingleAngularStep *= (M_PI / 180.0);
+
 													msg.angle_min = startAngle;
 													msg.angle_increment = sizeOfSingleAngularStep;
 													msg.angle_max = startAngle + (numberOfItems - 1) * sizeOfSingleAngularStep;
 													for (int i = 0; i < numberOfItems; i++)
 													{
 														idx = i + numberOfItems * (channelCnt - 1);
-														msg.ranges[idx] = (float)data[i] * scaleFactor + scaleFactorOffset;
+														msg.ranges[idx] = (float)data[i] * 0.001 * scaleFactor + scaleFactorOffset;
 													}
 													break;
 												case process_rssi:
@@ -2348,9 +2352,9 @@ namespace sick_scan
 							break;
 						case 24: // Preparation for MRS6000
 							baseLayer = -1;
-#if 0
 							layer = (msg.header.seq - (-2638)) / 125;
 							layer = (23 - layer) - 1;
+#if 0
 							elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
 							elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
 #endif
@@ -2416,6 +2420,7 @@ namespace sick_scan
 								memcpy(ptr + 8, &(point.z), sizeof(float));
 								memcpy(ptr + 12, &(intensity), sizeof(float));
 
+								
 								angle += msg.angle_increment;
 							}
 							// Publish
