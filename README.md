@@ -22,7 +22,7 @@ ROS Device Driver for Sick Laserscanner - supported scanner types:
 
 | **device name**    |  **part no.**                                                                                                                | **description**                                | **tested?**     |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|:---------------:|
-| MRS6124            | unpublished                                                                                                                  | 24 layer (standard)                            | ✔ [experimental]|
+| MRS6124            | [6065086](https://www.sick.com/de/de/mess-und-detektionsloesungen/3d-lidar-sensoren/mrs6000/mrs6124r-131001/p/p533545)                                                                                                                     | 24 layer (standard)                            | ✔ [experimental]|
 | MRS1104            | [1081208](https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044) | 4 layer                                        | ✔ [experimental]|
 | TiM551             | [1060445](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)           | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [experimental]|
 |                    |                                                                                                                              |  ang. resolution: 1.00[deg] Scan-Rate: 15 Hz   |                 |
@@ -49,8 +49,7 @@ roslaunch sick_scan sick_tim_5xx.launch
 - General: Brand new driver especially for MRS6124 
 - Stability issues: Driver is experimental and not well tested
 - Binary mode: MRS6124 must be switched to binary mode to ensure transportation of scan data
-- Support of TiM-Series and MRS1124: Experimental and currently untested
-- Echo: Only one echo with no amplitude information supported
+- Support of TiM-Series, LMS1104 and MRS1124: Experimental and currently untested
 - Coordinate transformation must be further tested
 
 
@@ -61,7 +60,17 @@ roslaunch sick_scan sick_tim_5xx.launch
 3. View node startup output wether the IP connection could be established 
 4. Check the scanner status using the LEDs on the device. The LED codes are described in the above mentioned operation manuals.
 5. Further testing and troubleshooting informations can found in the file test/readme_testplan.txt
-
+6. If you stop the scanner in your debugging IDE or by other hard interruption (like Ctrl-C), you must wait until 60 sec. before
+   the scanner is up and running again. During this time the MRS6124 reconnects twice. 
+   If you do not wait this waiting time you could see one of the following messages:
+   * TCP connection error
+   * Error-Message 0x0d
+7. Amplitude values in rviz: If you see only one color in rviz try the following:
+   Set the min/max-Range of intensity display in the rane [0...200] and switch on the intensity flag in the lauch file  
+8. In case of network problems check your own ip address and the ip address of your laser scanner (by using SOPAS ET).
+   * Own IP-address: ifconfig|grep "inet addr"
+   * Try to ping scanner ip address (used in launch file) 
+   
 ## SUPPORT
  
 * In case of technical support please open a new issue. 
