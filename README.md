@@ -66,9 +66,9 @@ roslaunch sick_scan sick_tim_5xx.launch
    * TCP connection error
    * Error-Message 0x0d
 7. Amplitude values in rviz: If you see only one color in rviz try the following:
-   Set the min/max-Range of intensity display in the rane [0...200] and switch on the intensity flag in the lauch file  
+   Set the min/max-Range of intensity display in the range [0...200] and switch on the intensity flag in the lauch file  
 8. In case of network problems check your own ip address and the ip address of your laser scanner (by using SOPAS ET).
-   * Own IP-address: ifconfig|grep "inet addr"
+   * List of own IP-addresses: ifconfig|grep "inet addr"
    * Try to ping scanner ip address (used in launch file) 
    
 ## SUPPORT
