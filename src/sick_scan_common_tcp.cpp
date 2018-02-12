@@ -37,7 +37,7 @@
 *  Last modified: 12th Dec 2017
 *
 *      Authors:
-*              Michael Lehning <michael.lehning@lehning.de>
+*         Michael Lehning <michael.lehning@lehning.de>
 *         Jochen Sprickerhof <jochen@sprickerhof.de>
 *         Martin Günther <mguenthe@uos.de>
 *
