@@ -2099,77 +2099,11 @@ namespace sick_scan
 									} while (bCont);
 								}
 #endif
-#if 0
-								parseOff = 64;
-								strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
-								if (strcmp(szChannel, "DIST1") == 0)
-								{
-									// For 12.5 is the pattern 0x41 0x48 0x00 0x00
-									memcpy(&scaleFactor, receiveBuffer + parseOff + 5, 4);
-									memcpy(&scaleFactorOffset, receiveBuffer + parseOff + 9, 4);
-									memcpy(&startAngleDiv10000, receiveBuffer + parseOff + 13, 4);
-									memcpy(&sizeOfSingleAngularStepDiv10000, receiveBuffer + parseOff + 17, 2);
-									memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
-
-									swap_endian((unsigned char*)&scaleFactor, 4);
-									swap_endian((unsigned char*)&scaleFactorOffset, 4);
-									swap_endian((unsigned char*)&startAngleDiv10000, 4);
-									swap_endian((unsigned char*)&sizeOfSingleAngularStepDiv10000, 2);
-									swap_endian((unsigned char*)&numberOfItems, 2);
-
-									startAngle = startAngleDiv10000 / 10000.00;
-									sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
-									sizeOfSingleAngularStep *= (M_PI / 180.0);
-									numEchos = 1;
-									echoMask = 1;
-									msg.angle_min = startAngle;
-									msg.angle_increment = sizeOfSingleAngularStep;
-									msg.angle_max = startAngle + (numberOfItems - 1) * sizeOfSingleAngularStep;
-									msg.ranges.clear();
-									msg.intensities.clear();
-
-									msg.ranges.resize(numberOfItems);
-									msg.intensities.resize(numberOfItems);
-
-									unsigned short *distData = (unsigned short *)(receiveBuffer + parseOff + 21);
-
-									unsigned char *swapPtr = (unsigned char *)distData;
-									for (int i = 0; i < numberOfItems * 2; i += 2)
-									{
-										unsigned char tmp;
-										tmp = swapPtr[i + 1];
-										swapPtr[i + 1] = swapPtr[i];
-										swapPtr[i] = tmp;
-									}
-									for (int i = 0; i < numberOfItems; i++)
-									{
-										msg.ranges[i] = (float)distData[i] * 0.001*scaleFactor + scaleFactorOffset;
-
-									}
-									// 30° --> 0 04 93 E0h
-								}
-#endif
-
-
 
 								elevAngle = elevAngleX200 / 200.0;
 								scanFrequency = scanFrequencyX100 / 100.0;
 
-								/*
-								HIER WEITERMACHEN!!!!
-								*/
-								/*
-								// "sSN LMDscandata "
-								Offset 50: Layer als Vielfaches von 200 des Winkelwertes als Signed Short
-								Offset 52: 000003e8 // Typo in MANUAL!!
-								Offset 62: Output Channel 2
-								Offset 64: steht DIST1
-								Offset 69: Real-Value als Multipler
-								Offset 77: StartAngle 00 04 93 E0h
-								Offset 81: Winkelinkrement
-								Offset 83: Werteanzahl 03 9c (924 dec. Werte)
-								printf("Try to parse ...");
-								*/
+
 							}
 						}
 					}
@@ -2178,7 +2112,7 @@ namespace sick_scan
 					// change Parsing Mode
 					dataToProcess = false; // only one package allowed - no chaining
 				}
-				else
+				else // Parsing of Ascii-Ending of datagram
 				{
 					dstart = strchr(buffer_pos, 0x02);
 					if (dstart != NULL)
@@ -2232,6 +2166,10 @@ namespace sick_scan
 						aiValidEchoIdx[i] = 0;
 					}
 				}
+
+
+        int numOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
+
 				if (success == ExitSuccess)
 				{
 					std::vector<float> rangeTmp = msg.ranges;  // copy all range value
@@ -2289,10 +2227,14 @@ namespace sick_scan
 							}
 
 #ifndef _MSC_VER
+              if (numOfLayers > 4)
+              {
+                sendMsg = false; // too many layers for publish as scan message. Only pointcloud messages will be pub.
+              }
 							if (sendMsg & 	outputChannelFlagId)  // publish only configured channels - workaround for cfg-bug MRS1104
 							{
 								diagnosticPub_->publish(msg);
-						}
+					    }
 #else
 							printf("MSG received...");
 #endif
@@ -2306,7 +2248,7 @@ namespace sick_scan
 						double elevationAngleDegree = 0.0;
 
 						const int numChannels = 4; // x y z i (for intensity)
-						int numOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
+
 
 						cloud_.header.stamp = ros::Time::now();
 						cloud_.header.frame_id = config_.frame_id;
@@ -2328,12 +2270,12 @@ namespace sick_scan
 
 						cloud_.data.resize(cloud_.row_step * cloud_.height);
 
-						// Sehr hilfreich: https://answers.ros.org/question/191265/pointcloud2-access-data/
+						// Helpful: https://answers.ros.org/question/191265/pointcloud2-access-data/
 						// https://gist.github.com/yuma-m/b5dcce1b515335c93ce8
 						// Copy to pointcloud
 						int layer = 0;
 						int baseLayer = 0;
-						bool useGivenElevationAngle = true;
+						bool useGivenElevationAngle = false;
 						switch (numOfLayers)
 						{
 						case 1: // TIM571 etc.
@@ -2430,8 +2372,16 @@ namespace sick_scan
 						}
 						// if ( (msg.header.seq == 0) || (layerOff == 0)) // FIXEN!!!!
 						if ((msg.header.seq == 0) || (msg.header.seq == 237))
-						{  // pulish, if seq == 0 // true for every TIM5xx scan, true for every 4th for LMS1000 and MRS1104
-						  //							cloud_.header.frame_id = msg.header.frame_id;
+						{
+              // Following cases are interesting:
+              // LMS5xx: seq is always 0 -> publish every scan
+              // MRS1104: Every 4th-Layer is 0 -> publish pointcloud every 4th layer message
+              // LMS1104: Publish every layer. The timing for the LMS1104 seems to be:
+              //          Every 67 ms receiving of a new scan message
+              //          Scan message contains 367 measurements
+              //          angle increment is 0.75° (yields 274,5° covery -> OK)
+              // MRS6124: Publish very 24th layer at the layer = 237 , MRS6124 contains no sequence with seq 0
+;
 #ifndef _MSC_VER
 							cloud_pub_.publish(cloud_);
 #else
