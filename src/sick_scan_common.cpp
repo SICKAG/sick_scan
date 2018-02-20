@@ -897,6 +897,7 @@ namespace sick_scan
 		// 4. Add handling of reply by using for the pattern "REPLY_HANDLING" in this code and adding a new case instruction.
 		// That's all!
 
+
 		volatile bool useBinaryCmd = false;
 		if (this->parser_->getCurrentParamPtr()->getUseBinaryProtocol()) // hard coded for every scanner type
 		{
