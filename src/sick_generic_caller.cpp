@@ -86,7 +86,8 @@ int main(int argc, char **argv)
 
 	if (argc == 1) // just for testing without calling by roslaunch
 	{
-		strcpy(nameTagVal, "__name:=sick_tim_5xx");
+		//strcpy(nameTagVal, "__name:=sick_tim_5xx");
+		strcpy(nameTagVal, "__name:=sick_mrs_6xxx");
 		// strcpy(nameTagVal, "__name:=sick_mrs_1xxx"); // dann IP-Adresse auf ...2 stellen
 		strcpy(logTagVal, "__log:=/tmp/tmp.log");
 		strcpy(internalDebugTagVal, "__internalDebug:=1");

@@ -781,18 +781,19 @@ namespace sick_scan
 		// After definition of command, we specify the command sequence for scanner initalisation
 
 		// try for MRS1104
-
 		sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3);
-#if 0
+
 		if (parser_->getCurrentParamPtr()->getUseBinaryProtocol())
 		{
-			sopasCmdChain.push_back(CMD_SET_TO_COLA_B_PROTOCOL);
+		//	sopasCmdChain.push_back(CMD_SET_TO_COLA_B_PROTOCOL);
 		}
 		else
 		{
-			sopasCmdChain.push_back(CMD_SET_TO_COLA_A_PROTOCOL);
+			//for binary Mode Testing
+		//	sopasCmdChain.push_back(CMD_SET_TO_COLA_A_PROTOCOL);
 		}
-#endif
+		
+
 		if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
 		{
 			// do not stop measurement for TiM571 otherwise the scanner would not start after start measurement
@@ -820,6 +821,7 @@ namespace sick_scan
 		sopasCmdChain.push_back(CMD_OPERATION_HOURS);
 		sopasCmdChain.push_back(CMD_POWER_ON_COUNT);
 		sopasCmdChain.push_back(CMD_LOCATION_NAME);
+
 
 		// ML: define here the command sequence
 
@@ -895,11 +897,13 @@ namespace sick_scan
 		// 4. Add handling of reply by using for the pattern "REPLY_HANDLING" in this code and adding a new case instruction.
 		// That's all!
 
-		bool useBinaryCmd = false;
-		if (this->parser_->getCurrentParamPtr()->getUseBinaryProtocol())
+		volatile bool useBinaryCmd = false;
+		if (this->parser_->getCurrentParamPtr()->getUseBinaryProtocol()) // hard coded for every scanner type
 		{
-			useBinaryCmd = true;
+			useBinaryCmd = true;  // shall we task ascii or binary with the scanner type??
 		}
+		bool useBinaryCmdNow = false;
+		int maxCmdLoop = 2; // try binary and ascii during startup
 		for (int i = 0; i < this->sopasCmdChain.size(); i++)
 		{
 			ros::Duration(0.2).sleep();   // could maybe removed
@@ -909,17 +913,38 @@ namespace sick_scan
 			std::vector<unsigned char> replyDummy;
 			std::vector<unsigned char> reqBinary;
 			ROS_DEBUG("Command: %s", stripControl(sopasCmd).c_str());
-			if (useBinaryCmd)
+			
+			// start always with ascii command
+			// and switch to either binary or ascii after switching the command mode
+			// via ... command
+			for (int iLoop = 0; iLoop < maxCmdLoop; iLoop++)
 			{
-				this->convertAscii2BinaryCmd(sopasCmd.c_str(), &reqBinary);
-				result = sendSopasAndCheckAnswer(reqBinary, &replyDummy);
-				sopasReplyBinVec[cmdId] = replyDummy;
-			}
-			else
-			{
-				result = sendSopasAndCheckAnswer(sopasCmd.c_str(), &replyDummy);
-			}
+				if (iLoop == 0)
+				{
+					useBinaryCmdNow = useBinaryCmd; // start with expected value
+				}
+				else
+				{
+					useBinaryCmdNow = !useBinaryCmdNow;// try the other option
+					useBinaryCmd = useBinaryCmdNow; // and use it from now on as default
 
+				}
+				if (useBinaryCmdNow)
+				{
+					this->convertAscii2BinaryCmd(sopasCmd.c_str(), &reqBinary);
+					result = sendSopasAndCheckAnswer(reqBinary, &replyDummy);
+					sopasReplyBinVec[cmdId] = replyDummy;
+				}
+				else
+				{
+					result = sendSopasAndCheckAnswer(sopasCmd.c_str(), &replyDummy);
+				}
+				if (result == 0) // command sent successfully
+				{
+					// useBinaryCmd holds information about last successful command mode
+					break;
+				}
+			}
 			if (result != 0)
 			{
 				ROS_ERROR("%s", sopasCmdErrMsg[cmdId].c_str());
@@ -934,8 +959,16 @@ namespace sick_scan
 			// Handle reply of specific commands here by inserting new case instruction
 			// REPLY_HANDLING
 			//============================================
+			maxCmdLoop = 1;
 			switch (cmdId)
 			{
+			case CMD_SET_TO_COLA_A_PROTOCOL:
+				useBinaryCmdNow = useBinaryCmd;
+
+				break;
+			case CMD_SET_TO_COLA_B_PROTOCOL:
+				useBinaryCmdNow = useBinaryCmd;
+				break;
 				/*
 				SERIAL_NUMBER: Device ident must be read before!
 				*/
@@ -2473,7 +2506,8 @@ namespace sick_scan
 
 			unsigned long msgLen = cmdLen - 2; // without stx and etx
 
-
+			// special handling for the following commands
+			// due to higher number of command arguments
 			std::string keyWord0 = "sMN SetAccessMode";
 			std::string keyWord1 = "sWN FREchoFilter";
 			std::string keyWord2 = "sEN LMDscandata";
@@ -2485,7 +2519,7 @@ namespace sick_scan
 			int level = 0;
 			unsigned char buffer[255];
 			int bufferLen = 0;
-			if (cmdAscii.find(keyWord0) != std::string::npos)
+			if (cmdAscii.find(keyWord0) != std::string::npos) // SetAccessMode
 			{
 				copyUntilSpaceCnt = 2;
 				int keyWord0Len = keyWord0.length();
@@ -2548,21 +2582,26 @@ namespace sick_scan
 
 			}
 
-
+			
+			// copy base command string to buffer
 			bool switchDoBinaryData = false;
 			for (int i = 1; i <= (int)(msgLen); i++)  // STX DATA ETX --> 0 1 2
 			{
 				char c = requestAscii[i];
 				if (switchDoBinaryData == true)
 				{
-					break;
-#if 0
-					if (c >= '0' && c <= '9')
+					if (0 == bufferLen)  // no keyword handling before this point 
 					{
-						c -= '0';
+						if (c >= '0' && c <= '9')  // standard data format expected - only one digit 
+						{                          
+							c -= '0';              // convert ASCII-digit to hex-digit
+						}                          // 48dez to 00dez and so on.
 					}
-#endif
-			}
+					else
+					{ 
+					break;
+					}
+				}
 				requestBinary->push_back(c);
 				if (requestAscii[i] == 0x20) // space
 				{
@@ -2573,8 +2612,9 @@ namespace sick_scan
 					}
 				}
 
-		}
-
+			}
+			// if there are already process bytes (due to special key word handling)
+			// copy these data bytes to the buffer
 			for (int i = 0; i < bufferLen; i++) // append variable data
 			{
 				requestBinary->push_back(buffer[i]);

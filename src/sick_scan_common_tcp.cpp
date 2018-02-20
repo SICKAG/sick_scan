@@ -352,6 +352,7 @@ namespace sick_scan
 			// processFrame_CoLa_B(frame);
 		}
 
+		// Push frame to recvQueue
 		recvQueue.push(std::vector<unsigned char>(frame.getRawData(), frame.getRawData() + frame.size()));
 
 	}
@@ -586,6 +587,22 @@ namespace sick_scan
 		size_t to_read;
 
 		int numBytes = 0;
+		// Polling - should be changed to condition variable in the future
+		int waitingTimeInMs = 10;
+		int i;
+		for (i = 0; i < timeout_ms; i += waitingTimeInMs)
+		{
+			if (false == this->recvQueue.isQueueEmpty())
+			{
+				break;
+			}
+			Sleep(waitingTimeInMs);
+		}
+		if (i >= timeout_ms)
+		{
+			return(ExitError);
+		}
+		boost::condition_variable cond_;
 		std::vector<unsigned char> recvData = this->recvQueue.pop();
 		*bytes_read = recvData.size();
 		memcpy(buffer, &(recvData[0]), recvData.size());

@@ -8,3 +8,5 @@ cmake-build-debug/
 build/
 
 \.vs/
+
+src/sick_scan_common\.cpp~RF1a1a7142\.TMP

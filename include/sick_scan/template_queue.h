@@ -10,6 +10,13 @@ template <typename T>
 class Queue
     {
 public:
+	bool isQueueEmpty()
+	{
+		bool retVal = false;
+		boost::mutex::scoped_lock mlock(mutex_);
+		retVal = queue_.empty();
+		return(retVal);
+	}
 
     T pop()
     {
