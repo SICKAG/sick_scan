@@ -65,6 +65,7 @@ public:
 
     int getReplyMode();
 
+
 	SopasEventMessage findFrameInReceiveBuffer();
 	void processFrame(SopasEventMessage& frame);
 	Queue<std::vector<unsigned char> > recvQueue;
@@ -117,7 +118,6 @@ public:
 		UINT32 m_numberOfBytesInReceiveBuffer; ///< Number of bytes in buffer
 		UINT8 m_receiveBuffer[480000]; ///< Low-Level receive buffer for all data 
 
-		SopasProtocol m_protocol;
 		bool m_beVerbose;
 
         boost::asio::io_service io_service_;

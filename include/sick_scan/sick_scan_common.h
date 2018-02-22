@@ -143,6 +143,8 @@ namespace sick_scan
 		bool testsetAligmentMode();
 		bool testsetActivateStandBy();
 		bool testsetApplicationMode();
+		int getProtocolType(void);
+		void setProtocolType(SopasProtocol cola_dialect_id);
 		virtual int init();
 		int loopOnce();
 		void check_angle_range(SickScanConfig &conf);
@@ -242,6 +244,7 @@ namespace sick_scan
 
 	private:
 
+		SopasProtocol m_protocolId;
 		// ROS
 		ros::NodeHandle nh_;
 		ros::Publisher pub_;
@@ -275,6 +278,7 @@ namespace sick_scan
 		std::vector<int> sopasCmdChain;
 
 		int  outputChannelFlagId;
+		bool checkForProtocolChangeAndMaybeReconnect(bool& useBinaryCmdNow);
 	};
 
 } /* namespace sick_scan */
