@@ -2348,7 +2348,6 @@ namespace sick_scan
 						bool useGivenElevationAngle = false;
 						switch (numOfLayers)
 						{
-<<<<<<< HEAD
 						case 1: // TIM571 etc.
 							baseLayer = 0;
 							break;
@@ -2379,17 +2378,6 @@ namespace sick_scan
 							}
 							break;
 						default:assert(0); break; // unsupported
-=======
-							geometry_msgs::Point32 point;
-							float range_meter = rangeTmp[iEcho * rangeNum + i];
-              float phi = angle; // azimuth angle
-              float alpha = layer * elevationAngleDegree;
-
-              // Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
-              point.x = range_meter * cos(alpha) * cos(phi);
-              point.y = range_meter * cos(alpha) * sin(phi);
-              point.z = range_meter * sin(alpha);
->>>>>>> devel
 
 						}
 
