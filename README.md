@@ -1,5 +1,5 @@
 # sick_scan
-
+##### Development-Branch
 ## Table of contents
 
 - [Supported Hardware](#supported-hardware)
@@ -14,8 +14,9 @@ towards rough outdoor environments.
 ## Supported Hardware
 
 This driver should work with all of the following products. However, this driver is brand new (Feb 2018) 
-and tested working on the MRS6124. The migration with the already publish sick_scan-driver (see github.com/SICKAG/sick_scan ) is in preparation
-and will be finished until end of March 2018.
+The migration with the master-branch of the already published sick_scan-driver (see github.com/SICKAG/sick_scan ) is in preparation
+and will be finished until end of March 2018. Since 22nd of February 2018 the new driver is a devel-branch of
+the already published driver.
 
 ROS Device Driver for Sick Laserscanner - supported scanner types: 
 
@@ -24,6 +25,7 @@ ROS Device Driver for Sick Laserscanner - supported scanner types:
 |--------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|:---------------:|
 | MRS6124            | [6065086](https://www.sick.com/de/de/mess-und-detektionsloesungen/3d-lidar-sensoren/mrs6000/mrs6124r-131001/p/p533545)                                                                                                                     | 24 layer (standard)                            | ✔ [experimental]|
 | MRS1104            | [1081208](https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044) | 4 layer                                        | ✔ [experimental]|
+| LMS1104            | [unpublished] | 1 layer (based on MRS1104 technology) |  ✔ [experimental]|
 | TiM551             | [1060445](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)           | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [experimental]|
 |                    |                                                                                                                              |  ang. resolution: 1.00[deg] Scan-Rate: 15 Hz   |                 |
 | TiM561             | [1071419](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)           | 1 layer max. range: 10m, ang. resol. 0.33 [deg]| ✔ [experimental]|
@@ -41,17 +43,23 @@ roslaunch sick_scan sick_mrs_6xxx.launch
 For MRS1104:
 roslaunch sick_scan sick_mrs_1xxx.launch
 
+For LMS1104:
+roslaunch sick_scan sick_lms_1xxx.launch
+
 For TiM551, TiM561, TiM571:
 roslaunch sick_scan sick_tim_5xx.launch
 
 ## Bugs and feature requests
 
 - General: Brand new driver especially for MRS6124 
-- Stability issues: Driver is experimental and not well tested
-- Binary mode: MRS6124 must be switched to binary mode to ensure transportation of scan data
-- Support of TiM-Series, LMS1104 and MRS1124: Experimental and currently untested
-- Coordinate transformation must be further tested
-
+- Stability issues: Driver is experimental 
+- Binary mode / ASCII-Mode: - COLA-A/COLA-B-protocol:
+The driver tests the protocol setting (ASCII or BINARY) at startup and then programs the scanner to the expected protocol. If the protocol is switched from BINARY to ASCII or vice versa during startup by the driver, it is recommended to restart the driver, otherwise the communication may be interrupted.
+Cola protocol mapping:
+-- MRS6124: COLA-B (Binary)
+-- All other scanners: COLA-A (Ascii)
+- Software should be further tested, documented and beautified
+- Setting of "topic" should not be hardcoded to /cloud in the future. This allows the simultaneous operation of several scanners. Each point cloud can then be converted using its own TF transformation.
 
 ## Troubleshooting 
 
@@ -70,6 +78,7 @@ roslaunch sick_scan sick_tim_5xx.launch
 8. In case of network problems check your own ip address and the ip address of your laser scanner (by using SOPAS ET).
    * List of own IP-addresses: ifconfig|grep "inet addr"
    * Try to ping scanner ip address (used in launch file) 
+9. If the driver stops during init phase please stop the driver with ctrl-c and restart (could be caused due to protocol ASCII/Binary cola-dialect).
    
 ## SUPPORT
  
@@ -93,7 +102,7 @@ The driver has not been released yet. But once that happens, you can install it 
 source /opt/ros/<rosdistro>/setup.bash
 mkdir -p ~/ros_catkin_ws/src/
 cd ~/ros_catkin_ws/src/
-git clone https://github.com/michael1309/sick_scan.git
+git clone -b devel --single-branch git://github.com/SICKAG/sick_scan.git
 cd ..
 catkin_make
 source ~/ros_catkin_ws/install/setup.bash
@@ -104,7 +113,7 @@ source ~/ros_catkin_ws/install/setup.bash
 ```bash
 roslaunch sick_scan sick_mrs6xxx.launch
 rosrun rviz rviz
-publish to point clound
+publish to point cloud
 ```
 
 ## Creators
@@ -121,4 +130,5 @@ on behalf of SICK AG
 
 ![SICK Logo](https://sick-syd.data.continum.net/static_2018013123/_ui/desktop/common/images/base/pics/logo.png "SICK Logo")
 ![Lehning Logo](http://www.lehning.de/style/banner.jpg "LEHNING Logo")
+
 
