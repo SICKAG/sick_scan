@@ -91,18 +91,18 @@ namespace sick_scan
 		port_(port),
 		timelimit_(timelimit)
 	{
-		m_protocol = CoLa_Unknown;
+
 		if ((cola_dialect_id == 'a') || (cola_dialect_id == 'A'))
 		{
-			m_protocol = CoLa_A;
+			this->setProtocolType(CoLa_A);
 		}
 
 		if ((cola_dialect_id == 'b') || (cola_dialect_id == 'B'))
 		{
-			m_protocol = CoLa_B;
+			this->setProtocolType(CoLa_B);
 		}
 
-		assert(m_protocol != CoLa_Unknown);
+		assert(this->getProtocolType() != CoLa_Unknown);
 
 		m_numberOfBytesInReceiveBuffer = 0;
 		m_alreadyReceivedBytes = 0;
@@ -156,6 +156,20 @@ namespace sick_scan
 		return(m_replyMode);
 	}
 
+#if 0
+	void SickScanCommonTcp::setProtocolType(char cola_dialect_id)
+	{
+		if ((cola_dialect_id == 'a') || (cola_dialect_id == 'A'))
+		{
+			this->m_protocol = CoLa_A;
+		}
+		else
+		{
+			this->m_protocol = CoLa_B;
+		}
+	}
+#endif
+
 
 	//
 	// Look for 23-frame (STX/ETX) in receive buffer.
@@ -170,7 +184,7 @@ namespace sick_scan
 		UINT32 i;
 
 		// Depends on protocol...
-		if (m_protocol == CoLa_A)
+		if (getProtocolType() == CoLa_A)
 		{
 			//
 			// COLA-A
@@ -222,7 +236,7 @@ namespace sick_scan
 
 			return SopasEventMessage(m_receiveBuffer, CoLa_A, frameLen);
 		}
-		else if (m_protocol == CoLa_B)
+		else if (getProtocolType() == CoLa_B)
 		{
 			UINT32 magicWord;
 			UINT32 payloadlength;
@@ -341,12 +355,12 @@ namespace sick_scan
 	void SickScanCommonTcp::processFrame(SopasEventMessage& frame)
 	{
 
-		if (m_protocol == CoLa_A)
+		if (getProtocolType() == CoLa_A)
 		{
 			printInfoMessage("SickScanCommonNw::processFrame: Calling processFrame_CoLa_A() with " + ::toString(frame.size()) + " bytes.", m_beVerbose);
 			// processFrame_CoLa_A(frame);
 		}
-		else if (m_protocol == CoLa_B)
+		else if (getProtocolType() == CoLa_B)
 		{
 			printInfoMessage("SickScanCommonNw::processFrame: Calling processFrame_CoLa_B() with " + ::toString(frame.size()) + " bytes.", m_beVerbose);
 			// processFrame_CoLa_B(frame);
@@ -540,17 +554,7 @@ namespace sick_scan
 
 	int SickScanCommonTcp::close_device()
 	{
-		if (socket_.is_open())
-		{
-			try
-			{
-				socket_.close();
-			}
-			catch (boost::system::system_error &e)
-			{
-				ROS_ERROR("An error occured during closing of the connection: %d:%s", e.code().value(), e.code().message().c_str());
-			}
-		}
+		m_nw.disconnect();
 		return 0;
 	}
 
@@ -685,7 +689,8 @@ namespace sick_scan
 		const int BUF_SIZE = 1000;
 		char buffer[BUF_SIZE];
 		int bytes_read;
-		if (readWithTimeout(20000, buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
+		// !!!
+		if (readWithTimeout(2000, buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
 		{
 			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after 1s");
 			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after 5 s.");

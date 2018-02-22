@@ -13,7 +13,7 @@
 #include <arpa/inet.h>  // for sockaddr_in and inet_ntoa()
 #include <string.h>     // for memset()
 #include <netdb.h>      // for hostent
-
+#include <iostream>     // for cout
 
 Tcp::Tcp()
 {
@@ -301,10 +301,12 @@ void Tcp::close()
 	{
 		// Dem Lese-Thread ein Ende signalisieren
 		m_readThread.m_threadShouldRun = false;
-
-		// Verbindung schliessen
+#ifdef _MSC_VER
+		closesocket(m_connectionSocket);  // waere evtl. auch fuer Linux korrekt
+#else
+			// Verbindung schliessen
 		::close(m_connectionSocket);
-
+#endif
 		// Auf das Ende des Empfangsthreads warten
 		printInfoMessage("Tcp::close: Waiting for the server thread to terminate...", m_beVerbose);
 
