@@ -579,6 +579,7 @@ namespace sick_scan
 		deadline_.async_wait(boost::bind(&SickScanCommonTcp::checkDeadline, this));
 	}
 
+
 	int SickScanCommonTcp::readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read, bool *exception_occured, bool isBinary)
 	{
 		// Set up the deadline to the proper timeout, error and delimiters
@@ -690,7 +691,7 @@ namespace sick_scan
 		char buffer[BUF_SIZE];
 		int bytes_read;
 		// !!!
-		if (readWithTimeout(2000, buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
+		if (readWithTimeout(getReadTimeOutInMs(), buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
 		{
 			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after 1s");
 			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after 5 s.");
@@ -709,7 +710,22 @@ namespace sick_scan
 	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 	{
 		this->setReplyMode(1);
-		std::vector<unsigned char> dataBuffer = this->recvQueue.pop();
+		const int maxWaitInMs = 2000;
+		std::vector<unsigned char> dataBuffer;
+#if 0 // prepared for reconnect
+		bool retVal = this->recvQueue.waitForIncomingObject(maxWaitInMs);
+		if (retVal == false)
+		{
+			ROS_WARN("Timeout during waiting of new datagram");
+			return ExitError;
+		}
+		else
+		{
+			dataBuffer = this->recvQueue.pop();
+		}
+#endif
+		dataBuffer = this->recvQueue.pop();
+
 		long size = dataBuffer.size();
 		memcpy(receiveBuffer, &(dataBuffer[0]), size);
 		*actual_length = size;

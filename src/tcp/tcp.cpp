@@ -203,6 +203,7 @@ void Tcp::readThreadFunction(bool& endThread, UINT16& waitTimeMs)
 		{
 			// Wir sollten eigentlich noch laufen!
 			printInfoMessage("Tcp::readThreadMain: Connection is lost! Read thread terminates now.", m_beVerbose);
+			endThread = true; // interrupt thread
 		}
 		waitTimeMs = 0;
 	}
