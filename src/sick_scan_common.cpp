@@ -679,6 +679,15 @@ namespace sick_scan
 		return result;
 	}
 
+	int SickScanCommon::getProtocolType(void)
+	{
+		return m_protocolId;
+	}
+
+	void SickScanCommon::setProtocolType(SopasProtocol cola_dialect_id)
+	{
+		m_protocolId = cola_dialect_id;
+	}
 
 
 	//************************************
@@ -785,12 +794,12 @@ namespace sick_scan
 
 		if (parser_->getCurrentParamPtr()->getUseBinaryProtocol())
 		{
-		//	sopasCmdChain.push_back(CMD_SET_TO_COLA_B_PROTOCOL);
+			sopasCmdChain.push_back(CMD_SET_TO_COLA_B_PROTOCOL);
 		}
 		else
 		{
 			//for binary Mode Testing
-		//	sopasCmdChain.push_back(CMD_SET_TO_COLA_A_PROTOCOL);
+			sopasCmdChain.push_back(CMD_SET_TO_COLA_A_PROTOCOL);
 		}
 		
 
@@ -915,8 +924,7 @@ namespace sick_scan
 			std::vector<unsigned char> reqBinary;
 			ROS_DEBUG("Command: %s", stripControl(sopasCmd).c_str());
 			
-			// start always with ascii command
-			// and switch to either binary or ascii after switching the command mode
+			// switch to either binary or ascii after switching the command mode
 			// via ... command
 			for (int iLoop = 0; iLoop < maxCmdLoop; iLoop++)
 			{
@@ -930,6 +938,11 @@ namespace sick_scan
 					useBinaryCmd = useBinaryCmdNow; // and use it from now on as default
 
 				}
+
+				this->setProtocolType(useBinaryCmdNow ? CoLa_B : CoLa_A);
+			
+				
+			
 				if (useBinaryCmdNow)
 				{
 					this->convertAscii2BinaryCmd(sopasCmd.c_str(), &reqBinary);
@@ -964,15 +977,17 @@ namespace sick_scan
 			switch (cmdId)
 			{
 			case CMD_SET_TO_COLA_A_PROTOCOL:
-				useBinaryCmdNow = useBinaryCmd;
-
+				checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
+				useBinaryCmd = useBinaryCmdNow;
 				break;
 			case CMD_SET_TO_COLA_B_PROTOCOL:
-				useBinaryCmdNow = useBinaryCmd;
+				checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
+				useBinaryCmd = useBinaryCmdNow;
 				break;
-				/*
-				SERIAL_NUMBER: Device ident must be read before!
-				*/
+
+			/*
+			SERIAL_NUMBER: Device ident must be read before!
+			*/
 
 			case CMD_DEVICE_IDENT: // FOR MRS6xxx the Device Ident holds all specific information (used instead of CMD_SERIAL_NUMBER)
 			{
@@ -2202,7 +2217,7 @@ namespace sick_scan
 				}
 
 
-        int numOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
+				int numOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
 
 				if (success == ExitSuccess)
 				{
@@ -2388,8 +2403,12 @@ namespace sick_scan
 								float intensity = 0.0;
 								if (config_.intensity)
 								{
-									intensity = intensityTmp[aiValidEchoIdx[iEcho] * rangeNum + i];
-
+									int intensityIndex = aiValidEchoIdx[iEcho] * rangeNum + i;
+									// intensity values available??
+									if (intensityIndex < intensityTmp.size())
+									{
+										intensity = intensityTmp[intensityIndex];
+									}
 								}
 								memcpy(ptr + 0, &(point.x), sizeof(float));
 								memcpy(ptr + 4, &(point.y), sizeof(float));
@@ -2732,6 +2751,39 @@ namespace sick_scan
 			}
 			return(bRet);
 		}
+
+		bool SickScanCommon::checkForProtocolChangeAndMaybeReconnect(bool& useBinaryCmdNow)
+		{
+			bool retValue = true;
+			bool shouldUseBinary = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
+			if (shouldUseBinary == useBinaryCmdNow)
+			{
+				retValue = true;
+			}
+			else
+			{
+				// we must reconnect and set the new protocoltype
+				int iRet = this->close_device();
+				ROS_INFO("SOPAS - Close and reconnected to scanner due to protocol change and wait 15 sec. ");
+				ROS_INFO("SOPAS - Changing from %s to %s\n", shouldUseBinary ? "ASCII" : "BINARY", shouldUseBinary ? "BINARY" : "ASCII");
+				// Wait a few seconds after rebooting
+				ros::Duration(15.0).sleep();
+
+				iRet = this->init_device();
+				if (shouldUseBinary == true)
+				{
+					this->setProtocolType(CoLa_B);
+				}
+				else
+				{
+					this->setProtocolType(CoLa_A);
+				}
+				useBinaryCmdNow = shouldUseBinary;
+			}
+			return(retValue);
+		}
+
+		// SopasProtocol m_protocolId;
 
 } /* namespace sick_scan */
 

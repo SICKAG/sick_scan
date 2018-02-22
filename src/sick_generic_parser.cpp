@@ -208,7 +208,7 @@ namespace sick_scan
 				basicParams[i].setNumberOfShots(811);
 				basicParams[i].setAngularDegreeResolution(0.3333);
 				basicParams[i].setExpectedFrequency(15.0);
-				basicParams[i].setUseBinaryProtocol(false);
+				basicParams[i].setUseBinaryProtocol(false); 
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) // future use
 			{
