@@ -131,7 +131,7 @@ public:
         std::string port_;
         int timelimit_;
         int m_replyMode;
-        };
+};
 
 
 } /* namespace sick_scan */

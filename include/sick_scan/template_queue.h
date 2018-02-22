@@ -18,6 +18,18 @@ public:
 		return(retVal);
 	}
 
+	bool waitForIncomingObject(int timeOutInMs)
+	{
+		boost::mutex::scoped_lock mlock(mutex_);
+		bool ret = true;
+		boost::posix_time::time_duration td = boost::posix_time::millisec(timeOutInMs);
+		while (queue_.empty() && (ret == true))
+		{
+			ret = cond_.timed_wait(mlock, td);
+		}
+		return(ret);
+	}
+
     T pop()
     {
       boost::mutex::scoped_lock mlock(mutex_);

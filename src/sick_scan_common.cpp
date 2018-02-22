@@ -679,6 +679,18 @@ namespace sick_scan
 		return result;
 	}
 
+	void SickScanCommon::setReadTimeOutInMs(int timeOutInMs)
+	{
+		readTimeOutInMs = timeOutInMs;
+	}
+
+
+	int SickScanCommon::getReadTimeOutInMs()
+	{
+		return(readTimeOutInMs);
+	}
+
+
 	int SickScanCommon::getProtocolType(void)
 	{
 		return m_protocolId;
@@ -910,10 +922,17 @@ namespace sick_scan
 		volatile bool useBinaryCmd = false;
 		if (this->parser_->getCurrentParamPtr()->getUseBinaryProtocol()) // hard coded for every scanner type
 		{
-			useBinaryCmd = true;  // shall we task ascii or binary with the scanner type??
+			useBinaryCmd = true;  // shall we talk ascii or binary with the scanner type??
 		}
+
 		bool useBinaryCmdNow = false;
 		int maxCmdLoop = 2; // try binary and ascii during startup
+
+		const int shortTimeOutInMs = 2000; // during startup phase to check binary or ascii
+		const int defaultTimeOutInMs = 20000; // standard time out 20 sec.
+
+		setReadTimeOutInMs(shortTimeOutInMs);
+
 		for (int i = 0; i < this->sopasCmdChain.size(); i++)
 		{
 			ros::Duration(0.2).sleep();   // could maybe removed
@@ -979,10 +998,12 @@ namespace sick_scan
 			case CMD_SET_TO_COLA_A_PROTOCOL:
 				checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
 				useBinaryCmd = useBinaryCmdNow;
+				setReadTimeOutInMs(defaultTimeOutInMs);
 				break;
 			case CMD_SET_TO_COLA_B_PROTOCOL:
 				checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
 				useBinaryCmd = useBinaryCmdNow;
+				setReadTimeOutInMs(defaultTimeOutInMs);
 				break;
 
 			/*

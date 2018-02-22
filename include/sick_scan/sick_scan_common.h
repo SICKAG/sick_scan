@@ -143,6 +143,8 @@ namespace sick_scan
 		bool testsetAligmentMode();
 		bool testsetActivateStandBy();
 		bool testsetApplicationMode();
+		int getReadTimeOutInMs();
+		void setReadTimeOutInMs(int timeOutInMs);
 		int getProtocolType(void);
 		void setProtocolType(SopasProtocol cola_dialect_id);
 		virtual int init();
@@ -239,11 +241,9 @@ namespace sick_scan
 
 		bool isCompatibleDevice(const std::string identStr) const;
 
-	protected:
 		diagnostic_updater::Updater diagnostics_;
 
 	private:
-
 		SopasProtocol m_protocolId;
 		// ROS
 		ros::NodeHandle nh_;
@@ -279,6 +279,7 @@ namespace sick_scan
 
 		int  outputChannelFlagId;
 		bool checkForProtocolChangeAndMaybeReconnect(bool& useBinaryCmdNow);
+		int readTimeOutInMs;
 	};
 
 } /* namespace sick_scan */
