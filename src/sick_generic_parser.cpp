@@ -62,108 +62,208 @@
 namespace sick_scan
 {
 
+	/*!
+	\brief Setting name (type) of scanner
 
+	\param Name of scanner
+	\sa getScannerName
+	*/
 	void ScannerBasicParam::setScannerName(std::string _s)
 	{
 		scannerName = _s;
 	}
 
+	/*!
+	\brief Getting name (type) of scanner
+
+	\param Name of scanner
+	\sa setScannerName
+	*/
 	std::string ScannerBasicParam::getScannerName()
 	{
 		return(scannerName);
 	}
 
+
+	/*!
+	\brief Setting number of scanner layers (depending of scanner type/family)
+
+	\param Number of scanner layers (e.g. 1 for TiM5xx and 24 for MRS6124
+	\sa getNumberOfLayers
+	*/
+	void ScannerBasicParam::setNumberOfLayers(int _layerNum)
+	{
+		numberOfLayers = _layerNum;
+	}
+
+	/*!
+	\brief Getting number of scanner layers 
+
+	\return Number of scanners layer (e.g. 1 for TiM5xx and 24 for MRS6124
+	\sa setNumberOfLayers
+	*/
 	int ScannerBasicParam::getNumberOfLayers(void)
 	{
 		return(numberOfLayers);
 
 	}
 
-	void ScannerBasicParam::setNumberOfLayers(int _layerNum)
-	{
-		numberOfLayers = _layerNum;
-	}
-
-
+	/*!
+	\brief Set number of shots per scan
+	
+	\param Number of shots per scan (for one layer)
+	\sa getNumberOfLayers
+	*/
 	void ScannerBasicParam::setNumberOfShots(int _shots)
 	{
 		numberOfShots = _shots;
 	}
 
+	/*!
+	\brief Get number of shots per scan
+
+	\return Number of shots per scan (for one layer)
+	\sa getNumberOfLayers
+	*/
 	int ScannerBasicParam::getNumberOfShots(void)
 	{
 		return(numberOfShots);
 	}
 
+	/*!
+	\brief Set number of maximum echoes for this laser scanner type
+
+	\param Number of max echoes 
+	\sa getNumberOfMaximumEchos
+	*/
 	void ScannerBasicParam::setNumberOfMaximumEchos(int _maxEchos)
 	{
 		this->numberOfMaximumEchos = _maxEchos;
 	}
 
+
+	/*!
+	\brief Get number of maximum echoes for this laser scanner type
+
+	\return Number of max echoes
+	\sa setNumberOfMaximumEchos
+	*/
 	int ScannerBasicParam::getNumberOfMaximumEchos(void)
 	{
 		return(numberOfMaximumEchos);
 	}
 
+	/*!
+	\brief Set pointer to corresponding parameter object to the parser
+	
+	\param pointer to parameter object
+	\sa getCurrentParamPtr
+	*/
 	void SickGenericParser::setCurrentParamPtr(ScannerBasicParam* _ptr)
 	{
 		currentParamSet = _ptr;
 	}
 
+
+	/*!
+	\brief Set angular resolution in degrees
+	\param angle resolution in degress (NOT rad) between each shot
+	\sa getAngularDegreeResolution
+	*/
+	void ScannerBasicParam::setAngularDegreeResolution(double _res)
+	{
+		angleDegressResolution = _res;
+	}
+
+	/*!
+	\brief Get angular resolution in degress
+	
+	\return angle resolution in degress (NOT rad) between each shot
+	*/
 	double ScannerBasicParam::getAngularDegreeResolution(void)
 	{
 		return(angleDegressResolution);
 	}
 
-	double ScannerBasicParam::getExpectedFrequency()
-	{
-		return(expectedFrequency);
-	}
-
+	/*!
+	\brief set expected scan frequency
+	\param expected scan frequency in [Hz]
+	\sa getExpectedFrequency
+	*/
 	void ScannerBasicParam::setExpectedFrequency(double _freq)
 	{
 		expectedFrequency = _freq;
 	}
 
+	/*!
+	\brief get expected scan frequency
+	
+	\return expected scan frequency in [Hz]
+	\sa setExpectedFrequency
+	*/
+	double ScannerBasicParam::getExpectedFrequency()
+	{
+		return(expectedFrequency);
+	}
 
 
+	/*!
+	\brief set angular resolution in VERTICAL direction for multilayer scanner
+	\param elevation resolution in degree 
+	\sa getElevationDegreeResolution
+	*/
+	void ScannerBasicParam::setElevationDegreeResolution(double _elevRes)
+	{
+		this->elevationDegreeResolution = _elevRes;
+	}
+
+
+	/*!
+	\brief get angular resolution in VERTICAL direction for multilayer scanner
+	\return elevation resolution in degree
+	\sa setElevationDegreeResolution
+	*/
+	double ScannerBasicParam::getElevationDegreeResolution()
+	{
+		return(this->elevationDegreeResolution);
+	}
+
+	/*!
+	\brief flag to decide between usage of ASCII-sopas or BINARY-sopas
+	\param _useBinary: True for binary, False for ASCII
+	\sa getUseBinaryProtocol
+	*/
+	void ScannerBasicParam::setUseBinaryProtocol(bool _useBinary)
+	{
+		this->useBinaryProtocol = _useBinary;
+	}
+
+	/*!
+	\brief flag to decide between usage of ASCII-sopas or BINARY-sopas
+	\return Boolean value: True for binary, False for ASCII
+	\sa setUseBinaryProtocol
+	*/
+	bool ScannerBasicParam::getUseBinaryProtocol(void)
+	{
+		return(useBinaryProtocol);
+	}
+
+
+
+	/*!
+	\brief Construction of parameter object
+
+	*/
 	ScannerBasicParam::ScannerBasicParam()
 	{
 		this->elevationDegreeResolution = 0.0;
 		this->setUseBinaryProtocol(false);
 	}
 
-	void ScannerBasicParam::setAngularDegreeResolution(double _res)
-	{
-		angleDegressResolution = _res;
+	/*!
+	\brief Construction of parser object
 
-	}
-
-	void ScannerBasicParam::setElevationDegreeResolution(double _elevRes)
-	{
-		this->elevationDegreeResolution = _elevRes;
-	}
-
-	bool ScannerBasicParam::getUseBinaryProtocol(void)
-	{
-		return(useBinaryProtocol);
-	}
-
-	void ScannerBasicParam::setUseBinaryProtocol(bool _useBinary)
-	{
-		this->useBinaryProtocol = _useBinary;
-	}
-
-	double ScannerBasicParam::getElevationDegreeResolution()
-	{
-		return(this->elevationDegreeResolution);
-	}
-	ScannerBasicParam *SickGenericParser::getCurrentParamPtr()
-	{
-		return(currentParamSet);
-	}
-
-
+	*/
 	SickGenericParser::SickGenericParser(std::string _scanType) :
 		AbstractParser(),
 		override_range_min_((float)0.05),
@@ -234,6 +334,20 @@ namespace sick_scan
 		}
 	}
 
+	/*!
+	\brief Gets Pointer to parameter object 
+	\return Pointer to parameter object holding information about protocol usage and scanner type specific parameter
+	*/
+	ScannerBasicParam *SickGenericParser::getCurrentParamPtr()
+	{
+		return(currentParamSet);
+	}
+
+	/*!
+	\brief checks the given scannerName/scannerType of validity
+	\param scannerType as string (e.g. "tim_5xx") 
+	\return index of found scanner. -1 corresponds to "not found"
+	*/
 	int SickGenericParser::lookUpForAllowedScanner(std::string scannerName)
 	{
 		int iRet = -1;
@@ -247,10 +361,28 @@ namespace sick_scan
 
 		return(iRet);
 	}
+
+	/*!
+	\brief Destructor of parser
+	\sa Constructor SickGenericParser
+	*/
 	SickGenericParser::~SickGenericParser()
 	{
 	}
 
+	/*!
+	\brief check for DIST and RSSI-entries in the datagram. Helper routine for parser
+
+	\param fields: String entries holding the information
+	\param expected_number_of_data: Warning, if the number of found entries does not correspond to this entries
+	\param distNum: Number of found DIST-entries
+	\param rssi: Number of found RSSI-entries
+	\param distVal: parsed istance values
+	\param rssiVal: parsed RSSI-values 
+	\param distMask: Bit-Masking holds the information of found DIST-entries (e.g. DIST1 -> Bit 0, DIST2 -> BIT 1 and so on)
+	\return Errorcode
+	\sa parse_datagram
+	*/
 	int SickGenericParser::checkForDistAndRSSI(std::vector<char *>& fields, int expected_number_of_data, int& distNum, int& rssiNum, std::vector<float>& distVal, std::vector<float>& rssiVal, int& distMask)
 	{
 		int iRet = ExitSuccess;
@@ -336,10 +468,20 @@ namespace sick_scan
 		return(iRet);
 	}
 
-	// echoMask introduced to get a workaround for cfg bug using MRS1104
+	/*!
+	\brief Parsing Ascii datagram
+	\param datagram: Pointer to datagram data
+	\param datagram_length: Number of bytes in datagram
+	\param config: Pointer to Configdata
+	\param msg: Holds result of Parsing
+	\param numEchos: Number of DIST-blocks found in message
+	\param echoMask: Mask corresponding to DIST-block-identifier 
+	\return set_range_max
+	*/
 	int SickGenericParser::parse_datagram(char* datagram, size_t datagram_length, SickScanConfig &config,
 		sensor_msgs::LaserScan &msg, int &numEchos, int &echoMask)
 	{
+		// echoMask introduced to get a workaround for cfg bug using MRS1104
 		ros::NodeHandle tmpParam("~");
 		bool dumpData = false;
 		int verboseLevel = 0;
@@ -657,25 +799,52 @@ namespace sick_scan
 		}
 
 
+	/*!
+	\brief Setting minimum range
+	\param minimum range in [m]
+	\sa set_range_max
+	*/
 	void SickGenericParser::set_range_min(float min)
 	{
 		override_range_min_ = min;
 	}
 
+	/*!
+	\brief Setting maximum range
+	\param maximum range in [m]
+	\sa set_range_min
+	*/
 	void SickGenericParser::set_range_max(float max)
 	{
 		override_range_max_ = max;
 	}
 
+	/*!
+	\brief setting time increment between shots 
+
+	\param time increment
+	*/
 	void SickGenericParser::set_time_increment(float time)
 	{
 		override_time_increment_ = time;
 	}
 
+	/*!
+	\brief setting scannertype
+
+	\param scannerType
+	\sa getScannerType
+	*/
 	void SickGenericParser::setScannerType(std::string _scannerType)
 	{
 		scannerType = _scannerType;
 	}
+
+	/*!
+	\brief getting scannertype
+
+	\return scannerType
+	*/
 	std::string SickGenericParser::getScannerType(void) {
 		return(scannerType);
 
