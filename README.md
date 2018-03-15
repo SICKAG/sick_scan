@@ -85,7 +85,7 @@ Cola protocol mapping:
 * In case of technical support please open a new issue. For optimal support, add the following information to your request:
  1. Scanner model name,
  2. Ros node startup log,
- 3. Spoas file of your scanner configuration.
+ 3. Sopas file of your scanner configuration.
   The instructions at http://sickusablog.com/create-and-download-a-sopas-file/ show how to create the Sopas file.
 * In case of application support please use [https://supportportal.sick.com ](https://supportportal.sick.com).
 
