@@ -2,6 +2,7 @@
 // colaa.cpp
 //
 // (c) 2011 SICK AG, Hamburg, Germany
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "sick_scan/tcp/colaa.hpp"
 #include <cstring>
@@ -218,7 +219,7 @@ UINT16 addUINT32ToBuffer(UINT8* buffer, UINT32 value)
  */
 UINT16 addStringToBuffer(UINT8* buffer, const std::string& text)
 {
-	UINT16 len = text.length();
+	UINT16 len = (UINT16)text.length();
 
 	// Kopiere den String
 	strcpy ((char*)buffer, text.c_str());
@@ -448,7 +449,7 @@ UINT32 decodeUINT32(std::string* rxData)
 		// Hexadezimalzahl
 		baseFactor = 16;
 	}
-	digits = number.length();
+	digits = (UINT16)number.length();
 
 	// Extrahiere die Zahl, letzte Stelle zuerst
 	for (INT16 d = digits - 1; d >= 0; d -= 1)
@@ -506,7 +507,7 @@ INT32 decodeINT32(std::string* rxData)
 	}
 
 	// Anzahl Ziffern
-	digits = number.length();
+	digits = (UINT16)number.length();
 
 	// Extrahiere die Zahl, letzte Stelle zuerst
 	for (INT16 d = digits - 1; d >= 0; d -= 1)
@@ -571,7 +572,7 @@ INT32 decodeINT32(const std::string& rxData)
 	}
 
 	// Anzahl Ziffern
-	digits = number.length();
+	digits = (UINT16)number.length();
 
 	// Extrahiere die Zahl, letzte Stelle zuerst
 	for (INT16 d = digits - 1; d >= offset; d -= 1)
@@ -708,7 +709,7 @@ UINT32 decodeUINT32(const std::string& rxData)
 	}
 
 	// Anzahl Ziffern
-	digits = number.length();
+	digits = (UINT16)number.length();
 
 	// Extrahiere die Zahl, letzte Stelle zuerst
 	for (INT16 d = digits - 1; d >= offset; d -= 1)

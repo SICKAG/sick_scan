@@ -108,7 +108,7 @@ namespace sick_scan
 
 		SickScanCommon(SickGenericParser* parser);
 		virtual ~SickScanCommon();
-		int setIpAddress(std::string ipAddress);
+
 		int setParticleFilter(bool _active, int _particleThreshold);//actualy only 500 mm is working.
 		/*! Changes the Identifier of a commandstr. to its expected answer counterpart
 		 *
@@ -191,7 +191,7 @@ namespace sick_scan
 		/**
 		 * \returns true if command was accepted, false otherwise
 		 */
-		bool startMeasurement();
+
 		SickScanCommonNw m_nw;
 	protected:
 		virtual int init_device() = 0;
@@ -225,12 +225,6 @@ namespace sick_scan
 		* \returns    unsigned long value as interpretation of big endian long value
 		*/
 		unsigned long convertBigEndianCharArrayToUnsignedLong(const unsigned char *vecArr);
-		/**
-		* \param [in]   (unsigned) long value which should be converto to big endian
-		* \param [out]  Pointer to byte array, where we store the big endian conversion
-		* \returns      void
-		*/
-		void convertUnsignedLongToBigEndianCharArray(unsigned long val, unsigned char *vecArr);
 
 		/**
 		* \param [in] reply check reply whether is SOPAS-ASCII or SOPAS-Binary

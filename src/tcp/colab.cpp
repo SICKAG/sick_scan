@@ -2,7 +2,7 @@
 // colab.cpp
 //
 // (c) 2010 SICK AG, Hamburg, Germany
-
+#define _CRT_SECURE_NO_WARNINGS
 #include "sick_scan/tcp/colab.hpp"
 #include <cstring>
 #include <cassert>
@@ -15,7 +15,7 @@ namespace colab
 
 void addStringToBuffer(UINT8* buffer, UINT16& pos, const std::string& stringValue)
 {
-	UINT16 length = stringValue.length();
+	UINT16 length = (UINT16)stringValue.length();
 	strcpy((char*) &buffer[pos], stringValue.c_str());
 	pos += length;
 }

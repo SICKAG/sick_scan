@@ -88,6 +88,16 @@ bool getTagVal(std::string tagVal, std::string& tag, std::string& val)
 	return(ret);
 }
 
+/*!
+\brief Internal Startup routine. In the future the scannerName should be coded in a specific param-Entry 
+       like "scannerType"
+       
+\param argc: Number of Arguments
+\param argv: Argument variable
+\param scannerName: Scannertype 
+\return exit-code
+\sa main
+*/
 int mainGenericLaser(int argc, char **argv, std::string scannerName)
 {
 	std::string tag;
@@ -173,14 +183,14 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 	while (ros::ok())
 	{
 		// attempt to connect/reconnect
-		delete s;
-    if (useTCP)
-			s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser, colaDialectId);
-    else
-    {
-        ROS_ERROR("TCP is not switched on. Probably hostname or port not set. Use roslaunch to start node.");
-        exit(-1);
-    }
+		delete s;  // disconnect scanner
+        if (useTCP)
+		  s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser, colaDialectId);
+        else
+        {
+           ROS_ERROR("TCP is not switched on. Probably hostname or port not set. Use roslaunch to start node.");
+           exit(-1);
+        }
 
 		result = s->init();
 
@@ -197,7 +207,7 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 
 	}
 
-	delete s;
-	delete parser;
+	delete s; // close connnect
+	delete parser; // close parser
 	return result;
 }

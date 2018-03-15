@@ -62,12 +62,22 @@
 // 001.001.000 Switch to multithreaded processing of data
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "001"  
-#define SICK_GENERIC_PATCH_LEVEL "000"
+#define SICK_GENERIC_PATCH_LEVEL "001"
 
-
+// 001.001.001: Documentation added
 #include <algorithm> // for std::min
 
 
+/*!
+\brief Startup routine - if called with no argmuments we assume debug session.
+       Set scanner name variable by parsing for "__name:=". This will be changed in the future
+	   by setting a parameter. Calls mainGenericLaser after parsing.
+
+\param argc: Number of Arguments
+\param argv: Argument variable
+\return exit-code
+\sa mainGenericLaser
+*/
 int main(int argc, char **argv)
 {
 	char nameId[] = "__name:=";
@@ -100,7 +110,7 @@ int main(int argc, char **argv)
 		argv_tmp[3] = internalDebugTagVal;
 
 	}
-  ROS_INFO("sick_generic_caller V. %s.%s.%s", SICK_GENERIC_MAJOR_VER, SICK_GENERIC_MINOR_VER, SICK_GENERIC_PATCH_LEVEL);
+    ROS_INFO("sick_generic_caller V. %s.%s.%s", SICK_GENERIC_MAJOR_VER, SICK_GENERIC_MINOR_VER, SICK_GENERIC_PATCH_LEVEL);
 	for (int i = 0; i < argc_tmp; i++)
 	{
 		if (strstr(argv_tmp[i], nameId) == argv_tmp[i])
