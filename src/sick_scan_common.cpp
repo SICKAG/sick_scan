@@ -858,6 +858,8 @@ namespace sick_scan
 
 		setReadTimeOutInMs(shortTimeOutInMs);
 
+    bool restartDueToProcolChange = false;
+
 		for (int i = 0; i < this->sopasCmdChain.size(); i++)
 		{
 			ros::Duration(0.2).sleep();   // could maybe removed
@@ -918,18 +920,32 @@ namespace sick_scan
 			// REPLY_HANDLING
 			//============================================
 			maxCmdLoop = 1;
+
+
 			switch (cmdId)
 			{
 			case CMD_SET_TO_COLA_A_PROTOCOL:
-				checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
+      {
+				bool protocolCheck = checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
+        if (false == protocolCheck)
+        {
+          restartDueToProcolChange = true;
+        }
 				useBinaryCmd = useBinaryCmdNow;
 				setReadTimeOutInMs(defaultTimeOutInMs);
-				break;
+      }
+			break;
 			case CMD_SET_TO_COLA_B_PROTOCOL:
-				checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
+      {
+        bool protocolCheck = checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
+        if (false == protocolCheck)
+        {
+          restartDueToProcolChange = true;
+        }
 				useBinaryCmd = useBinaryCmdNow;
 				setReadTimeOutInMs(defaultTimeOutInMs);
-				break;
+      }
+      break;
 
 				/*
 				SERIAL_NUMBER: Device ident must be read before!
@@ -1106,21 +1122,17 @@ namespace sick_scan
 			break;
 			// ML: add here reply handling
 			}
+
+      if (restartDueToProcolChange)
+      {
+        return ExitError;
+
+      }
 		}
 
 
-
 		//-----------------------------------------------------------------
 		//
-		// Set Access Mode to change parameter afterward
-		//
-		//-----------------------------------------------------------------
-		// sMN SetAccessMode 04 81BE23AA (vgl. https://www.google.de/url?sa=t&rct=j&q=&esrc=s&source=web&cd=2&cad=rja&uact=8&ved=0ahUKEwjTqbS_3NnXAhWCSBQKHfOwAZkQFgguMAE&url=https%3A%2F%2Fwww.sick.com%2Fmedia%2Fpdf%2F7%2F17%2F617%2FIM0056617.PDF&usg=AOvVaw16Wc_EqJALJttj1WjNnWY5 )
-
-
-		//-----------------------------------------------------------------
-		//
-		// Try to read angular resolution of specific scanner.
 		// This is recommended to decide between TiM551 and TiM561/TiM571 capabilities
 		// The TiM551 has an angular resolution of 1.000 [deg]
 		// The TiM561 and TiM571 have an angular resolution of 0.333 [deg]
@@ -2493,10 +2505,11 @@ namespace sick_scan
 		bool shouldUseBinary = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
 		if (shouldUseBinary == useBinaryCmdNow)
 		{
-			retValue = true;
+			retValue = true;  // !!!! CHANGE ONLY FOR TEST!!!!!
 		}
 		else
 		{
+/*
 			// we must reconnect and set the new protocoltype
 			int iRet = this->close_device();
 			ROS_INFO("SOPAS - Close and reconnected to scanner due to protocol change and wait 15 sec. ");
@@ -2505,6 +2518,7 @@ namespace sick_scan
 			ros::Duration(15.0).sleep();
 
 			iRet = this->init_device();
+			*/
 			if (shouldUseBinary == true)
 			{
 				this->setProtocolType(CoLa_B);
@@ -2513,7 +2527,9 @@ namespace sick_scan
 			{
 				this->setProtocolType(CoLa_A);
 			}
+
 			useBinaryCmdNow = shouldUseBinary;
+	    retValue= false;
 		}
 		return(retValue);
 	}
