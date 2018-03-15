@@ -192,6 +192,7 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 	int result = sick_scan::ExitError;
 	while (ros::ok())
 	{
+    ROS_INFO("Start initialising scanner ...");
 		// attempt to connect/reconnect
 		delete s;  // disconnect scanner
         if (useTCP)
