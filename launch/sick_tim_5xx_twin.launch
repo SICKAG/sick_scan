@@ -10,7 +10,7 @@
      3. Pointcloud2->Topic: /cloud_2
 
      Remark: Add two Pointcloud2-Visualizer to the Displays-Windows.
-     You can also add two Laserscan-Visualizer. Please the topic for laserscan-Visualizer to /scan_1 and /scan_2
+     You can also add two Laserscan-Visualizer. Please set the topic for laserscan-Visualizer to /scan_1 and /scan_2 in this case.
 
 -->
 <launch>
