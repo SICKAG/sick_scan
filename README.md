@@ -1,5 +1,5 @@
 # sick_scan
-##### Development-Branch
+##### Master-Branch
 ## Table of contents
 
 - [Supported Hardware](#supported-hardware)
