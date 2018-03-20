@@ -178,6 +178,25 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 		parser->set_time_increment(param);
 	}
 
+	/*
+	 *  Check, if parameter for protocol type is set
+	 */
+	bool sopas_protocol_type;
+	if (true == nhPriv.getParam("sopas_protocol_type", sopas_protocol_type))
+	{
+		ROS_INFO("Found sopas_protocol_type param overwriting default protocol:");
+		if (sopas_protocol_type)
+		{
+			ROS_INFO("Binary protocol activated");
+		}
+		else
+		{
+			ROS_INFO("ASCII protocol activated");
+		}
+		parser->getCurrentParamPtr()->setUseBinaryProtocol(sopas_protocol_type);
+	}
+
+
 	if (parser->getCurrentParamPtr()->getUseBinaryProtocol())
 	{
 		colaDialectId = 'B';

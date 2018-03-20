@@ -289,7 +289,7 @@ namespace sick_scan
 				basicParams[i].setAngularDegreeResolution(0.25);
 				basicParams[i].setElevationDegreeResolution(2.5); // in [degree]
 				basicParams[i].setExpectedFrequency(50.0);
-				basicParams[i].setUseBinaryProtocol(false);
+				basicParams[i].setUseBinaryProtocol(true);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)  // LMS1000 - 4 layer, 1101 shots per scan
 			{
@@ -299,7 +299,7 @@ namespace sick_scan
 				basicParams[i].setAngularDegreeResolution(1.00);  // 0.25° wurde nicht unterstuetzt. (SFA 4)
 				basicParams[i].setElevationDegreeResolution(0.0); // in [degree]
 				basicParams[i].setExpectedFrequency(50.0);
-				basicParams[i].setUseBinaryProtocol(false);
+				basicParams[i].setUseBinaryProtocol(true);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_5XX_NAME) == 0) // TIM_5xx - 1 Layer, max. 811 shots per scan
 			{
@@ -308,7 +308,7 @@ namespace sick_scan
 				basicParams[i].setNumberOfShots(811);
 				basicParams[i].setAngularDegreeResolution(0.3333);
 				basicParams[i].setExpectedFrequency(15.0);
-				basicParams[i].setUseBinaryProtocol(false); 
+				basicParams[i].setUseBinaryProtocol(true);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) // future use
 			{
