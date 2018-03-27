@@ -635,7 +635,11 @@ namespace sick_scan
 		result = init_scanner();
 		if (result != 0)
 		{
-			ROS_FATAL("Failed to init scanner: %d", result);
+			ROS_ERROR("Failed to init scanner Error Code: %d\nWaiting for timeout...\n"
+							  "If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed.\n"
+							  "This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. There are two ways to prevent this:\n"
+							  "1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.\n"
+							  "2. Use the parameter \"sopas_protocol_type\" to overwrite the default settings of the driver.", result);
 		}
 		return result;
 	}
@@ -853,7 +857,7 @@ namespace sick_scan
 		bool useBinaryCmdNow = false;
 		int maxCmdLoop = 2; // try binary and ascii during startup
 
-		const int shortTimeOutInMs = 2000; // during startup phase to check binary or ascii
+		const int shortTimeOutInMs = 5000; // during startup phase to check binary or ascii
 		const int defaultTimeOutInMs = 20000; // standard time out 20 sec.
 
 		setReadTimeOutInMs(shortTimeOutInMs);

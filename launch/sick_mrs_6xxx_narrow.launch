@@ -17,7 +17,7 @@
       <param name="device_number" type="int" value="0" />
       <param name="range_min" type="double" value="0.05" />
     -->
-    <param name="scanner_type" type="string" value="sick_mrs_6xxx"
+    <param name="scanner_type" type="string" value="sick_mrs_6xxx"/>
     <param name="range_max" type="double" value="25.0" />
     <param name="hostname" type="string" value="192.168.0.24" />
     <param name="port" type="string" value="2112" />
