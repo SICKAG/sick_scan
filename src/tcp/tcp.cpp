@@ -14,6 +14,8 @@
 #include <string.h>     // for memset()
 #include <netdb.h>      // for hostent
 #include <iostream>     // for cout
+#include <sys/poll.h>
+#include <poll.h>
 
 Tcp::Tcp()
 {
@@ -228,7 +230,7 @@ INT32 Tcp::readInputData()
 	const UINT16 max_length = 8192;
 	UINT8 inBuffer[max_length];
 	INT32 recvMsgSize = 0;
-	
+
 	// Ist die Verbindung offen?
 	if (isOpen() == false)
 	{
@@ -240,7 +242,32 @@ INT32 Tcp::readInputData()
 #ifdef _MSC_VER
 	recvMsgSize = recv(m_connectionSocket, (char *)inBuffer, max_length, 0);
 #else
-	recvMsgSize = recv(m_connectionSocket, inBuffer, max_length, 0);
+	{
+		int ret = -1;
+		do {
+			struct pollfd fd;
+
+			fd.fd = m_connectionSocket; // your socket handler
+			fd.events = POLLIN;
+			ret = poll(&fd, 1, 1000); // 1 second for timeout
+			switch (ret) {
+				case -1:
+					// Error
+					break;
+				case 0:
+					// Timeout
+					break;
+				default:
+					recvMsgSize = recv(m_connectionSocket, inBuffer, max_length, 0);
+					break;
+			}
+			if (m_readThread.m_threadShouldRun == false)
+			{
+				recvMsgSize = 0;
+				break;
+			}
+		} while (ret == 0);
+	}
 #endif
 	if (recvMsgSize < 0)
 	{
@@ -330,7 +357,7 @@ void Tcp::stopReadThread()
 {
 	printInfoMessage("Tcp::stopReadThread: Stopping thread.", m_beVerbose);
 	
-//	m_readThread.m_threadShouldRun = false;
+	m_readThread.m_threadShouldRun = false;
 	m_readThread.join();
 
 	printInfoMessage("Tcp::stopReadThread: Done - Read thread is now closed.", m_beVerbose);

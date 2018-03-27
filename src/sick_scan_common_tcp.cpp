@@ -554,6 +554,7 @@ namespace sick_scan
 
 	int SickScanCommonTcp::close_device()
 	{
+		ROS_WARN("Disconnecting TCP-Connection.");
 		m_nw.disconnect();
 		return 0;
 	}
@@ -712,7 +713,7 @@ namespace sick_scan
 		this->setReplyMode(1);
 		const int maxWaitInMs = 2000;
 		std::vector<unsigned char> dataBuffer;
-#if 0 // prepared for reconnect
+#if 1 // prepared for reconnect
 		bool retVal = this->recvQueue.waitForIncomingObject(maxWaitInMs);
 		if (retVal == false)
 		{
@@ -724,7 +725,7 @@ namespace sick_scan
 			dataBuffer = this->recvQueue.pop();
 		}
 #endif
-		dataBuffer = this->recvQueue.pop();
+		// dataBuffer = this->recvQueue.pop();
 
 		long size = dataBuffer.size();
 		memcpy(receiveBuffer, &(dataBuffer[0]), size);

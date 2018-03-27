@@ -98,7 +98,7 @@ bool getTagVal(std::string tagVal, std::string& tag, std::string& val)
 \return exit-code
 \sa main
 */
-int mainGenericLaser(int argc, char **argv, std::string scannerName)
+int mainGenericLaser(int argc, char **argv, std::string nodeName)
 {
 	std::string tag;
 	std::string val;
@@ -121,8 +121,18 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 			}
 		}
 	}
-	ros::init(argc, argv, scannerName);
+
+	ros::init(argc, argv, nodeName);  // scannerName holds the node-name
 	ros::NodeHandle nhPriv("~");
+
+	std::string scannerName;
+	if (false == nhPriv.getParam("scanner_type", scannerName))
+	{
+		ROS_ERROR("cannot find parameter ""scanner_type"" in the param set. Please specify scanner_type.");
+		ROS_ERROR("Try to set sick_tim_5xx as fallback.\n");
+		scannerName = "sick_tim_5xx";
+	}
+
 
 	if (doInternalDebug)
 	{
@@ -182,6 +192,7 @@ int mainGenericLaser(int argc, char **argv, std::string scannerName)
 	int result = sick_scan::ExitError;
 	while (ros::ok())
 	{
+    ROS_INFO("Start initialising scanner ...");
 		// attempt to connect/reconnect
 		delete s;  // disconnect scanner
         if (useTCP)
