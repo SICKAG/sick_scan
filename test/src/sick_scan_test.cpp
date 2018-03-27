@@ -11,7 +11,7 @@
 *     * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
 *       documentation and/or other materials provided with the distribution.
-*     * Neither the name of Osnabrück University nor the names of its
+*     * Neither the name of Osnabrï¿½ck University nor the names of its
 *       contributors may be used to endorse or promote products derived from
 *       this software without specific prior written permission.
 *     * Neither the name of SICK AG nor the names of its
@@ -56,8 +56,8 @@
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
 
-#include "tinyxml/tinystr.h"
-#include "tinyxml/tinyxml.h"
+#include "tinystr.h"
+#include "tinyxml.h"
 
 #define MAX_NAME_LEN (1024)
 

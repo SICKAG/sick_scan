@@ -47,14 +47,14 @@ add_executable(sick_generic_caller
 	)
 target_link_libraries(sick_generic_caller sick_scan_lib)
 
-add_executable(sick_scan_test)
-    test/src/sick_scan_test.cpp
+add_executable(sick_scan_test
+	test/src/sick_scan_test.cpp
 	driver/src/tinyxml/tinystr.cpp
 	driver/src/tinyxml/tinyxml.cpp
 	driver/src/tinyxml/tinyxmlerror.cpp
 	driver/src/tinyxml/tinyxmlparser.cpp
 	)
-target_link_libraries(sick_generic_caller sick_scan_lib)
+target_link_libraries(sick_scan_test sick_scan_lib)
 
 
 install(TARGETS sick_scan_lib
