@@ -20,7 +20,7 @@ catkin_package(
     LIBRARIES sick_scan_lib
     INCLUDE_DIRS include )
 
-include_directories(include include/tcp ${catkin_INCLUDE_DIRS} )
+include_directories(include include/tcp include/tinyxml ${catkin_INCLUDE_DIRS} )
 
 add_library(sick_scan_lib
     driver/src/sick_scan_common.cpp
@@ -46,6 +46,15 @@ add_executable(sick_generic_caller
 	driver/src/sick_scan_common_nw.cpp
 	)
 target_link_libraries(sick_generic_caller sick_scan_lib)
+
+add_executable(sick_scan_test
+	test/src/sick_scan_test.cpp
+	driver/src/tinyxml/tinystr.cpp
+	driver/src/tinyxml/tinyxml.cpp
+	driver/src/tinyxml/tinyxmlerror.cpp
+	driver/src/tinyxml/tinyxmlparser.cpp
+	)
+target_link_libraries(sick_scan_test sick_scan_lib)
 
 
 install(TARGETS sick_scan_lib
