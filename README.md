@@ -47,17 +47,27 @@ For LMS1104:
 roslaunch sick_scan sick_lms_1xxx.launch
 
 For TiM551, TiM561, TiM571:
-roslaunch sick_scan sick_tim_5xx.launch
+roslaunch sick_scan sick_tim_5xx.launch#
+
+### Start multiple Nodes
+
+Take the launchfile "sick_tim_5xx_twin.launch" as an example.
+Rempping the scan and cloud topics is essential to distinguish the scanndata and provide TF information.
+
+## Sopas mode
+This driver supports both COLA-B (binary) and COLA-A (ASCII) communication with the laser scanner. Binary mode is activated by default. Since this mode generates less network traffic.
+If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed. This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. 
+There are two ways to prevent this:
+1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.
+2. Use the parameter "sopas_protocol_type" to overwrite the default settings of the driver.
+
 
 ## Bugs and feature requests
 
 - General: Brand new driver especially for MRS6124 
 - Stability issues: Driver is experimental 
-- Binary mode / ASCII-Mode: - COLA-A/COLA-B-protocol:
-The driver tests the protocol setting (ASCII or BINARY) at startup and then programs the scanner to the expected protocol. If the protocol is switched from BINARY to ASCII or vice versa during startup by the driver, it is recommended to restart the driver, otherwise the communication may be interrupted.
-Cola protocol mapping:
--- MRS6124: COLA-B (Binary)
--- All other scanners: COLA-A (Ascii)
+- Sopas protocol mapping:
+-- All scanners: COLA-B (Binary)
 - Software should be further tested, documented and beautified
 - Setting of "topic" should not be hardcoded to /cloud in the future. This allows the simultaneous operation of several scanners. Each point cloud can then be converted using its own TF transformation.
 
