@@ -334,7 +334,7 @@ int main(int argc, char **argv)
 	std::string packagePath;
 	extractPackagePath(pPath, packagePath);
 
-	std::string testCtrlXmlFileName = packagePath + std::string(1, sep) + "test" + std::string(1, sep) + "sick_scan_test.xml";
+	std::string testCtrlXmlFileName = packagePath + std::string(1, sep) + "sick_scan" + std::string(1, sep) + "test" + std::string(1, sep) + "sick_scan_test.xml";
 
 
 	TiXmlDocument doc;
