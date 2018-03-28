@@ -53,8 +53,16 @@
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <iostream>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <cstdio>
+#include <cstdlib>
+
+
 #include "sick_scan/sick_generic_laser.h"
 
+#include <ros/console.h>
 
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
@@ -81,8 +89,18 @@ public:
 		nameVal = _nameVal;
 		typeVal = _typeVal;
 		valueVal = _valueVal;
+    setCheckStatus(999,"untested");
 	};
 
+  void setPointerToXmlNode(TiXmlElement *paramEntryPtr)
+  {
+    this->nodePtr = paramEntryPtr;
+  }
+
+    TiXmlElement * getPointerToXmlNode(void)
+    {
+      return( this->nodePtr);
+    }
 	void setValues(std::string _nameVal, std::string _typeVal, std::string _valueVal)
 	{
 		nameVal = _nameVal;
@@ -105,13 +123,63 @@ public:
 		return(valueVal);
 	}
 
+  void setCheckStatus(int errCode, std::string errMsg)
+  {
+    errorCode = errCode;
+    errorMsg = errMsg;
+  };
+
+    int getErrorCode()
+    {
+      return(errorCode);
+    }
+
+    std::string getErrorMsg()
+    {
+      return(errorMsg);
+    }
+
 private:
 	std::string nameVal;
 	std::string typeVal;
 	std::string valueVal;
+  int errorCode;
+  std::string errorMsg;
+    TiXmlElement *nodePtr;
 };
 
 
+
+
+
+void sudokill(pid_t tokill)
+{
+
+  kill(tokill, SIGTERM);
+#if 0
+  char *killstr;
+  int status;
+  pid_t pid;
+
+  if (asprintf(&killstr, "%d", tokill) < 0)
+    printf("asprintf() failed");
+
+  pid = fork();
+  switch (pid)
+  {
+    case -1:
+      printf( "fork() failed");
+    case 0:
+      execlp("sudo", "sudo", "kill", killstr, (char *) NULL);
+      printf( "execlp() failed");
+    default:
+      while (wait(&status) != pid);
+  }
+
+  free(killstr);
+#endif
+  sleep(5);
+}
 
 std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 {
@@ -124,6 +192,7 @@ std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 		std::string nameVal = "";
 		std::string typeVal = "";
 		std::string valueVal = "";
+
 		for (TiXmlAttribute* node = paramEntry->FirstAttribute(); ; node = node->Next())
 		{
 			const char *tag = node->Name();
@@ -149,6 +218,7 @@ std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 		}
 
 		paramEntryAscii tmpEntry(nameVal, typeVal, valueVal);
+    tmpEntry.setPointerToXmlNode(paramEntry);
 		tmpList.push_back(tmpEntry);
 		paramEntry = (TiXmlElement *)paramEntry->NextSibling();
 	}
@@ -181,6 +251,48 @@ void replaceParamList(TiXmlNode * node, std::vector<paramEntryAscii> paramOrgLis
 		paramTmp->SetAttribute("value", tmp.getValue().c_str());
 		node->LinkEndChild(paramTmp);
 	}
+}
+
+pid_t pid;
+
+pid_t launchRosFile(std::string cmdLine)
+{
+  std::string cmd = cmdLine;
+  typedef std::vector<std::string > split_vector_type;
+
+  split_vector_type splitVec; // #2: Search for tokens
+  boost::split(splitVec, cmdLine, boost::is_any_of(" "), boost::token_compress_on); // SplitVec == { "hello abc","ABC","aBc goodbye" }
+
+
+
+  pid_t pid = fork(); // create child process
+  int status;
+
+  switch (pid)
+  {
+    case -1: // error
+      perror("fork");
+      exit(1);
+
+    case 0: // child process
+      execl("/opt/ros/kinetic/bin/roslaunch", splitVec[0].c_str(), splitVec[1].c_str(),  splitVec[2].c_str(), NULL); // run the command
+      perror("execl"); // execl doesn't return unless there is a problem
+      exit(1);
+
+    default: // parent process, pid now contains the child pid
+  /*
+      while (-1 == waitpid(pid, &status, 0)); // wait for child to complete
+      if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+      {
+        // handle error
+        std::cerr << "process " << cmd << " (pid=" << pid << ") failed" << std::endl;
+      }
+      */
+      break;
+
+  }
+
+  return(pid);
 }
 
 int createTestLaunchFile(std::string launchFileFullName, std::vector<paramEntryAscii> entryList, std::string& testLaunchFile)
@@ -234,17 +346,15 @@ int createTestLaunchFile(std::string launchFileFullName, std::vector<paramEntryA
 
 int cloud_width = 0;  // hacky 
 int cloud_height = 0;
+int callbackCnt = 0;
 void cloud_callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 {
 	static int cnt = 0;
-	cnt++;
+  callbackCnt++;
 	cloud_width = cloud_msg->width;
 	cloud_height = cloud_msg->height;
 	ROS_INFO("inside callback");
-	if (cnt > 10)
-	{
-		ros::shutdown(); // to stop ros::spin()
-	}
+
 }
 
 int startCallbackTest(int argc, char** argv)
@@ -253,9 +363,19 @@ int startCallbackTest(int argc, char** argv)
 	ros::NodeHandle nh;
 	ros::Rate loop_rate(10);
 	ros::Subscriber sub;
+  ROS_INFO("Cloudtester started."
+                  );
 	sub = nh.subscribe("cloud", 1, cloud_callback);
-	ros::spin();
+  while (callbackCnt < 10)
+  {
+  ros::spinOnce();
+  }
+  sub.shutdown();
+  ros::shutdown();
+
+  ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
 	return(0);
+
 }
 
 
@@ -308,6 +428,14 @@ int main(int argc, char **argv)
 
 	std::string exeName = argv[0];
 
+  if (argc == 1)
+  {
+    printf("Usage: %s <XML-Test-Ctrl-File>\n", exeName.c_str());
+    printf("\n");
+    printf("The XML-Test-Ctrl-File controls the parameter checking of various scanner types.");
+    printf("The XML-File sick_scan_test.xml in the test-Directory shows an example of this file type.\n");
+    exit(-1);
+  }
 #if 0
 	createPrefixFromExeName(exeName, prefix);
 #ifdef _MSC_VER
@@ -334,10 +462,12 @@ int main(int argc, char **argv)
 	std::string packagePath;
 	extractPackagePath(pPath, packagePath);
 
-	std::string testCtrlXmlFileName = packagePath + std::string(1, sep) + "sick_scan" + std::string(1, sep) + "test" + std::string(1, sep) + "sick_scan_test.xml";
+//	std::string testCtrlXmlFileName = packagePath + std::string(1, sep) + "sick_scan" + std::string(1, sep) + "test" + std::string(1, sep) + "sick_scan_test.xml";
+//  $ROS_PACKAGE_PATH/sick_scan/test/sick_scan_test.xml
+  std::string testCtrlXmlFileName = argv[1];
+  boost::replace_all(testCtrlXmlFileName, "$ROS_PACKAGE_PATH", packagePath);
 
-
-	TiXmlDocument doc;
+  TiXmlDocument doc;
 	doc.LoadFile(testCtrlXmlFileName.c_str());
 	if (doc.Error())
 	{
@@ -350,20 +480,14 @@ int main(int argc, char **argv)
 	boost::filesystem::path parentPath = p.parent_path();
 	std::string pathName = parentPath.string();
 	std::string launchFilePrefix = parentPath.parent_path().string() + std::string(1, sep) + "launch" + std::string(1, sep);
-	TiXmlNode *node = doc.FirstChild("launchList");
-	if (node == NULL)
-	{
-		ROS_ERROR("Cannot find tag <launchList>\n");
-		exit(-1);
-	}
-	node = node->FirstChild("launch");
+	TiXmlNode *node = doc.FirstChild("launch");
 	if (node == NULL)
 	{
 		ROS_ERROR("Cannot find tag <launch>\n");
 		exit(-1);
 	}
 
-	while (node)
+	if (node)
 	{
 		TiXmlElement *fileNameEntry;
 		fileNameEntry = (TiXmlElement *)node->FirstChild("filename");
@@ -389,10 +513,13 @@ int main(int argc, char **argv)
 				std::string testOnlyLaunchFileName = p.filename().string();
 				commandLine = "roslaunch sick_scan " + testOnlyLaunchFileName;
 				ROS_INFO("launch ROS test ... [%s]", commandLine.c_str());
-				int result = std::system(commandLine.c_str());
 
+        // int result = std::system(commandLine.c_str());
+
+        pid_t pidId = launchRosFile(commandLine.c_str());
 				startCallbackTest(argc, argv); // get 10 pointcloud messages 
 
+        ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
 				ROS_INFO("If you receive an error message like \"... is neither a launch file ... \""
 					"please source ROS env. via source ./devel/setup.bash");
 
@@ -412,18 +539,41 @@ int main(int argc, char **argv)
 							{
 								sscanf(valPtr, "%d", &expectedWidth);
 							}
+
+              ROS_INFO("Test\n");
+              int errorCode = 0;
 							if (expectedWidth == cloud_width)
 							{
-								ROS_INFO("CHECK PASSED! WIDTH %d == %d", expectedWidth, cloud_width);
+								printf("CHECK PASSED! WIDTH %d == %d\n", expectedWidth, cloud_width);
+                errorCode = 0;
 							}
 							else
 							{
-								ROS_INFO("CHECK FAILED! WIDTH %d <> %d", expectedWidth, cloud_width);
+                printf("CHECK FAILED! WIDTH %d <> %d\n", expectedWidth, cloud_width);
+                errorCode = 1;
 
 							}
+              resultList[i].setCheckStatus(errorCode, (errorCode == 0) ? "OK" : "Unexpected number of shots");
+              cloud_width = 0;
 						}
+
+            TiXmlElement *paramSet = resultList[i].getPointerToXmlNode();
+            paramSet->SetAttribute("errorCode", resultList[i].getErrorCode());
+            paramSet->SetAttribute("errorMsg", resultList[i].getErrorMsg().c_str());
 					}
+
 				}
+
+        printf("Killing process %d\n", pidId);
+        sudokill(pidId);
+
+        std::string testCtrlResultXmlFileName = "";
+        size_t pos = testCtrlXmlFileName.rfind('.');
+        if (pos != std::string::npos)
+        {
+          testCtrlResultXmlFileName = testCtrlXmlFileName.substr(0,pos) + "_res.xml";
+          doc.SaveFile(testCtrlResultXmlFileName.c_str());
+        }
 
 			}
 		}
@@ -431,7 +581,8 @@ int main(int argc, char **argv)
 		{
 			ROS_WARN("Cannot find filename entry");
 		}
-		node = node->NextSibling();
+
+
 	}
 	return result;
 
