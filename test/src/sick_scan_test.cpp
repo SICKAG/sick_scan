@@ -51,6 +51,7 @@
 
 #include "boost/filesystem.hpp"
 #include <boost/regex.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "sick_scan/sick_generic_laser.h"
 
@@ -117,40 +118,40 @@ std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 	std::vector<paramEntryAscii> tmpList;
 
 
-		TiXmlElement *paramEntry = (TiXmlElement *)paramList->FirstChild("param");
-		while (paramEntry)
+	TiXmlElement *paramEntry = (TiXmlElement *)paramList->FirstChild("param");
+	while (paramEntry)
+	{
+		std::string nameVal = "";
+		std::string typeVal = "";
+		std::string valueVal = "";
+		for (TiXmlAttribute* node = paramEntry->FirstAttribute(); ; node = node->Next())
 		{
-			std::string nameVal = "";
-			std::string typeVal = "";
-			std::string valueVal = "";
-			for (TiXmlAttribute* node = paramEntry->FirstAttribute(); ; node = node->Next())
+			const char *tag = node->Name();
+			const char *val = node->Value();
+
+			if (strcmp(tag, "name") == 0)
 			{
-				const char *tag = node->Name();
-				const char *val = node->Value();
-				
-				if (strcmp(tag, "name") == 0)
-				{
-					nameVal = val;
-				}
-				if (strcmp(tag, "type") == 0)
-				{
-					typeVal = val;
-				}
-				if (strcmp(tag, "value") == 0)
-				{
-					valueVal = val;
-				}
-				if (node == paramEntry->LastAttribute())
-				{
-
-					break;
-				}
+				nameVal = val;
 			}
+			if (strcmp(tag, "type") == 0)
+			{
+				typeVal = val;
+			}
+			if (strcmp(tag, "value") == 0)
+			{
+				valueVal = val;
+			}
+			if (node == paramEntry->LastAttribute())
+			{
 
-			paramEntryAscii tmpEntry(nameVal, typeVal, valueVal);
-			tmpList.push_back(tmpEntry);
-			paramEntry = (TiXmlElement *)paramEntry->NextSibling();
+				break;
+			}
 		}
+
+		paramEntryAscii tmpEntry(nameVal, typeVal, valueVal);
+		tmpList.push_back(tmpEntry);
+		paramEntry = (TiXmlElement *)paramEntry->NextSibling();
+	}
 
 	return(tmpList);
 }
@@ -160,7 +161,7 @@ std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 void replaceParamList(TiXmlNode * node, std::vector<paramEntryAscii> paramOrgList)
 {
 	bool fndParam = false;
-	do 
+	do
 	{
 		fndParam = false;
 		TiXmlElement *paramEntry = (TiXmlElement *)node->FirstChild("param");
@@ -216,7 +217,7 @@ int createTestLaunchFile(std::string launchFileFullName, std::vector<paramEntryA
 		// delete all parameters and replace with new one
 		replaceParamList(node, paramOrgList);
 	}
-	
+
 	// append source extension if any 
 	size_t pos = launchFileFullName.rfind('.');
 	std::string resultFileName = "";
@@ -246,7 +247,7 @@ void cloud_callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	}
 }
 
-int startCallbackTest(int argc, char** argv) 
+int startCallbackTest(int argc, char** argv)
 {
 	ros::init(argc, argv, "cloudtester");
 	ros::NodeHandle nh;
@@ -263,25 +264,38 @@ void createPrefixFromExeName(std::string exeName, std::string& prefix)
 #ifdef _MSC_VER
 #else
 #endif
-  std::string searchPattern = "(.*)cmake\\-build\\-debug.*";
-  boost::regex expr(searchPattern);
-  boost::smatch what;
+	std::string searchPattern = "(.*)cmake\\-build\\-debug.*";
+	boost::regex expr(searchPattern);
+	boost::smatch what;
 
-  if (boost::regex_search(exeName, what, expr))
-  {
-    std::string prefixPath = what[1];  // started from CLION IDE - build complete path
-    prefix = prefixPath;
-    prefix += "test";
-  }
-  else
-  {
-      prefix = ".";
-  }
+	if (boost::regex_search(exeName, what, expr))
+	{
+		std::string prefixPath = what[1];  // started from CLION IDE - build complete path
+		prefix = prefixPath;
+		prefix += "test";
+	}
+	else
+	{
+		prefix = ".";
+	}
 
 }
 
+
+void extractPackagePath(std::string pathList, std::string& packagePath)
+{
+	typedef std::vector<std::string > split_vector_type;
+	packagePath = "???";
+	split_vector_type splitVec; // #2: Search for tokens
+	boost::split(splitVec, pathList, boost::is_any_of(":"), boost::token_compress_on); // SplitVec == { "hello abc","ABC","aBc goodbye" }
+	if (splitVec.size() > 0)
+	{
+		packagePath = splitVec[0];
+	}
+}
+
 /*!
-\brief Startup routine 
+\brief Startup routine
 \param argc: Number of Arguments
 \param argv: Argument variable
 \return exit-code
@@ -292,14 +306,35 @@ int main(int argc, char **argv)
 	char sep = boost::filesystem::path::preferred_separator;
 	std::string prefix = ".";
 
-  std::string exeName = argv[0];
+	std::string exeName = argv[0];
 
-  createPrefixFromExeName(exeName, prefix);
+#if 0
+	createPrefixFromExeName(exeName, prefix);
 #ifdef _MSC_VER
-  		prefix = std::string("..") + sep + std::string("..") + sep + "test";
+	prefix = std::string("..") + sep + std::string("..") + sep + "test";
 #endif
-	std::string testCtrlXmlFileName = prefix + std::string(1, sep) + "sick_scan_test.xml";
 	ROS_INFO("sick_scan_test V. %s.%s.%s", SICK_SCAN_TEST_MAJOR_VER, SICK_SCAN_TEST_MINOR_VER, SICK_SCAN_TEST_PATCH_LEVEL);
+#endif
+
+
+	char* pPath;
+	pPath = getenv("ROS_PACKAGE_PATH");
+#ifdef _MSC_VER
+	pPath = "..\\..:\tmp";
+#endif
+	if (pPath != NULL)
+	{
+		ROS_INFO("Current root path entries for launch file search: %s\n", pPath);
+	}
+	else
+	{
+		ROS_FATAL("Cannot find ROS_PACKAGE_PATH - please run <Workspace>/devel/setup.bash");
+	}
+
+	std::string packagePath;
+	extractPackagePath(pPath, packagePath);
+
+	std::string testCtrlXmlFileName = packagePath + std::string(1, sep) + "test" + std::string(1, sep) + "sick_scan_test.xml";
 
 
 	TiXmlDocument doc;
@@ -307,16 +342,9 @@ int main(int argc, char **argv)
 	if (doc.Error())
 	{
 		ROS_ERROR("Cannot load/parse %s", testCtrlXmlFileName.c_str());
-    ROS_ERROR("Details: %s\n", doc.ErrorDesc());
+		ROS_ERROR("Details: %s\n", doc.ErrorDesc());
 		exit(-1);
 	}
-
-  char* pPath;
-  pPath = getenv ("ROS_PACKAGE_PATH");
-  if (pPath!=NULL)
-  {
-    printf("The current path is: %s\n", pPath);
-  }
 
 	boost::filesystem::path p(testCtrlXmlFileName);
 	boost::filesystem::path parentPath = p.parent_path();
@@ -357,14 +385,16 @@ int main(int argc, char **argv)
 				std::string testLaunchFile;
 				createTestLaunchFile(launchFileFullName, paramList, testLaunchFile);
 				std::string commandLine;
-				commandLine = "roslaunch sick_scan " + testLaunchFile;
+				boost::filesystem::path p(testLaunchFile);
+				std::string testOnlyLaunchFileName = p.filename().string();
+				commandLine = "roslaunch sick_scan " + testOnlyLaunchFileName;
 				ROS_INFO("launch ROS test ... [%s]", commandLine.c_str());
 				int result = std::system(commandLine.c_str());
 
 				startCallbackTest(argc, argv); // get 10 pointcloud messages 
 
-        ROS_INFO("If you receive an error message like \"... is neither a launch file ... \""
-                         "please source ROS env. via source ./devel/setup.bash");
+				ROS_INFO("If you receive an error message like \"... is neither a launch file ... \""
+					"please source ROS env. via source ./devel/setup.bash");
 
 
 				TiXmlNode *resultListNode = (TiXmlNode *)node->FirstChild("resultList");
