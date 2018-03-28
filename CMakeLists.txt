@@ -56,6 +56,12 @@ add_executable(sick_scan_test
 	)
 target_link_libraries(sick_scan_test sick_scan_lib)
 
+# Destinations:
+# LIB for library
+# BIN for Binaries
+# INCLUDE for Includes
+# SHARE for config files, launch files etc.
+
 
 install(TARGETS sick_scan_lib
     DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
@@ -65,9 +71,18 @@ install(
         sick_generic_caller
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
+install(
+		TARGETS
+		sick_scan_test
+		RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+
 install(FILES include/${PROJECT_NAME}/abstract_parser.h
               include/${PROJECT_NAME}/sick_scan_common.h
     DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+
+install(FILES test/sick_scan_test.xml
+        DESTINATION {CATKIN_PACKAGE_SHARE_DESTINATION}/test )
 
 install(DIRECTORY launch/
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)

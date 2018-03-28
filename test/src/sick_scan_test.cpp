@@ -48,7 +48,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #include "boost/filesystem.hpp"
+#include <boost/regex.hpp>
+
 #include "sick_scan/sick_generic_laser.h"
 
 
@@ -112,7 +115,7 @@ private:
 std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 {
 	std::vector<paramEntryAscii> tmpList;
-	ros::NodeHandle nhPriv("~");
+
 
 		TiXmlElement *paramEntry = (TiXmlElement *)paramList->FirstChild("param");
 		while (paramEntry)
@@ -143,22 +146,7 @@ std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 					break;
 				}
 			}
-			if (typeVal.compare("string") == 0)
-			{
-				nhPriv.setParam(nameVal, valueVal);
-			}
-			if (typeVal.compare("int") == 0)
-			{
-				int val = 0;
-				sscanf(valueVal.c_str(), "%d", &val);
-				nhPriv.setParam(nameVal, val);			
-			}
-			if (typeVal.compare("double") == 0)
-			{
-				double val = 0;
-				sscanf(valueVal.c_str(), "%lf", &val);
-				nhPriv.setParam(nameVal, val);
-			}
+
 			paramEntryAscii tmpEntry(nameVal, typeVal, valueVal);
 			tmpList.push_back(tmpEntry);
 			paramEntry = (TiXmlElement *)paramEntry->NextSibling();
@@ -270,6 +258,28 @@ int startCallbackTest(int argc, char** argv)
 }
 
 
+void createPrefixFromExeName(std::string exeName, std::string& prefix)
+{
+#ifdef _MSC_VER
+#else
+#endif
+  std::string searchPattern = "(.*)cmake\\-build\\-debug.*";
+  boost::regex expr(searchPattern);
+  boost::smatch what;
+
+  if (boost::regex_search(exeName, what, expr))
+  {
+    std::string prefixPath = what[1];  // started from CLION IDE - build complete path
+    prefix = prefixPath;
+    prefix += "test";
+  }
+  else
+  {
+      prefix = ".";
+  }
+
+}
+
 /*!
 \brief Startup routine 
 \param argc: Number of Arguments
@@ -280,11 +290,15 @@ int main(int argc, char **argv)
 {
 	int result = 0;
 	char sep = boost::filesystem::path::preferred_separator;
-	std::string prefix = "";
+	std::string prefix = ".";
+
+  std::string exeName = argv[0];
+
+  createPrefixFromExeName(exeName, prefix);
 #ifdef _MSC_VER
-		prefix = std::string("..") + sep + std::string("..") + sep;
+  		prefix = std::string("..") + sep + std::string("..") + sep + "test";
 #endif
-	std::string testCtrlXmlFileName = prefix + "test" + std::string(1, sep) + "sick_scan_test.xml";
+	std::string testCtrlXmlFileName = prefix + std::string(1, sep) + "sick_scan_test.xml";
 	ROS_INFO("sick_scan_test V. %s.%s.%s", SICK_SCAN_TEST_MAJOR_VER, SICK_SCAN_TEST_MINOR_VER, SICK_SCAN_TEST_PATCH_LEVEL);
 
 
@@ -293,8 +307,16 @@ int main(int argc, char **argv)
 	if (doc.Error())
 	{
 		ROS_ERROR("Cannot load/parse %s", testCtrlXmlFileName.c_str());
+    ROS_ERROR("Details: %s\n", doc.ErrorDesc());
 		exit(-1);
 	}
+
+  char* pPath;
+  pPath = getenv ("ROS_PACKAGE_PATH");
+  if (pPath!=NULL)
+  {
+    printf("The current path is: %s\n", pPath);
+  }
 
 	boost::filesystem::path p(testCtrlXmlFileName);
 	boost::filesystem::path parentPath = p.parent_path();
@@ -340,6 +362,10 @@ int main(int argc, char **argv)
 				int result = std::system(commandLine.c_str());
 
 				startCallbackTest(argc, argv); // get 10 pointcloud messages 
+
+        ROS_INFO("If you receive an error message like \"... is neither a launch file ... \""
+                         "please source ROS env. via source ./devel/setup.bash");
+
 
 				TiXmlNode *resultListNode = (TiXmlNode *)node->FirstChild("resultList");
 				if (resultListNode != NULL)
