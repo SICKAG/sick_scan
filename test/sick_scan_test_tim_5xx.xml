@@ -2,7 +2,7 @@
 <launch>
 	<filename>sick_tim_5xx.launch</filename>
 	<paramList>
-		<!-- Set the ip address to the ip address of our MRS6124 scanner -->
+		<!-- Set the ip address to the ip address of our TIM561 scanner -->
 	<param name="hostname" type="string" value="192.168.0.61" />
 	</paramList>
 	<resultList>
