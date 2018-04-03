@@ -1,10 +1,11 @@
 # sick_scan
-##### Master-Branch
+##### Devel-Branch
 ## Table of contents
 
 - [Supported Hardware](#supported-hardware)
 - [Start node](#start-node)
 - [Bugs and feature requests](#bugs-and-feature-requests)
+- [Testing](#testing)
 - [Creators](#creators)
 
 This stack provides a ROS driver for the SICK series of laser scanners mentioned in the following list.
@@ -129,6 +130,16 @@ roslaunch sick_scan sick_mrs6xxx.launch
 rosrun rviz rviz
 publish to point cloud
 ```
+## Testing
+The sick_scan_test program was developed for testing the driver. This program checks elementary properties of the scanner. In a first implementation stage, the shots per scan are checked. The test program works according to the following principle:
+1. The parameters from an original launch file are read.
+2. These parameters are modified according to the instructions in the test control file.
+3. The modified parameters including all other parameter settings from the original launch file are copied to a test launch file.
+4. The launch file is started.
+5. The parameters are checked.
+6. The result of the check is transferred to a result file.
+The basic procedure can be seen in the following figure:
+![Alt text](./sick_scan_test.png?raw=true "princile of test program")
 
 ## Creators
 
