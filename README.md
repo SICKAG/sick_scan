@@ -140,6 +140,8 @@ The sick_scan_test program was developed for testing the driver. This program ch
 6. The result of the check is transferred to a result file.
 The basic procedure can be seen in the following figure:
 ![Alt text](./sick_scan_test.png?raw=true "princile of test program")
+More information about the structure of the individual files in the test run can be found [here](test/sick_scan_test.md):
+
 
 ## Creators
 
