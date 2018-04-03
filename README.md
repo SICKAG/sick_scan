@@ -135,7 +135,7 @@ The sick_scan_test program was developed for testing the driver. This program ch
 1. The parameters from an original launch file are read.
 2. These parameters are modified according to the instructions in the test control file.
 3. The modified parameters including all other parameter settings from the original launch file are copied to a test launch file.
-4. The launch file is started.
+4. The test launch file is started.
 5. The parameters are checked.
 6. The result of the check is transferred to a result file.
 The basic procedure can be seen in the following figure:

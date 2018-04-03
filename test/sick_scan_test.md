@@ -23,6 +23,11 @@ The following XML is an example of a test control file:
 </launch>
 ```
 
+Explanation: The XML file contains the two blocks paramList and resultList. 
+The parameters to be overwritten in the launch file are specified in the paramList block. 
+The corresponding launch file is referenced by the entry filename. The resultList block specifies 
+which measured values are expected. In a first approach, the parameter shotsPerLayer is checked here.
+
 ## Structure Test Result File
 The following XML is an example of a result file:
 
@@ -32,13 +37,18 @@ The following XML is an example of a result file:
 	<filename>sick_tim_5xx.launch</filename>
 	<paramList>
 		<!-- Set the ip address to the ip address of our TiM scanner -->
-	<param name="hostname" type="string" value="192.168.0.61" errorCode="0" errorMsg="OK" />
+	<param name="hostname" type="string" value="192.168.0.61" />
 	</paramList>
 	<resultList>
-		<param name="shotsPerLayer" type="int" value="811" />
+		<param name="shotsPerLayer" type="int" value="811"  errorCode="0" errorMsg="OK" />
 	</resultList>
 </launch>
 ```
+
+Explanation: The result XML file corresponds to the control file. 
+The errorCode and errorMsg attributes are added to the parameters 
+in the resultList block. A simple grep command with "errorCode" can be used to check the test result after the test has been performed.
+
 ## Creators
 
 **Michael Lehning**
