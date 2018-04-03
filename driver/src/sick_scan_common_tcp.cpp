@@ -606,7 +606,7 @@ namespace sick_scan
 		}
 		if (i >= timeout_ms)
 		{
-			ROS_ERROR("no answer received after %d ms. Maybe sopas mode is wrong.\n",timeout_ms);
+			ROS_ERROR("no answer received after %zu ms. Maybe sopas mode is wrong.\n",timeout_ms);
 			return(ExitError);
 		}
 		boost::condition_variable cond_;
