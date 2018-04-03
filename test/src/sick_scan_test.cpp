@@ -186,13 +186,35 @@ std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 	std::vector<paramEntryAscii> tmpList;
 
 
-	TiXmlElement *paramEntry = (TiXmlElement *)paramList->FirstChild("param");
+	TiXmlElement *paramEntry = (TiXmlElement *)paramList->FirstChild("param"); // first child
 	while (paramEntry)
 	{
 		std::string nameVal = "";
 		std::string typeVal = "";
 		std::string valueVal = "";
 
+		// is this a param-node?
+		// if this is valid than process attributes
+		const char *val = paramEntry->Value();
+		bool searchAttributes = true;
+		if (strcmp(val,"param") == 0)
+		{
+			// expected value
+		}
+		else
+		{
+			searchAttributes = false;
+		}
+		if (paramEntry->Type() == TiXmlNode::TINYXML_ELEMENT)
+		{
+			// expected value
+		}
+		else
+		{
+			searchAttributes = false;
+		}
+		if (searchAttributes)
+		{
 		for (TiXmlAttribute* node = paramEntry->FirstAttribute(); ; node = node->Next())
 		{
 			const char *tag = node->Name();
@@ -220,7 +242,8 @@ std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 		paramEntryAscii tmpEntry(nameVal, typeVal, valueVal);
     tmpEntry.setPointerToXmlNode(paramEntry);
 		tmpList.push_back(tmpEntry);
-		paramEntry = (TiXmlElement *)paramEntry->NextSibling();
+		}
+		paramEntry = (TiXmlElement *)paramEntry->NextSibling();  // go to next sibling
 	}
 
 	return(tmpList);
@@ -295,14 +318,17 @@ pid_t launchRosFile(std::string cmdLine)
   return(pid);
 }
 
+
 int createTestLaunchFile(std::string launchFileFullName, std::vector<paramEntryAscii> entryList, std::string& testLaunchFile)
 {
+	printf("Try load lunchfile :%s",launchFileFullName.c_str());
 	TiXmlDocument doc;
 	doc.LoadFile(launchFileFullName.c_str());
 
 	if (doc.Error() == true)
 	{
-		ROS_WARN("ERROR parsing launch file %s\nRow: %d\nCol: %d", doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
+		ROS_ERROR("ERROR parsing launch file %s\nRow: %d\nCol: %d", doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
+		return(-1);
 	}
 	TiXmlNode *node = doc.FirstChild("launch");
 	if (node != NULL)
@@ -359,7 +385,7 @@ void cloud_callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 int startCallbackTest(int argc, char** argv)
 {
-	ros::init(argc, argv, "cloudtester");
+
 	ros::NodeHandle nh;
 	ros::Rate loop_rate(10);
 	ros::Subscriber sub;
@@ -414,6 +440,37 @@ void extractPackagePath(std::string pathList, std::string& packagePath)
 	}
 }
 
+bool getPackageRootFolder(std::string exePath, std::string& packageRootFolder)
+{
+	 packageRootFolder = "";
+	// try to retrive package name from exePat
+	typedef std::vector<std::string > split_vector_type;
+	split_vector_type splitVec; // #2: Search for tokens
+	boost::split(splitVec, exePath, boost::is_any_of("/"), boost::token_compress_on); // SplitVec == { "hello abc","ABC","aBc goodbye" }
+	bool bFnd = false;
+	for (int i = splitVec.size() - 1; i >= 0; i--)  // last part is exe-Name - so forget this
+	{
+		std::string tmpPath = "";
+		for (int j = 1; j < i; j++)
+		{
+			tmpPath += '/';
+			tmpPath += splitVec[j];
+		}
+
+		std::string fileTmpPath = tmpPath;
+		fileTmpPath += "/package.xml";
+		if (boost::filesystem::exists(fileTmpPath))
+		{
+			packageRootFolder = tmpPath;
+			bFnd = true;
+			break;
+		}
+	}
+
+	return(bFnd);
+
+}
+
 /*!
 \brief Startup routine
 \param argc: Number of Arguments
@@ -425,6 +482,7 @@ int main(int argc, char **argv)
 	int result = 0;
 	char sep = boost::filesystem::path::preferred_separator;
 	std::string prefix = ".";
+	std::string packageRootFolder;
 
 	std::string exeName = argv[0];
 
@@ -436,6 +494,14 @@ int main(int argc, char **argv)
     printf("The XML-File sick_scan_test.xml in the test-Directory shows an example of this file type.\n");
     exit(-1);
   }
+  else
+  {
+    printf("Given program arguments:\n");
+      for (int i = 0; i < argc; i++)
+      {
+          printf("%d: %s\n", i, argv[i]);
+      }
+  }
 #if 0
 	createPrefixFromExeName(exeName, prefix);
 #ifdef _MSC_VER
@@ -444,6 +510,17 @@ int main(int argc, char **argv)
 	ROS_INFO("sick_scan_test V. %s.%s.%s", SICK_SCAN_TEST_MAJOR_VER, SICK_SCAN_TEST_MINOR_VER, SICK_SCAN_TEST_PATCH_LEVEL);
 #endif
 
+	ros::init(argc, argv, "cloudtester");
+
+	std::string nodeName = ros::this_node::getName();
+
+	std::string nodeNameSpace =ros::this_node::getNamespace();
+
+	printf("Nodename:  %s\n", nodeName.c_str());
+	printf("Namespace: %s\n", nodeNameSpace.c_str());
+	bool bFnd = getPackageRootFolder(argv[0], packageRootFolder);
+
+	printf("Package Path: %s\n", packageRootFolder.c_str());
 
 	char* pPath;
 	pPath = getenv("ROS_PACKAGE_PATH");
@@ -467,6 +544,8 @@ int main(int argc, char **argv)
   std::string testCtrlXmlFileName = argv[1];
   boost::replace_all(testCtrlXmlFileName, "$ROS_PACKAGE_PATH", packagePath);
 
+
+	testCtrlXmlFileName = packageRootFolder + std::string(1,'/') + testCtrlXmlFileName;
   TiXmlDocument doc;
 	doc.LoadFile(testCtrlXmlFileName.c_str());
 	if (doc.Error())

@@ -81,8 +81,10 @@ install(FILES include/${PROJECT_NAME}/abstract_parser.h
               include/${PROJECT_NAME}/sick_scan_common.h
     DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
-install(FILES test/sick_scan_test.xml
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/test )
+install(DIRECTORY test/
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/test 
+	FILES_MATCHING PATTERN "*.xml"
+	PATTERN "test/src" EXCLUDE)
 
 install(DIRECTORY launch/
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
