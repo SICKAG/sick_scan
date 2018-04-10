@@ -38,6 +38,8 @@
 #define SICK_SCANNER_LMS_1XXX_NAME "sick_lms_1xxx"
 #define SICK_SCANNER_MRS_1XXX_NAME "sick_mrs_1xxx"
 #define SICK_SCANNER_TIM_5XX_NAME "sick_tim_5xx"
+#define SICK_SCANNER_LMS_5XX_NAME "sick_lms_5xx"
+#define SICK_SCANNER_LMS_1XX_NAME "sick_lms_1xx"
 #define SICK_SCANNER_MRS_6XXX_NAME "sick_mrs_6xxx"
 #include "abstract_parser.h"
 

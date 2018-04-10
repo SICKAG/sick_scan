@@ -274,6 +274,8 @@ namespace sick_scan
 		setScannerType(_scanType);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_TIM_5XX_NAME);
+		allowedScannerNames.push_back(SICK_SCANNER_LMS_5XX_NAME);
+        allowedScannerNames.push_back(SICK_SCANNER_LMS_1XX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_LMS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_6XXX_NAME);
 		basicParams.resize(allowedScannerNames.size()); // resize to number of supported scanner types
@@ -302,15 +304,33 @@ namespace sick_scan
 				basicParams[i].setUseBinaryProtocol(true);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_5XX_NAME) == 0) // TIM_5xx - 1 Layer, max. 811 shots per scan
-			{
-				basicParams[i].setNumberOfMaximumEchos(1);
-				basicParams[i].setNumberOfLayers(1);
-				basicParams[i].setNumberOfShots(811);
-				basicParams[i].setAngularDegreeResolution(0.3333);
-				basicParams[i].setExpectedFrequency(15.0);
-				basicParams[i].setUseBinaryProtocol(true);
-			}
-			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) // future use
+            {
+                basicParams[i].setNumberOfMaximumEchos(1);
+                basicParams[i].setNumberOfLayers(1);
+                basicParams[i].setNumberOfShots(811);
+                basicParams[i].setAngularDegreeResolution(0.3333);
+                basicParams[i].setExpectedFrequency(15.0);
+                basicParams[i].setUseBinaryProtocol(true);
+            }
+            if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0) // LMS_5xx - 1 Layer
+            {
+                basicParams[i].setNumberOfMaximumEchos(1);
+                basicParams[i].setNumberOfLayers(1);
+                basicParams[i].setNumberOfShots(381);
+                basicParams[i].setAngularDegreeResolution(0.5);
+                basicParams[i].setExpectedFrequency(15.0);
+                basicParams[i].setUseBinaryProtocol(true);
+            }
+            if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XX_NAME) == 0) // LMS_1xx - 1 Layer
+            {
+                basicParams[i].setNumberOfMaximumEchos(1);
+                basicParams[i].setNumberOfLayers(1);
+                basicParams[i].setNumberOfShots(541);
+                basicParams[i].setAngularDegreeResolution(0.5);
+                basicParams[i].setExpectedFrequency(25.0);
+                basicParams[i].setUseBinaryProtocol(true);
+            }
+			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) //
 			{
 				basicParams[i].setNumberOfMaximumEchos(5);
 				basicParams[i].setNumberOfLayers(24);
