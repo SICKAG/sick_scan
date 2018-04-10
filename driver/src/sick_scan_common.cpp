@@ -258,7 +258,7 @@ namespace sick_scan
 
 	/*!
 	\brief Convert little endian to big endian (should be replaced by swap-routine)
-	\param vecArr Pointer to 4 byte block
+	\param *vecArr Pointer to 4 byte block
 	\return swapped 4-byte-value as long
 	*/
 	unsigned long SickScanCommon::convertBigEndianCharArrayToUnsignedLong(const unsigned char *vecArr)
@@ -378,7 +378,7 @@ namespace sick_scan
 
 	/*!
 	\brief Generate expected answer string from the command string
-	\param Command string (either as ASCII or BINARY)
+	\param requestStr command string (either as ASCII or BINARY)
 	\return expected answer string
 	 */
 	std::string SickScanCommon::generateExpectedAnswerString(const std::vector<unsigned char> requestStr)
@@ -497,7 +497,7 @@ namespace sick_scan
 	/*!
 	\brief send command and check answer
 	\param requestStr: Sopas-Command
-	\param reply: Antwort-String
+	\param *reply: Antwort-String
 	\param cmdId: Command index to derive the correct error message (optional)
 	\return error code
 	*/
@@ -515,7 +515,7 @@ namespace sick_scan
 	/*!
 	\brief send command and check answer
 	\param requestStr: Sopas-Command given as byte-vector
-	\param reply: Antwort-String
+	\param *reply: Antwort-String
 	\param cmdId: Command index to derive the correct error message (optional)
 	\return error code
 	*/
@@ -582,7 +582,7 @@ namespace sick_scan
 
 	/*!
 	\brief set timeout in milliseconds
-	\param timeout in milliseconds
+	\param timeOutInMs in milliseconds
 	\sa getReadTimeOutInMs
 	*/
 	void SickScanCommon::setReadTimeOutInMs(int timeOutInMs)
@@ -592,7 +592,7 @@ namespace sick_scan
 
 	/*!
 	\brief get timeout in milliseconds
-	\param timeout in milliseconds
+	\return timeout in milliseconds
 	\sa setReadTimeOutInMs
 	*/
 	int SickScanCommon::getReadTimeOutInMs()
@@ -1658,7 +1658,7 @@ namespace sick_scan
 
 	/*!
 	\brief check the identification string
-	\param identification string (got from sopas request)
+	\param identStr string (got from sopas request)
 	\return true, if this driver supports the scanner identified by the identification string
 	*/
 	bool sick_scan::SickScanCommon::isCompatibleDevice(const std::string identStr) const

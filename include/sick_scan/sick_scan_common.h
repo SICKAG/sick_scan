@@ -116,21 +116,7 @@ namespace sick_scan
 		 * @return Expected answer
 		 */
 		std::string generateExpectedAnswerString(const std::vector<unsigned char> requestStr);
-		/*! Sends a SPOAS command over TCP and checks answer for plausibility
-		 *
-		 * @param request
-		 * @param reply
-		 * @param cmdId
-		 * @return
-		 */
 		int sendSopasAndCheckAnswer(std::string request, std::vector<unsigned char> *reply, int cmdId);
-		/*! Sends a SPOAS command vector over TCP and checks answer for plausibility
-		 *
-		 * @param request
-		 * @param reply
-		 * @param cmdId
-		 * @return
-		 */
 		int sendSopasAndCheckAnswer(std::vector<unsigned char> request, std::vector<unsigned char> *reply, int cmdId);
 
 		int setAligmentMode(int _AligmentMode);
@@ -203,6 +189,7 @@ namespace sick_scan
 		/**
 		 * \param [in] request the command to send.
 		 * \param [out] reply if not NULL, will be filled with the reply package to the command.
+		 * \param [in] cmdLen Length of the Comandstring in bytes used for Binary Mode only
 		 */
 		virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen = -1) = 0;
 		/// Read a datagram from the device.
@@ -210,6 +197,7 @@ namespace sick_scan
 		 * \param [in] receiveBuffer data buffer to fill
 		 * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
 		 * \param [out] actual_length the actual amount of data written
+		 * \param [in] isBinaryProtocol used Communication protocol True=Binary false=ASCII
 		 */
 		virtual int get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol) = 0;
 
@@ -220,7 +208,7 @@ namespace sick_scan
 		 */
 		std::string replyToString(const std::vector<unsigned char> &reply);
 		/**
-		* \param [in] Pointer to (unsigned) char buffer in big endian byte oder (MSB first)
+		* \param [in] *vecArr to (unsigned) char buffer in big endian byte oder (MSB first)
 		*
 		* \returns    unsigned long value as interpretation of big endian long value
 		*/
@@ -233,6 +221,11 @@ namespace sick_scan
 		*/
 		int checkForBinaryAnswer(const std::vector<unsigned char>* reply);
 
+		/*!
+		\brief check the identification string
+		\param identStr string (got from sopas request)
+		\return true, if this driver supports the scanner identified by the identification string
+		*/
 		bool isCompatibleDevice(const std::string identStr) const;
 
 		diagnostic_updater::Updater diagnostics_;

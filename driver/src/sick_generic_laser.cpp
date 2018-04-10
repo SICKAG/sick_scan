@@ -94,7 +94,7 @@ bool getTagVal(std::string tagVal, std::string& tag, std::string& val)
        
 \param argc: Number of Arguments
 \param argv: Argument variable
-\param scannerName: Scannertype 
+\param nodeName name of the ROS-node
 \return exit-code
 \sa main
 */

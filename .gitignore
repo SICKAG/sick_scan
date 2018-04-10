@@ -22,3 +22,5 @@ launch/sick_lms_5xx_test\.launch
 test/sick_scan_test_lms_1xx_res\.xml
 
 test/sick_scan_test_lms_5xx_res\.xml
+
+doc/

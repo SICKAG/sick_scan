@@ -3,7 +3,7 @@
 * Copyright (C) 2017, SICK AG, Waldkirch
 *
 * All rights reserved.
-* \class Network interface
+* \class SickScanCommonNw
 *
 * \brief Interface for TCP/IP 
 *

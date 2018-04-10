@@ -93,6 +93,7 @@ public:
          * \param [in] receiveBuffer data buffer to fill
          * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
          * \param [out] actual_length the actual amount of data written
+         * \param [in] isBinaryProtocol true=binary False=ASCII
          */
         virtual int
         get_datagram(unsigned char *receiveBuffer, int bufferSize, int *actual_length, bool isBinaryProtocol);
