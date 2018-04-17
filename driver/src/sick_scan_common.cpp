@@ -791,11 +791,12 @@ namespace sick_scan
 		maxNumberOfEchos = this->parser_->getCurrentParamPtr()->getNumberOfMaximumEchos();  // 1 for TIM 571, 3 for MRS1104, 5 for 6000
 
 		bool rssiFlag = false;
-        bool rssiResolution = true; //True=16 bit Flase=8bit
+        bool rssiResolutionIs16Bit = true; //True=16 bit Flase=8bit
 		int activeEchos = 0;
 		ros::NodeHandle pn("~");
 		pn.getParam("intensity", rssiFlag);
-        pn.getParam("intensity_resolution", rssiResolution);
+        pn.getParam("intensity_resolution", rssiResolutionIs16Bit);
+        this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
 
 		// parse active_echos entry and set flag array
 		pn.getParam("active_echos", activeEchos);
@@ -1409,7 +1410,7 @@ namespace sick_scan
 			// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
             // CMD_SET_PARTIAL_SCANDATA_CFG = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
 			const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
-			sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0,rssiResolution ? 1 : 0);
+			sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0,rssiResolutionIs16Bit ? 1 : 0);
 			if (useBinaryCmd)
 			{
 				std::vector<unsigned char> reqBinary;
@@ -1839,8 +1840,8 @@ namespace sick_scan
 							char szChannel[255] = { 0 };
 							float scaleFactor = 1.0;
 							float scaleFactorOffset = 0.0;
-							long startAngleDiv10000 = 1;
-							long sizeOfSingleAngularStepDiv10000 = 1;
+							int32_t  startAngleDiv10000 = 1;
+                            int32_t sizeOfSingleAngularStepDiv10000 = 1;
 							double startAngle = 0.0;
 							double sizeOfSingleAngularStep = 0.0;
 							short numberOfItems = 0;
@@ -1924,6 +1925,7 @@ namespace sick_scan
 									szChannel[5] = '\0';
 									strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
 									bCont = false;
+                                    int processDataLenValuesInBytes = 2;
 									if (strstr(szChannel, "DIST") == szChannel) {
 										task = process_dist;
 										channelCnt++;
@@ -1946,8 +1948,9 @@ namespace sick_scan
 										task = process_rssi;
 										rssiCnt++;
 										bCont = true;
+                                        // copy two byte value (unsigned short to  numberOfItems
 										memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
-										swap_endian((unsigned char*)&numberOfItems, 2);
+										swap_endian((unsigned char*)&numberOfItems, 2); // swap
 
 									}
 									if (bCont)
@@ -1969,14 +1972,22 @@ namespace sick_scan
 											unsigned short *data = (unsigned short *)(receiveBuffer + parseOff + 21);
 
 											unsigned char *swapPtr = (unsigned char *)data;
-											for (int i = 0; i < numberOfItems * 2; i += 2)
+                                            // copy RSSI-Values +2 for 16-bit values +1 for 8-bit value
+											for (int i = 0; i < numberOfItems * processDataLenValuesInBytes; i += processDataLenValuesInBytes)
 											{
-												unsigned char tmp;
-												tmp = swapPtr[i + 1];
-												swapPtr[i + 1] = swapPtr[i];
-												swapPtr[i] = tmp;
+                                                if (processDataLenValuesInBytes == 1)
+                                                {
+                                                }
+                                                else
+                                                {
+                                                    unsigned char tmp;
+												    tmp = swapPtr[i + 1];
+												    swapPtr[i + 1] = swapPtr[i];
+												    swapPtr[i] = tmp;
+                                                }
 											}
 											int idx = 0;
+                                            bool rssiHas16Bit = true;
 											switch (task)
 											{
 
@@ -1995,11 +2006,26 @@ namespace sick_scan
 												}
 												break;
 											case process_rssi:
-												for (int i = 0; i < numberOfItems; i++)
-												{
-													idx = i + numberOfItems * (rssiCnt - 1);
-													msg.intensities[idx] = (float)data[i] * scaleFactor + scaleFactorOffset;
-												}
+                                                    if (this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit()==false)
+                                                        {
+                                                            rssiHas16Bit = false;
+                                                        }
+												    for (int i = 0; i < numberOfItems; i++)
+												    {
+													    idx = i + numberOfItems * (rssiCnt - 1);
+                                                        // we must select between 16 bit and 8 bit values
+                                                        float rssiVal = 0.0;
+                                                        if (rssiHas16Bit== true)
+                                                            {
+                                                                rssiVal = (float)data[i];
+                                                            }
+                                                        else
+                                                            {
+                                                                unsigned char *data8Ptr = (unsigned char *)data;
+                                                                rssiVal = (float)data8Ptr[i];
+                                                            }
+                                                        msg.intensities[idx] = rssiVal * scaleFactor + scaleFactorOffset;
+												    }
 												break;
 
 											case process_vang:
@@ -2011,6 +2037,12 @@ namespace sick_scan
 											}
 										}
 										parseOff += 21 + 2 * numberOfItems;
+                                        // LDMScandata Message Segments are 2 bytes longer for LMS 511 Scanner
+                                        if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0)
+                                        {
+                                            parseOff=parseOff+2;
+                                        }
+
 									}
 								} while (bCont);
 							}
@@ -2447,14 +2479,7 @@ namespace sick_scan
 				buffer[0] = (unsigned char)(0xFF & (dummyArr[0]));
 				buffer[1] = 0x00;
 				buffer[2] = (unsigned char)(0xFF & dummyArr[2]);  // Remission
-                buffer[3] = (unsigned char)(0xFF & dummyArr[3]);
-				//buffer[3] = 0x01; // for MRS6124 16bit-Remission-Data  - should always be true
-
-                //QWZ
-                //if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0)
-                //{
-                //    buffer[3] = 0x00; // for LMS_5xx 8 Bit-Remission-Data  - legacy
-                //}
+                buffer[3] = (unsigned char)(0xFF & dummyArr[3]);  // Remission data format 0=8 bit 1= 16 bit
 
 
 				buffer[12] = (unsigned char)(0xFF & (dummyArr[11]));  // nth-Scan

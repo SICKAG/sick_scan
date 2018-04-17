@@ -66,6 +66,8 @@ namespace sick_scan
 		double getExpectedFrequency(void);
 		bool getUseBinaryProtocol(void);
 		void setUseBinaryProtocol(bool _useBinary);
+		void setIntensityResolutionIs16Bit(bool _IntensityResolutionIs16Bit);
+		bool getIntensityResolutionIs16Bit(void);
       void setExpectedFrequency(double _freq);
 		ScannerBasicParam();
 	private:
@@ -77,6 +79,7 @@ namespace sick_scan
 		double angleDegressResolution;
       double expectedFrequency;
 	  bool useBinaryProtocol;
+	  bool IntensityResolutionIs16Bit;
 	};
 
 

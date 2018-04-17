@@ -240,12 +240,31 @@ namespace sick_scan
 
 	/*!
 	\brief flag to decide between usage of ASCII-sopas or BINARY-sopas
-	\return Boolean value: True for binary, False for ASCII
-	\sa setUseBinaryProtocol
+	\return _useBinary: True for binary, False for ASCII
+	\sa getUseBinaryProtocol
 	*/
 	bool ScannerBasicParam::getUseBinaryProtocol(void)
 	{
-		return(useBinaryProtocol);
+		return(this->useBinaryProtocol);
+	}
+	/*!
+	\brief Set the RSSI Value length
+	\param _useBinary: Boolean value: True=16 Bit False=8Bit
+	\sa getUseBinaryProtocol
+	*/
+	void ScannerBasicParam::setIntensityResolutionIs16Bit(bool _IntensityResolutionIs16Bit)
+	{
+		this->IntensityResolutionIs16Bit = _IntensityResolutionIs16Bit;
+	}
+
+	/*!
+	\brief Get the RSSI Value length
+	\return Boolean value: True=16 Bit False=8Bit
+	\sa setUseBinaryProtocol
+	*/
+	bool ScannerBasicParam::getIntensityResolutionIs16Bit(void)
+	{
+		return(IntensityResolutionIs16Bit);
 	}
 
 
