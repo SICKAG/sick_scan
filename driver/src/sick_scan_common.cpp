@@ -696,7 +696,7 @@ namespace sick_scan
 		sopasCmdMaskVec[CMD_ALIGNMENT_MODE] = "\x02sWN MMAlignmentMode %d\x03";
 		sopasCmdMaskVec[CMD_APPLICATION_MODE] = "\x02sWN SetActiveApplications 1 %s %d\x03";
 		sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES] = "\x02sWN LMPoutputRange 1 %X %X %X\x03";
-		sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
+		sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 0 00 00 0 0 0 0 1\x03";
 		sopasCmdMaskVec[CMD_SET_ECHO_FILTER] = "\x02sWN FREchoFilter %d\x03";
 
 		//error Messages
@@ -791,9 +791,11 @@ namespace sick_scan
 		maxNumberOfEchos = this->parser_->getCurrentParamPtr()->getNumberOfMaximumEchos();  // 1 for TIM 571, 3 for MRS1104, 5 for 6000
 
 		bool rssiFlag = false;
+        bool rssiResolution = true; //True=16 bit Flase=8bit
 		int activeEchos = 0;
 		ros::NodeHandle pn("~");
 		pn.getParam("intensity", rssiFlag);
+        pn.getParam("intensity_resolution", rssiResolution);
 
 		// parse active_echos entry and set flag array
 		pn.getParam("active_echos", activeEchos);
@@ -1375,6 +1377,7 @@ namespace sick_scan
 		*/
 		//                              1    2     3
 		// Prepare flag array for echos
+        // Except for the LMS5xx scanner here the mask is hard 00 see SICK Telegram listing "Telegram structure: sWN LMDscandatacfg" for details
 
 		outputChannelFlagId = 0x00;
 		for (int i = 0; i < outputChannelFlag.size(); i++)
@@ -1385,6 +1388,14 @@ namespace sick_scan
 		{
 			outputChannelFlagId = 1;  // at least one channel must be set
 		}
+        if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0)
+        {
+            outputChannelFlagId = 1;
+            ROS_INFO("LMS 5xx detected overwriting output channel flag ID");
+        }
+
+
+
 
 
 
@@ -1396,8 +1407,9 @@ namespace sick_scan
 		{
 			char requestLMDscandatacfg[MAX_STR_LEN];
 			// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+            // CMD_SET_PARTIAL_SCANDATA_CFG = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
 			const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
-			sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0);
+			sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0,rssiResolution ? 1 : 0);
 			if (useBinaryCmd)
 			{
 				std::vector<unsigned char> reqBinary;
@@ -2435,7 +2447,15 @@ namespace sick_scan
 				buffer[0] = (unsigned char)(0xFF & (dummyArr[0]));
 				buffer[1] = 0x00;
 				buffer[2] = (unsigned char)(0xFF & dummyArr[2]);  // Remission
-				buffer[3] = 0x01; // for MRS6124 16bit-Remission-Data  - should always be true
+                buffer[3] = (unsigned char)(0xFF & dummyArr[3]);
+				//buffer[3] = 0x01; // for MRS6124 16bit-Remission-Data  - should always be true
+
+                //QWZ
+                //if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0)
+                //{
+                //    buffer[3] = 0x00; // for LMS_5xx 8 Bit-Remission-Data  - legacy
+                //}
+
 
 				buffer[12] = (unsigned char)(0xFF & (dummyArr[11]));  // nth-Scan
 
