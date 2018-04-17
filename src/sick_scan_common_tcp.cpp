@@ -453,15 +453,15 @@ namespace sick_scan
 		// starting with 0x02 - but no magic word -> ASCII-Command-Reply
 		if ((numOfBytes < 2) && (m_alreadyReceivedBytes == 0))
 		{
-			return;  // ultra short message (only 1 byte) must be nonsense 
+			return;  // ultra short message (only 1 byte) must be nonsense
 		}
 		if ((buffer[0] == 0x02) && (buffer[1] != 0x02)) // no magic word, but received initial 0x02 -> guess Ascii reply
 		{
 			if (numOfBytes > 0)
 			{
-				// check last character of message - must be 0x03 
+				// check last character of message - must be 0x03
 				char lastChar = buffer[numOfBytes - 1];  // check last for 0x03
-				if (lastChar == 0x03)  
+				if (lastChar == 0x03)
 				{
 					memcpy(m_packetBuffer, buffer, numOfBytes);
 					m_alreadyReceivedBytes = numOfBytes;
@@ -711,7 +711,7 @@ namespace sick_scan
 	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 	{
 		this->setReplyMode(1);
-		const int maxWaitInMs = 2000;
+		const int maxWaitInMs = 10000;
 		std::vector<unsigned char> dataBuffer;
 #if 1 // prepared for reconnect
 		bool retVal = this->recvQueue.waitForIncomingObject(maxWaitInMs);
