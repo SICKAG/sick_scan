@@ -1866,12 +1866,12 @@ namespace sick_scan
 					{
 						if (lenVal < actual_length)
 						{
-							short elevAngleX200;  // signed short (F5 B2  -> Layer 24 
+							short elevAngleX200 = 0;  // signed short (F5 B2  -> Layer 24
 												  // F5B2h -> -2638/200= -13.19° 
-							int scanFrequencyX100;
-							double elevAngle;
+							int scanFrequencyX100 = 0;
+							double elevAngle = 0.00;
 							double scanFrequency = 0.0;
-							long measurementFrequencyDiv100; // multiply with 100
+							long measurementFrequencyDiv100 = 0; // multiply with 100
 							int numberOf16BitChannels = 0;
 							int numberOf8BitChannels = 0;
 
@@ -2027,6 +2027,7 @@ namespace sick_scan
 										task = process_dist;
 										distChannelCnt++;
 										bCont = true;
+										numberOfItems = 0;
 										memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
 										swap_endian((unsigned char*)&numberOfItems, 2);
 
@@ -2035,6 +2036,7 @@ namespace sick_scan
 										vangleCnt++;
 										task = process_vang;
 										bCont = true;
+										numberOfItems = 0;
 										memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
 										swap_endian((unsigned char*)&numberOfItems, 2);
 
@@ -2045,6 +2047,7 @@ namespace sick_scan
 										task = process_rssi;
 										rssiCnt++;
 										bCont = true;
+										numberOfItems = 0;
                                         // copy two byte value (unsigned short to  numberOfItems
 										memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
 										swap_endian((unsigned char*)&numberOfItems, 2); // swap
@@ -2052,6 +2055,12 @@ namespace sick_scan
 									}
 									if (bCont)
 									{
+										scaleFactor = 0.0;
+										scaleFactorOffset = 0.0;
+										startAngleDiv10000 = 0;
+										sizeOfSingleAngularStepDiv10000 = 0;
+										numberOfItems = 0;
+
 										memcpy(&scaleFactor, receiveBuffer + parseOff + 5, 4);
 										memcpy(&scaleFactorOffset, receiveBuffer + parseOff + 9, 4);
 										memcpy(&startAngleDiv10000, receiveBuffer + parseOff + 13, 4);
