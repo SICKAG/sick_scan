@@ -202,9 +202,9 @@ namespace sick_scan
 			SickScanConfig cfg;
 			ros::NodeHandle tmp("~");
 			double min_angle, max_angle, res_angle;
-			tmp.getParam("min_ang", min_angle);
-			tmp.getParam("max_ang", max_angle);
-			tmp.getParam("res_ang", res_angle);
+			tmp.getParam(PARAM_MIN_ANG, min_angle);
+			tmp.getParam(PARAM_MAX_ANG, max_angle);
+			tmp.getParam(PARAM_RES_ANG, res_angle);
 			cfg.min_ang = min_angle;
 			cfg.max_ang = max_angle;
 			cfg.skip = 0;
@@ -791,12 +791,12 @@ namespace sick_scan
 		maxNumberOfEchos = this->parser_->getCurrentParamPtr()->getNumberOfMaximumEchos();  // 1 for TIM 571, 3 for MRS1104, 5 for 6000
 
 		bool rssiFlag = false;
-        bool rssiResolutionIs16Bit = true; //True=16 bit Flase=8bit
+		bool rssiResolutionIs16Bit = true; //True=16 bit Flase=8bit
 		int activeEchos = 0;
 		ros::NodeHandle pn("~");
 		pn.getParam("intensity", rssiFlag);
-        pn.getParam("intensity_resolution", rssiResolutionIs16Bit);
-        this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
+		pn.getParam("intensity_resolution_16bit", rssiResolutionIs16Bit);
+    this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
 
 		// parse active_echos entry and set flag array
 		pn.getParam("active_echos", activeEchos);
@@ -1389,11 +1389,22 @@ namespace sick_scan
 		{
 			outputChannelFlagId = 1;  // at least one channel must be set
 		}
-        if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0)
-        {
-            outputChannelFlagId = 1;
-            ROS_INFO("LMS 5xx detected overwriting output channel flag ID");
-        }
+		if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0)
+    {
+      outputChannelFlagId = 1;
+      ROS_INFO("LMS 5xx detected overwriting output channel flag ID");
+
+			ROS_INFO("LMS 5xx detected overwriting resolution flag (only 8 bit supported)");
+  		this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(false);
+ 			rssiResolutionIs16Bit = this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit();
+		}
+		if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_MRS_1XXX_NAME) == 0)
+		{
+			ROS_INFO("MRS 1xxx detected overwriting resolution flag (only 8 bit supported)");
+			this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(false);
+			rssiResolutionIs16Bit = this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit();
+
+		}
 
 
 
@@ -1862,6 +1873,7 @@ namespace sick_scan
 							double scanFrequency = 0.0;
 							long measurementFrequencyDiv100; // multiply with 100
 							int numberOf16BitChannels = 0;
+							int numberOf8BitChannels = 0;
 
 							memcpy(&elevAngleX200, receiveBuffer + 50, 2);
 							swap_endian((unsigned char*)&elevAngleX200, 2);
@@ -1878,19 +1890,40 @@ namespace sick_scan
 							memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
 							swap_endian((unsigned char*)&numberOf16BitChannels, 2);
 
+							int  parseOff = 64;
 
 
 							char szChannel[255] = { 0 };
 							float scaleFactor = 1.0;
 							float scaleFactorOffset = 0.0;
 							int32_t  startAngleDiv10000 = 1;
-                            int32_t sizeOfSingleAngularStepDiv10000 = 1;
+							int32_t sizeOfSingleAngularStepDiv10000 = 1;
 							double startAngle = 0.0;
 							double sizeOfSingleAngularStep = 0.0;
 							short numberOfItems = 0;
-							int  parseOff = 64;
 
+							static int cnt = 0;
+							cnt++;
+							// get number of 8 bit channels
+							// we must jump of the 16 bit data blocks including header ...
+							for (int i = 0; i < numberOf16BitChannels; i++)
+							{
+								int numberOfItems = 0x00;
+								memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+								swap_endian((unsigned char*)&numberOfItems, 2);
+								parseOff += 21; // 21 Byte header followed by data entries
+								parseOff += numberOfItems * 2;
+							}
 
+							if (parseOff < 0)
+							{
+								printf("STOP!");
+							}
+							// now we can read the number of 8-Bit-Channels
+							memcpy(&numberOf8BitChannels, receiveBuffer + parseOff, 2);
+							swap_endian((unsigned char*)&numberOf8BitChannels, 2);
+
+							parseOff = 64;
 							enum datagram_parse_task
 							{
 								process_dist,
@@ -1900,7 +1933,8 @@ namespace sick_scan
 							};
 							for (int processLoop = 0; processLoop < 2; processLoop++)
 							{
-								int channelCnt;
+								int totalChannelCnt = 0;
+								int distChannelCnt;
 								int rssiCnt;
 								bool bCont = true;
 								int vangleCnt;
@@ -1911,7 +1945,7 @@ namespace sick_scan
 
 								if (processLoop == 0)
 								{
-									channelCnt = 0;
+									distChannelCnt = 0;
 									rssiCnt = 0;
 									vangleCnt = 0;
 								}
@@ -1919,7 +1953,7 @@ namespace sick_scan
 								if (processLoop == 1)
 								{
 									processData = true;
-									numEchos = channelCnt;
+									numEchos = distChannelCnt;
 									msg.ranges.resize(numberOfItems * numEchos);
 									if (rssiCnt > 0)
 									{
@@ -1939,7 +1973,7 @@ namespace sick_scan
 									echoMask = (1 << numEchos) - 1;
 
 									// reset count. We will use the counter for index calculation now.
-									channelCnt = 0;
+									distChannelCnt = 0;
 									rssiCnt = 0;
 									vangleCnt = 0;
 
@@ -1953,7 +1987,8 @@ namespace sick_scan
 								startAngle = 0.0;
 								sizeOfSingleAngularStep = 0.0;
 								numberOfItems = 0;
-								strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
+
+
 #if 1 // prepared for multiecho parsing
 
 								bCont = true;
@@ -1964,14 +1999,33 @@ namespace sick_scan
 								{
 									task = process_idle;
 									doVangVecProc = false;
+									int processDataLenValuesInBytes = 2;
 
-									szChannel[5] = '\0';
-									strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
+									if (totalChannelCnt == numberOf16BitChannels)
+									{
+											parseOff += 2; // jump of number of 8 bit channels- already parsed above
+									}
+
+									if (totalChannelCnt >= numberOf16BitChannels)
+									{
+										processDataLenValuesInBytes = 1; // then process 8 bit values ...
+									}
 									bCont = false;
-                                    int processDataLenValuesInBytes = 2;
+									strcpy(szChannel,"");
+
+									if (totalChannelCnt < (numberOf16BitChannels + numberOf8BitChannels))
+									{
+										szChannel[5] = '\0';
+										strncpy(szChannel, (const char *) receiveBuffer + parseOff, 5);
+									}
+									else
+									{
+									   // all channels processed (16 bit and 8 bit channels)
+									}
+
 									if (strstr(szChannel, "DIST") == szChannel) {
 										task = process_dist;
-										channelCnt++;
+										distChannelCnt++;
 										bCont = true;
 										memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
 										swap_endian((unsigned char*)&numberOfItems, 2);
@@ -2018,19 +2072,19 @@ namespace sick_scan
                                             // copy RSSI-Values +2 for 16-bit values +1 for 8-bit value
 											for (int i = 0; i < numberOfItems * processDataLenValuesInBytes; i += processDataLenValuesInBytes)
 											{
-                                                if (processDataLenValuesInBytes == 1)
-                                                {
-                                                }
-                                                else
-                                                {
-                                                    unsigned char tmp;
-												    tmp = swapPtr[i + 1];
-												    swapPtr[i + 1] = swapPtr[i];
-												    swapPtr[i] = tmp;
-                                                }
+												if (processDataLenValuesInBytes == 1)
+                        {
+                        }
+                        else
+                        {
+                        	unsigned char tmp;
+												  tmp = swapPtr[i + 1];
+												  swapPtr[i + 1] = swapPtr[i];
+												  swapPtr[i] = tmp;
+												}
 											}
 											int idx = 0;
-                                            bool rssiHas16Bit = true;
+
 											switch (task)
 											{
 
@@ -2044,30 +2098,27 @@ namespace sick_scan
 												msg.angle_max = startAngle + (numberOfItems - 1) * sizeOfSingleAngularStep;
 												for (int i = 0; i < numberOfItems; i++)
 												{
-													idx = i + numberOfItems * (channelCnt - 1);
+													idx = i + numberOfItems * (distChannelCnt - 1);
 													msg.ranges[idx] = (float)data[i] * 0.001 * scaleFactor + scaleFactorOffset;
 												}
 												break;
 											case process_rssi:
-                                                    if (this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit()==false)
-                                                        {
-                                                            rssiHas16Bit = false;
-                                                        }
+												// Das muss vom Protokoll abgeleitet werden. !!!
 												    for (int i = 0; i < numberOfItems; i++)
 												    {
 													    idx = i + numberOfItems * (rssiCnt - 1);
-                                                        // we must select between 16 bit and 8 bit values
-                                                        float rssiVal = 0.0;
-                                                        if (rssiHas16Bit== true)
-                                                            {
-                                                                rssiVal = (float)data[i];
-                                                            }
-                                                        else
-                                                            {
-                                                                unsigned char *data8Ptr = (unsigned char *)data;
-                                                                rssiVal = (float)data8Ptr[i];
-                                                            }
-                                                        msg.intensities[idx] = rssiVal * scaleFactor + scaleFactorOffset;
+                              // we must select between 16 bit and 8 bit values
+                              float rssiVal = 0.0;
+                              if (processDataLenValuesInBytes == 2)
+															{
+                                rssiVal = (float)data[i];
+                              }
+                              else
+                              {
+                                unsigned char *data8Ptr = (unsigned char *)data;
+                                rssiVal = (float)data8Ptr[i];
+                              }
+                              msg.intensities[idx] = rssiVal * scaleFactor + scaleFactorOffset;
 												    }
 												break;
 
@@ -2079,14 +2130,11 @@ namespace sick_scan
 												break;
 											}
 										}
-										parseOff += 21 + 2 * numberOfItems;
-                                        // LDMScandata Message Segments are 2 bytes longer for LMS 511 Scanner
-                                        if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0)
-                                        {
-                                            parseOff=parseOff+2;
-                                        }
+										parseOff += 21 + processDataLenValuesInBytes * numberOfItems;
+
 
 									}
+									totalChannelCnt++;
 								} while (bCont);
 							}
 #endif
@@ -2522,7 +2570,7 @@ namespace sick_scan
 				buffer[0] = (unsigned char)(0xFF & (dummyArr[0]));
 				buffer[1] = 0x00;
 				buffer[2] = (unsigned char)(0xFF & dummyArr[2]);  // Remission
-                buffer[3] = (unsigned char)(0xFF & dummyArr[3]);  // Remission data format 0=8 bit 1= 16 bit
+				buffer[3] = (unsigned char)(0xFF & dummyArr[3]);  // Remission data format 0=8 bit 1= 16 bit
 				buffer[12] = (unsigned char)(0xFF & (dummyArr[11]));  // nth-Scan
 
 				bufferLen = 13;
