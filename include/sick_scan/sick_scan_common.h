@@ -1,5 +1,7 @@
 /*
  * Copyright (C) 2013, Osnabrück University
+ * Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
+ * Copyright (C) 2017, SICK AG, Waldkirch
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,6 +33,7 @@
  *      Authors:
  *         Jochen Sprickerhof <jochen@sprickerhof.de>
  *         Martin Günther <mguenthe@uos.de>
+ *         Michael Lehning <michael.lehning@lehning.de>
  *
  * Based on the TiM communication example by SICK AG.
  *
@@ -104,7 +107,11 @@ namespace sick_scan
 			//
 			CMD_END // CMD_END is a tag for end of enum - never (re-)move it. It must be the last element.
 		};
-
+// --- START KEYWORD DEFINITIONS ---
+#define PARAM_MIN_ANG "min_ang"
+#define PARAM_MAX_ANG "max_ang"
+#define PARAM_RES_ANG "res_ang"
+// --- END KEYWORD DEFINITIONS ---
 
 		SickScanCommon(SickGenericParser* parser);
 		virtual ~SickScanCommon();
