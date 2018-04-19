@@ -228,7 +228,10 @@ namespace sick_scan
 		*/
 		bool isCompatibleDevice(const std::string identStr) const;
 
+		bool dumpDatagramForDebugging(unsigned char *buffer, int bufLen);
+
 		diagnostic_updater::Updater diagnostics_;
+
 
 	private:
 		SopasProtocol m_protocolId;

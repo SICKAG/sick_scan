@@ -1669,6 +1669,39 @@ namespace sick_scan
 		return reply_str;
 	}
 
+	bool sick_scan::SickScanCommon::dumpDatagramForDebugging(unsigned char *buffer, int bufLen)
+	{
+
+			static int cnt = 0;
+			char szDumpFileName[255] = {0};
+			char szDir[255] = {0};
+		  if (cnt == 0)
+			{
+				ROS_INFO("Attention: verboseLevel is set to 1. Datagrams are stored in the /tmp folder.");
+			}
+#ifdef _MSC_VER
+			strcpy(szDir,"C:\\temp\\");
+#else
+			strcpy(szDir,"/tmp/");
+#endif
+			sprintf(szDumpFileName,"%ssick_datagram_%06d.bin", szDir, cnt);
+			bool isBinary = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
+			if (isBinary)
+			{
+				FILE *ftmp;
+				ftmp = fopen(szDumpFileName,"wb");
+				if (ftmp != NULL)
+				{
+					fwrite(buffer, bufLen, 1, ftmp);
+					fclose(ftmp);
+				}
+			}
+			cnt++;
+
+
+	}
+
+
 	/*!
 	\brief check the identification string
 	\param identStr string (got from sopas request)
@@ -1769,6 +1802,16 @@ namespace sick_scan
 			std_msgs::String datagram_msg;
 			datagram_msg.data = std::string(reinterpret_cast<char*>(receiveBuffer));
 			datagram_pub_.publish(datagram_msg);
+		}
+
+		/* Dump Binary Protocol */
+		ros::NodeHandle tmpParam("~");
+		bool dumpData = false;
+		int verboseLevel = 0;
+		tmpParam.getParam("verboseLevel", verboseLevel);
+		if (verboseLevel > 0)
+		{
+			dumpDatagramForDebugging(receiveBuffer, actual_length);
 		}
 
 		sensor_msgs::LaserScan msg;
@@ -2480,8 +2523,6 @@ namespace sick_scan
 				buffer[1] = 0x00;
 				buffer[2] = (unsigned char)(0xFF & dummyArr[2]);  // Remission
                 buffer[3] = (unsigned char)(0xFF & dummyArr[3]);  // Remission data format 0=8 bit 1= 16 bit
-
-
 				buffer[12] = (unsigned char)(0xFF & (dummyArr[11]));  // nth-Scan
 
 				bufferLen = 13;
