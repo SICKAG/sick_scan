@@ -60,7 +60,8 @@ This driver supports both COLA-B (binary) and COLA-A (ASCII) communication with 
 If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed. This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. 
 There are two ways to prevent this:
 1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.
-2. Use the parameter "sopas_protocol_type" to overwrite the default settings of the driver.
+2. Use the parameter "use_binary_protocol" to overwrite the default settings of the driver.
+3. Setting "use_binary_protocol" to "False" activates COLA-A and disables COLA-B (default)
 
 
 ## Bugs and feature requests

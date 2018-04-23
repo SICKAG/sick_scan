@@ -94,7 +94,7 @@ bool getTagVal(std::string tagVal, std::string& tag, std::string& val)
        
 \param argc: Number of Arguments
 \param argv: Argument variable
-\param scannerName: Scannertype 
+\param nodeName name of the ROS-node
 \return exit-code
 \sa main
 */
@@ -181,11 +181,11 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 	/*
 	 *  Check, if parameter for protocol type is set
 	 */
-	bool sopas_protocol_type;
-	if (true == nhPriv.getParam("sopas_protocol_type", sopas_protocol_type))
+	bool use_binary_protocol = true;
+	if (true == nhPriv.getParam("use_binary_protocol", use_binary_protocol))
 	{
 		ROS_INFO("Found sopas_protocol_type param overwriting default protocol:");
-		if (sopas_protocol_type==true)
+		if (use_binary_protocol==true)
 		{
 			ROS_INFO("Binary protocol activated");
 		}
@@ -194,7 +194,7 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 			if(parser->getCurrentParamPtr()->getNumberOfLayers()>4)
 			{
 				nhPriv.setParam("sopas_protocol_type", true);
-				sopas_protocol_type=true;
+				use_binary_protocol=true;
 				ROS_WARN("This scanner type does not support ASCII communication.\n"
 								 "Binary communication has been activated.\n"
 								 "The parameter \"sopas_protocol_type\" has been set to \"True\".");
@@ -205,7 +205,7 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 			}
 
 		}
-		parser->getCurrentParamPtr()->setUseBinaryProtocol(sopas_protocol_type);
+		parser->getCurrentParamPtr()->setUseBinaryProtocol(use_binary_protocol);
 	}
 
 

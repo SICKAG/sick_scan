@@ -65,7 +65,7 @@ namespace sick_scan
 	/*!
 	\brief Setting name (type) of scanner
 
-	\param Name of scanner
+	\param _s name of scanner
 	\sa getScannerName
 	*/
 	void ScannerBasicParam::setScannerName(std::string _s)
@@ -76,7 +76,7 @@ namespace sick_scan
 	/*!
 	\brief Getting name (type) of scanner
 
-	\param Name of scanner
+	\return Name of scanner
 	\sa setScannerName
 	*/
 	std::string ScannerBasicParam::getScannerName()
@@ -88,7 +88,7 @@ namespace sick_scan
 	/*!
 	\brief Setting number of scanner layers (depending of scanner type/family)
 
-	\param Number of scanner layers (e.g. 1 for TiM5xx and 24 for MRS6124
+	\param _layerNum of scanner layers (e.g. 1 for TiM5xx and 24 for MRS6124
 	\sa getNumberOfLayers
 	*/
 	void ScannerBasicParam::setNumberOfLayers(int _layerNum)
@@ -99,7 +99,7 @@ namespace sick_scan
 	/*!
 	\brief Getting number of scanner layers 
 
-	\return Number of scanners layer (e.g. 1 for TiM5xx and 24 for MRS6124
+	\return Number of scanners layer (e.g. 1 for TiM5xx and 24 for MRS6124)
 	\sa setNumberOfLayers
 	*/
 	int ScannerBasicParam::getNumberOfLayers(void)
@@ -111,7 +111,7 @@ namespace sick_scan
 	/*!
 	\brief Set number of shots per scan
 	
-	\param Number of shots per scan (for one layer)
+	\param _shots of shots per scan (for one layer)
 	\sa getNumberOfLayers
 	*/
 	void ScannerBasicParam::setNumberOfShots(int _shots)
@@ -133,7 +133,7 @@ namespace sick_scan
 	/*!
 	\brief Set number of maximum echoes for this laser scanner type
 
-	\param Number of max echoes 
+	\param _maxEchos of max echoes
 	\sa getNumberOfMaximumEchos
 	*/
 	void ScannerBasicParam::setNumberOfMaximumEchos(int _maxEchos)
@@ -156,7 +156,7 @@ namespace sick_scan
 	/*!
 	\brief Set pointer to corresponding parameter object to the parser
 	
-	\param pointer to parameter object
+	\param _ptr to parameter object
 	\sa getCurrentParamPtr
 	*/
 	void SickGenericParser::setCurrentParamPtr(ScannerBasicParam* _ptr)
@@ -167,7 +167,7 @@ namespace sick_scan
 
 	/*!
 	\brief Set angular resolution in degrees
-	\param angle resolution in degress (NOT rad) between each shot
+	\param _res resolution in degress (NOT rad) between each shot
 	\sa getAngularDegreeResolution
 	*/
 	void ScannerBasicParam::setAngularDegreeResolution(double _res)
@@ -187,7 +187,7 @@ namespace sick_scan
 
 	/*!
 	\brief set expected scan frequency
-	\param expected scan frequency in [Hz]
+	\param _freq scan frequency in [Hz]
 	\sa getExpectedFrequency
 	*/
 	void ScannerBasicParam::setExpectedFrequency(double _freq)
@@ -209,7 +209,7 @@ namespace sick_scan
 
 	/*!
 	\brief set angular resolution in VERTICAL direction for multilayer scanner
-	\param elevation resolution in degree 
+	\param _elevRes resolution in degree
 	\sa getElevationDegreeResolution
 	*/
 	void ScannerBasicParam::setElevationDegreeResolution(double _elevRes)
@@ -240,12 +240,31 @@ namespace sick_scan
 
 	/*!
 	\brief flag to decide between usage of ASCII-sopas or BINARY-sopas
-	\return Boolean value: True for binary, False for ASCII
-	\sa setUseBinaryProtocol
+	\return _useBinary: True for binary, False for ASCII
+	\sa getUseBinaryProtocol
 	*/
 	bool ScannerBasicParam::getUseBinaryProtocol(void)
 	{
-		return(useBinaryProtocol);
+		return(this->useBinaryProtocol);
+	}
+	/*!
+	\brief Set the RSSI Value length
+	\param _useBinary: Boolean value: True=16 Bit False=8Bit
+	\sa getUseBinaryProtocol
+	*/
+	void ScannerBasicParam::setIntensityResolutionIs16Bit(bool _IntensityResolutionIs16Bit)
+	{
+		this->IntensityResolutionIs16Bit = _IntensityResolutionIs16Bit;
+	}
+
+	/*!
+	\brief Get the RSSI Value length
+	\return Boolean value: True=16 Bit False=8Bit
+	\sa setUseBinaryProtocol
+	*/
+	bool ScannerBasicParam::getIntensityResolutionIs16Bit(void)
+	{
+		return(IntensityResolutionIs16Bit);
 	}
 
 
@@ -262,6 +281,7 @@ namespace sick_scan
 
 	/*!
 	\brief Construction of parser object
+	 \param _scanType Type of the Laserscanner
 
 	*/
 	SickGenericParser::SickGenericParser(std::string _scanType) :
@@ -274,6 +294,8 @@ namespace sick_scan
 		setScannerType(_scanType);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_TIM_5XX_NAME);
+		allowedScannerNames.push_back(SICK_SCANNER_LMS_5XX_NAME);
+        allowedScannerNames.push_back(SICK_SCANNER_LMS_1XX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_LMS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_6XXX_NAME);
 		basicParams.resize(allowedScannerNames.size()); // resize to number of supported scanner types
@@ -302,15 +324,33 @@ namespace sick_scan
 				basicParams[i].setUseBinaryProtocol(true);
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_5XX_NAME) == 0) // TIM_5xx - 1 Layer, max. 811 shots per scan
-			{
-				basicParams[i].setNumberOfMaximumEchos(1);
-				basicParams[i].setNumberOfLayers(1);
-				basicParams[i].setNumberOfShots(811);
-				basicParams[i].setAngularDegreeResolution(0.3333);
-				basicParams[i].setExpectedFrequency(15.0);
-				basicParams[i].setUseBinaryProtocol(true);
-			}
-			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) // future use
+            {
+                basicParams[i].setNumberOfMaximumEchos(1);
+                basicParams[i].setNumberOfLayers(1);
+                basicParams[i].setNumberOfShots(811);
+                basicParams[i].setAngularDegreeResolution(0.3333);
+                basicParams[i].setExpectedFrequency(15.0);
+                basicParams[i].setUseBinaryProtocol(true);
+            }
+            if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0) // LMS_5xx - 1 Layer
+            {
+                basicParams[i].setNumberOfMaximumEchos(1);
+                basicParams[i].setNumberOfLayers(1);
+                basicParams[i].setNumberOfShots(381);
+                basicParams[i].setAngularDegreeResolution(0.5);
+                basicParams[i].setExpectedFrequency(15.0);
+                basicParams[i].setUseBinaryProtocol(true);
+            }
+            if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XX_NAME) == 0) // LMS_1xx - 1 Layer
+            {
+                basicParams[i].setNumberOfMaximumEchos(1);
+                basicParams[i].setNumberOfLayers(1);
+                basicParams[i].setNumberOfShots(541);
+                basicParams[i].setAngularDegreeResolution(0.5);
+                basicParams[i].setExpectedFrequency(25.0);
+                basicParams[i].setUseBinaryProtocol(true);
+            }
+			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) //
 			{
 				basicParams[i].setNumberOfMaximumEchos(5);
 				basicParams[i].setNumberOfLayers(24);
@@ -345,7 +385,7 @@ namespace sick_scan
 
 	/*!
 	\brief checks the given scannerName/scannerType of validity
-	\param scannerType as string (e.g. "tim_5xx") 
+	\param scannerName as string (e.g. "tim_5xx")
 	\return index of found scanner. -1 corresponds to "not found"
 	*/
 	int SickGenericParser::lookUpForAllowedScanner(std::string scannerName)
@@ -376,7 +416,7 @@ namespace sick_scan
 	\param fields: String entries holding the information
 	\param expected_number_of_data: Warning, if the number of found entries does not correspond to this entries
 	\param distNum: Number of found DIST-entries
-	\param rssi: Number of found RSSI-entries
+	\param rssiNum: Number of found RSSI-entries
 	\param distVal: parsed istance values
 	\param rssiVal: parsed RSSI-values 
 	\param distMask: Bit-Masking holds the information of found DIST-entries (e.g. DIST1 -> Bit 0, DIST2 -> BIT 1 and so on)
@@ -801,7 +841,7 @@ namespace sick_scan
 
 	/*!
 	\brief Setting minimum range
-	\param minimum range in [m]
+	\param min range in [m]
 	\sa set_range_max
 	*/
 	void SickGenericParser::set_range_min(float min)
@@ -811,7 +851,7 @@ namespace sick_scan
 
 	/*!
 	\brief Setting maximum range
-	\param maximum range in [m]
+	\param max range in [m]
 	\sa set_range_min
 	*/
 	void SickGenericParser::set_range_max(float max)
@@ -832,7 +872,7 @@ namespace sick_scan
 	/*!
 	\brief setting scannertype
 
-	\param scannerType
+	\param _scannerType
 	\sa getScannerType
 	*/
 	void SickGenericParser::setScannerType(std::string _scannerType)
