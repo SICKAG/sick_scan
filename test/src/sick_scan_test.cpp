@@ -845,14 +845,15 @@ int main(int argc, char **argv)
         {
           boost::filesystem::path tmpFilePath =testCtrlXmlFileName.substr(0,pos);
           boost::filesystem::path xmlDir= tmpFilePath.parent_path();
-          xmlDir.append("/results");
-          if (boost::filesystem::exists(xmlDir))
+					std::string xmlDirName = xmlDir.string();
+					xmlDirName.append("/results");
+          if (boost::filesystem::exists(xmlDirName))
           {
 
           }
           else
           {
-            boost::filesystem::create_directory(xmlDir);
+            boost::filesystem::create_directory(xmlDirName);
           }
           std::string tmpFilNamewoExtension= tmpFilePath.stem().string();
           std::string resultFileName=xmlDir.string();
