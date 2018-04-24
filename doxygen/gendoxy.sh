@@ -19,7 +19,7 @@ rm -rf .git
 rm -rf .gitignore
 rm -rf .*
 
-git clone https://github.com/michael1309/sick_scan.git .
+git clone https://github.com/SICKAG/sick_scan.git .
 git checkout master
 cd ..
 mkdir html/docs
