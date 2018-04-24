@@ -1,10 +1,11 @@
 # sick_scan
-##### Master-Branch
+##### Devel-Branch
 ## Table of contents
 
 - [Supported Hardware](#supported-hardware)
 - [Start node](#start-node)
 - [Bugs and feature requests](#bugs-and-feature-requests)
+- [Testing](#testing)
 - [Creators](#creators)
 
 This stack provides a ROS driver for the SICK series of laser scanners mentioned in the following list.
@@ -47,17 +48,28 @@ For LMS1104:
 roslaunch sick_scan sick_lms_1xxx.launch
 
 For TiM551, TiM561, TiM571:
-roslaunch sick_scan sick_tim_5xx.launch
+roslaunch sick_scan sick_tim_5xx.launch#
+
+### Start multiple Nodes
+
+Take the launchfile "sick_tim_5xx_twin.launch" as an example.
+Rempping the scan and cloud topics is essential to distinguish the scanndata and provide TF information.
+
+## Sopas mode
+This driver supports both COLA-B (binary) and COLA-A (ASCII) communication with the laser scanner. Binary mode is activated by default. Since this mode generates less network traffic.
+If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed. This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. 
+There are two ways to prevent this:
+1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.
+2. Use the parameter "use_binary_protocol" to overwrite the default settings of the driver.
+3. Setting "use_binary_protocol" to "False" activates COLA-A and disables COLA-B (default)
+
 
 ## Bugs and feature requests
 
 - General: Brand new driver especially for MRS6124 
 - Stability issues: Driver is experimental 
-- Binary mode / ASCII-Mode: - COLA-A/COLA-B-protocol:
-The driver tests the protocol setting (ASCII or BINARY) at startup and then programs the scanner to the expected protocol. If the protocol is switched from BINARY to ASCII or vice versa during startup by the driver, it is recommended to restart the driver, otherwise the communication may be interrupted.
-Cola protocol mapping:
--- MRS6124: COLA-B (Binary)
--- All other scanners: COLA-A (Ascii)
+- Sopas protocol mapping:
+-- All scanners: COLA-B (Binary)
 - Software should be further tested, documented and beautified
 - Setting of "topic" should not be hardcoded to /cloud in the future. This allows the simultaneous operation of several scanners. Each point cloud can then be converted using its own TF transformation.
 
@@ -119,6 +131,18 @@ roslaunch sick_scan sick_mrs6xxx.launch
 rosrun rviz rviz
 publish to point cloud
 ```
+## Testing
+The sick_scan_test program was developed for testing the driver. This program checks elementary properties of the scanner. In a first implementation stage, the shots per scan are checked. The test program works according to the following principle:
+1. The parameters from an original launch file are read.
+2. These parameters are modified according to the instructions in the test control file.
+3. The modified parameters including all other parameter settings from the original launch file are copied to a test launch file.
+4. The test launch file is started.
+5. The parameters are checked.
+6. The result of the check is transferred to a result file.
+The basic procedure can be seen in the following figure:
+![Alt text](./sick_scan_test.png?raw=true "princile of test program")
+More information about the structure of the individual files in the test run can be found [here](test/sick_scan_test.md):
+
 
 ## Creators
 

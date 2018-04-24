@@ -694,8 +694,8 @@ namespace sick_scan
 		// !!!
 		if (readWithTimeout(getReadTimeOutInMs(), buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
 		{
-			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after 1s");
-			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after 5 s.");
+			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after %d ms",getReadTimeOutInMs());
+			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after timeout.");
 			return ExitError;
 		}
 
@@ -711,7 +711,7 @@ namespace sick_scan
 	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 	{
 		this->setReplyMode(1);
-		const int maxWaitInMs = 2000;
+		const int maxWaitInMs = getReadTimeOutInMs();
 		std::vector<unsigned char> dataBuffer;
 #if 1 // prepared for reconnect
 		bool retVal = this->recvQueue.waitForIncomingObject(maxWaitInMs);

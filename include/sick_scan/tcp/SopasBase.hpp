@@ -24,11 +24,11 @@ class SopasEventMessage;
 class SopasAnswer;
 
 /**
- * Class SopasBase encapsuls the communication to a sensor via SopasProtocol. It offers the functions: </br>
- * 			- invokeMethode<br/>
- * 			- readVariable<br/>
- * 			- writeVariable<br/>
- * 			- (un)registerEvent<br/>
+ * Class SopasBase encapsuls the communication to a sensor via SopasProtocol. It offers the functions:
+ * 			- invokeMethode
+ * 			- readVariable
+ * 			- writeVariable
+ * 			- (un)registerEvent
  *
  * 		Callback functions are used to inform you about incoming events (scans or eval cases).
  */
@@ -113,16 +113,16 @@ public:
 
 	/// Initialization
 	/**
-	 * @brief
-	 * @param protocol
-	 * @param ipAddress
-	 * @param portNumber
-	 * @param weWantScanData
-	 * @param weWantFieldData
-	 * @param readOnlyMode
-	 * @param disconnectFunction Function to be called on disconnect events.
-	 * obj = pointer to the object that holds the disconnectFunction
-	 * @return
+	 * \brief
+	 * \param protocol
+	 * \param ipAddress IP-adress of the Scanner
+	 * \param portNumber port for SOPAS comunication
+	 * \param weWantScanData
+	 * \param weWantFieldData
+	 * \param readOnlyMode
+	 * \param disconnectFunction Function to be called on disconnect events.
+	 * \param obj = pointer to the object that holds the disconnectFunction
+	 * \return
 	 */
 	virtual bool init(SopasProtocol protocol,
 						std::string ipAddress,
@@ -149,9 +149,9 @@ public:
 	bool disconnect();
 
 	/**
-	 * @brief Reads the scanner type and version variable from the sensor and stores it in the
+	 * \brief Reads the scanner type and version variable from the sensor and stores it in the
 	 *        member variables. This is done always by name.
-	 * @return true if no errors occurred.
+	 * \return true if no errors occurred.
 	 */
 	bool action_getScannerTypeAndVersion();
 

@@ -22,11 +22,9 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>diagnostic_updater</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
-  <build_depend>libusb-1.0-dev</build_depend>
 
   <run_depend>roscpp</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>diagnostic_updater</run_depend>
   <run_depend>dynamic_reconfigure</run_depend>
-  <run_depend>libusb-1.0</run_depend>
 </package>
