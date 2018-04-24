@@ -8,5 +8,6 @@
 	<resultList>
 		<param name="shotsPerLayer" type="int" value="811" />
 		<param name="scanRate" type="double" value="10.0" valueMin="9.0" valueMax="11.0" />
+		<param name="RSSIEnabled" type="bool" value="True" />
 	</resultList>
 </launch>

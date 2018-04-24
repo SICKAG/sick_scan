@@ -36,3 +36,11 @@ html/
 html/
 
 \.#html_step3\.sh
+
+test/results/
+
+test/\.catkin_workspace
+
+test/src/CMakeLists\.txt
+
+test/tmp/
