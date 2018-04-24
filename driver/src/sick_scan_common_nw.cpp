@@ -1,6 +1,9 @@
 /**
-* Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
-* Copyright (C) 2017, SICK AG, Waldkirch
+* \file
+* \brief Laser Scanner network communication
+ *
+* Copyright (C) 2018,2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
+* Copyright (C) 2018,2017, SICK AG, Waldkirch
 *
 * All rights reserved.
 * \class SickScanCommonNw

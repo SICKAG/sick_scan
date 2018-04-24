@@ -70,6 +70,7 @@
 
 #include "tinystr.h"
 #include "tinyxml.h"
+#include <boost/algorithm/string.hpp>
 
 #define MAX_NAME_LEN (1024)
 
@@ -373,13 +374,100 @@ int createTestLaunchFile(std::string launchFileFullName, std::vector<paramEntryA
 int cloud_width = 0;  // hacky 
 int cloud_height = 0;
 int callbackCnt = 0;
+double intensityStdDev = 0.0;
+double rangeStdDev = 0.0;
 void cloud_callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 {
 	static int cnt = 0;
   callbackCnt++;
 	cloud_width = cloud_msg->width;
 	cloud_height = cloud_msg->height;
-	ROS_INFO("inside callback");
+	int intensity_idx = -1;
+	int cartesianIdxArr[3];
+	for (int i = 0; i < 3; i++)
+	{
+		cartesianIdxArr[i] = -1;
+	}
+	for (int i = 0; i < cloud_msg->fields.size(); i++)
+	{
+		std::string fieldName = 	cloud_msg->fields[i].name;
+		if (fieldName.compare("intensity") == 0)
+		{
+			intensity_idx = i;
+		}
+		if (fieldName.compare("x") == 0)
+		{
+			cartesianIdxArr[0] = i;
+		}
+		if (fieldName.compare("y") == 0)
+		{
+			cartesianIdxArr[1] = i;
+		}
+		if (fieldName.compare("z") == 0)
+		{
+			cartesianIdxArr[2] = i;
+		}
+
+	}
+	if (intensity_idx != -1)
+	{
+		float intensitySum = 0.0;
+		float intensity2Sum = 0.0;
+		int intensityNum = cloud_width * cloud_height;
+	for (int i = 0; i < cloud_height; i++)
+		for (int j = 0; j < cloud_width; j++)
+		{
+			int idx = i * cloud_width + j;
+			idx *= cloud_msg->point_step;  // calculate byte address offset
+			int relOff = cloud_msg->fields[intensity_idx].offset;
+			float *intensityPtr = (float *)(&(cloud_msg->data[idx+relOff]));
+			float intensity = *intensityPtr;
+			intensitySum += intensity;
+			intensity2Sum += intensity * intensity;
+		}
+		if (intensityNum > 1)
+		{
+			intensityStdDev = (intensity2Sum - 1.0 / intensityNum * (intensitySum * intensitySum));
+			{
+				intensityStdDev /= (intensityNum - 1);
+				intensityStdDev = sqrt(intensityStdDev);
+			}
+		}
+	}
+
+	if (cartesianIdxArr[0] != -1 &&cartesianIdxArr[1] != -1 &&cartesianIdxArr[2] != -1)
+	{
+		float rangeSum = 0.0;
+		float range2Sum = 0.0;
+		int rangeNum = cloud_width * cloud_height;
+		for (int i = 0; i < cloud_height; i++)
+			for (int j = 0; j < cloud_width; j++)
+			{
+				int idx = i * cloud_width + j;
+				idx *= cloud_msg->point_step;  // calculate byte address offset
+				int relOffX = cloud_msg->fields[cartesianIdxArr[0]].offset;
+				float *XPtr = (float *)(&(cloud_msg->data[idx+relOffX]));
+				float X = *XPtr;
+				int relOffY = cloud_msg->fields[cartesianIdxArr[1]].offset;
+				float *YPtr = (float *)(&(cloud_msg->data[idx+relOffY]));
+				float Y = *YPtr;
+				int relOffZ = cloud_msg->fields[cartesianIdxArr[2]].offset;
+				float *ZPtr = (float *)(&(cloud_msg->data[idx+relOffZ]));
+				float Z = *ZPtr;
+				float range =sqrt(X*X+Y*Y+Z*Z);
+				rangeSum += range;
+				range2Sum += range * range;
+			}
+		if (rangeNum > 1)
+		{
+			rangeStdDev = (range2Sum - 1.0 / rangeNum * (rangeSum * rangeSum));
+			{
+				rangeStdDev /= (rangeNum - 1);
+				rangeStdDev = sqrt(intensityStdDev);
+			}
+		}
+	}
+	ROS_INFO("valid PointCloud2 message received");
 
 }
 
@@ -619,6 +707,7 @@ int main(int argc, char **argv)
 								sscanf(valPtr, "%d", &expectedWidth);
 							}
 
+
               ROS_INFO("Test\n");
               int errorCode = 0;
 							if (expectedWidth == cloud_width)
@@ -633,9 +722,113 @@ int main(int argc, char **argv)
 
 							}
               resultList[i].setCheckStatus(errorCode, (errorCode == 0) ? "OK" : "Unexpected number of shots");
-              cloud_width = 0;
-						}
 
+						}
+						if (resultList[i].getName().compare("pointCloud2Height") == 0)
+              {
+                int expectedHeight = -1;
+                std::string valString = resultList[i].getValue();
+                const char *valPtr = valString.c_str();
+                if (valPtr != NULL)
+                {
+                  sscanf(valPtr, "%d", &expectedHeight);
+                }
+                ROS_INFO("Test\n");
+                int errorCode = 0;
+                if (expectedHeight == cloud_height)
+                {
+                  printf("CHECK PASSED! HEIGHT %d == %d\n", expectedHeight, cloud_height);
+                  errorCode = 0;
+                }
+                else
+                {
+                  printf("CHECK FAILED! HEIGHT %d <> %d\n", expectedHeight, cloud_height);
+                  errorCode = 1;
+                }
+                resultList[i].setCheckStatus(errorCode, (errorCode == 0) ? "OK" : "Unexpected pointCloud2 height");
+                cloud_height = 0;
+              }
+
+            if (resultList[i].getName().compare("RSSIEnabled") == 0)
+            {
+              int expectedWidth = -1;
+              std::string valString = resultList[i].getValue();
+              bool rssiEnabled = false;
+              if (boost::iequals(valString, "true"))
+              {
+                rssiEnabled = true;
+              } else if (boost::iequals(valString, "false"))
+              {
+                rssiEnabled = false;
+              } else
+              {
+                ROS_WARN("RSSIEnabled parameter wrong. True or False are valid parameters!\n");
+              }
+
+              ROS_INFO("Test\n");
+              int errorCode = 0;
+              if (rssiEnabled == true)
+              {
+                if (intensityStdDev >= 1e-5)
+                {
+                  printf("CHECK PASSED! RSSI Standard deviation %.3e is not 0.\n",intensityStdDev);
+                  errorCode = 0;
+                } else
+                {
+                  printf("CHECK FAILED!  RSSI standard deviation is samller than %.10e even though RSSI is enabled\n",intensityStdDev);
+                  errorCode = 1;
+
+                }
+              }
+
+              if (rssiEnabled == false)
+              {
+                if (intensityStdDev <= 1e-5)
+                {
+                  printf("CHECK FAILED! RSSI standard deviation %.3e is bigger than 1e-5 even though RSSI is disabled\n",intensityStdDev);
+                  errorCode = 1;
+                } else
+                {
+                  printf("CHECK PASSED!  RSSI Standard deviation %.3e is smaller than 1e-5.\n",intensityStdDev);
+                  errorCode = 0;
+
+                }
+              }
+            }
+              if (resultList[i].getName().compare("ranges") == 0)
+              {
+                int expectedWidth = -1;
+                std::string valString = resultList[i].getValue();
+                bool rangeTest=false;
+                if (boost::iequals(valString, "true"))
+                {
+                  rangeTest=true;
+                }
+                else
+                {
+                  ROS_WARN("ranges parameter wrong. True or False are valid parameters!\n");
+                }
+
+                ROS_INFO("Test\n");
+                int errorCode = 0;
+                if (rangeTest==true)
+                {
+                  if (rangeStdDev >= 1e-5)
+                  {
+                    printf("CHECK PASSED! Range Standard deviation %.3e is not 0.\n", rangeStdDev);
+                    errorCode = 0;
+                  }
+                  else
+                  {
+                    printf("CHECK FAILED!  Range standard deviation %.3e is smaller than 1e-5!\n", rangeStdDev);
+                    errorCode = 1;
+
+                  }
+                  resultList[i].setCheckStatus(errorCode, (errorCode == 0) ? "OK" : "Range standard deviation is 0 !\n");
+                }
+
+
+            }
             TiXmlElement *paramSet = resultList[i].getPointerToXmlNode();
             paramSet->SetAttribute("errorCode", resultList[i].getErrorCode());
             paramSet->SetAttribute("errorMsg", resultList[i].getErrorMsg().c_str());
@@ -650,8 +843,24 @@ int main(int argc, char **argv)
         size_t pos = testCtrlXmlFileName.rfind('.');
         if (pos != std::string::npos)
         {
-          testCtrlResultXmlFileName = testCtrlXmlFileName.substr(0,pos) + "_res.xml";
-          doc.SaveFile(testCtrlResultXmlFileName.c_str());
+          boost::filesystem::path tmpFilePath =testCtrlXmlFileName.substr(0,pos);
+          boost::filesystem::path xmlDir= tmpFilePath.parent_path();
+          xmlDir.append("/results");
+          if (boost::filesystem::exists(xmlDir))
+          {
+
+          }
+          else
+          {
+            boost::filesystem::create_directory(xmlDir);
+          }
+          std::string tmpFilNamewoExtension= tmpFilePath.stem().string();
+          std::string resultFileName=xmlDir.string();
+          resultFileName.append("/");
+          resultFileName.append(tmpFilNamewoExtension);
+          resultFileName.append("_res.xml");
+          printf(resultFileName.c_str());
+          doc.SaveFile(resultFileName.c_str());
         }
 
 			}
