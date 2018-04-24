@@ -20,17 +20,22 @@ rm -rf .gitignore
 rm -rf .*
 
 git clone https://github.com/michael1309/sick_scan.git .
+git checkout master
 cd ..
 mkdir html/docs
 cd html/docs/
 rm -rf *
 cp ../../doxygen/docs/* .
 cd ..
-doxygen ./docs/Doxyfile
 git checkout gh-pages
+git checkout master -- include
+git checkout master -- driver
+doxygen ./docs/Doxyfile
 cd ./html
 git add .
 cd ..
+git add include
+git add driver
 git commit -m "Added Doxygen output to repo"
 git push origin gh-pages
 cd ../doxygen

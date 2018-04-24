@@ -1,14 +1,11 @@
 /**
 * \file
-* \brief Laser Scanner communication
+* \brief Laser Scanner Entry Point
  *
 * Copyright (C) 2018,2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
 * Copyright (C) 2018,2017, SICK AG, Waldkirch
 *
 * All rights reserved.
-* \class SickScanCommonNw
-*
-* \brief Interface for TCP/IP
 *
 * This class provides an interface for TCP/IP communication.
 * It also contains simple methods for accessing the essential contents of the SOPAS message
