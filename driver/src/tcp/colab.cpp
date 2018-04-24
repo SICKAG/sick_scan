@@ -1,5 +1,8 @@
-* \file
-* \brief Binary-Handling of SOPAS-messages
+/**
+ *
+ * \file
+ * \brief Binary-Handling of SOPAS-messages
+ */
 //
 // colab.cpp
 //
