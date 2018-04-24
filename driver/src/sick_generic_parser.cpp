@@ -1,4 +1,4 @@
-/*
+/**
 * \file
 * \brief Laser Scanner communication
 * \class ScannerBasicParam

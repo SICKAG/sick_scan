@@ -1,3 +1,6 @@
+/**
+* \file
+* \brief ASCII-Handling of SOPAS-messages
 //
 // colaa.cpp
 //
