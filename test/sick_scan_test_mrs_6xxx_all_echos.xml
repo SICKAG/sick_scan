@@ -10,7 +10,6 @@
 		<param name="shotsPerLayer" type="int" value="924" />
 		<param name="pointCloud2Height" type="int" value="96" /><!-- 24*4 24 Layers*Echos-->
 		<param name="RSSIEnabled" type="bool" value="True" />
-		<param name="ranges" type="bool" value="True" />
 		<param name="scanRate" type="double" value="10.0" valueMin="9.0" valueMax="11.0" />
 	</resultList>
 </launch>

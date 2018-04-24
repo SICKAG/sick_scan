@@ -795,7 +795,7 @@ int main(int argc, char **argv)
                 }
               }
             }
-              if (resultList[i].getName().compare("RSSIEnabled") == 0)
+              if (resultList[i].getName().compare("ranges") == 0)
               {
                 int expectedWidth = -1;
                 std::string valString = resultList[i].getValue();
