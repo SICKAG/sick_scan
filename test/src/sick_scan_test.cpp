@@ -859,7 +859,7 @@ int main(int argc, char **argv)
           resultFileName.append("/");
           resultFileName.append(tmpFilNamewoExtension);
           resultFileName.append("_res.xml");
-          printf(resultFileName.c_str());
+          printf("Save to %s\n", resultFileName.c_str());
           doc.SaveFile(resultFileName.c_str());
         }
 
