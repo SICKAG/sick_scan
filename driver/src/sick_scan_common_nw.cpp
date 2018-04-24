@@ -1,6 +1,7 @@
 /**
-\file
-\brief Laser Scanner communication*
+* \file
+* \brief Laser Scanner communication
+ *
 * Copyright (C) 2018,2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
 * Copyright (C) 2018,2017, SICK AG, Waldkirch
 *
