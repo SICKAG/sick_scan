@@ -1,4 +1,6 @@
-/*
+/**
+* \file
+* \brief Laser Scanner Parser
 * Copyright (C) 2013, Osnabrück University
 * Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
 * Copyright (C) 2017, SICK AG, Waldkirch
