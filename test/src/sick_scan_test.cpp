@@ -322,7 +322,7 @@ pid_t launchRosFile(std::string cmdLine)
 
 int createTestLaunchFile(std::string launchFileFullName, std::vector<paramEntryAscii> entryList, std::string& testLaunchFile)
 {
-	printf("Try load lunchfile :%s",launchFileFullName.c_str());
+	printf("Try loading launchfile :%s",launchFileFullName.c_str());
 	TiXmlDocument doc;
 	doc.LoadFile(launchFileFullName.c_str());
 
