@@ -2,8 +2,8 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.12 (2018-04-25)
+-------------------
 * Added script to start all test sequentially
 * Added RSSi and Range Deviation Test to sick_scan_test
 * channel handling for 8 bit rssi values corrected
