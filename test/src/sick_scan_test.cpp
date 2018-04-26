@@ -322,7 +322,7 @@ pid_t launchRosFile(std::string cmdLine)
 
 int createTestLaunchFile(std::string launchFileFullName, std::vector<paramEntryAscii> entryList, std::string& testLaunchFile)
 {
-	printf("Try load lunchfile :%s",launchFileFullName.c_str());
+	printf("Try loading launchfile :%s",launchFileFullName.c_str());
 	TiXmlDocument doc;
 	doc.LoadFile(launchFileFullName.c_str());
 
@@ -845,21 +845,22 @@ int main(int argc, char **argv)
         {
           boost::filesystem::path tmpFilePath =testCtrlXmlFileName.substr(0,pos);
           boost::filesystem::path xmlDir= tmpFilePath.parent_path();
-          xmlDir.append("/results");
-          if (boost::filesystem::exists(xmlDir))
+					std::string xmlDirName = xmlDir.string();
+					xmlDirName.append("/results");
+          if (boost::filesystem::exists(xmlDirName))
           {
 
           }
           else
           {
-            boost::filesystem::create_directory(xmlDir);
+            boost::filesystem::create_directory(xmlDirName);
           }
           std::string tmpFilNamewoExtension= tmpFilePath.stem().string();
           std::string resultFileName=xmlDir.string();
           resultFileName.append("/");
           resultFileName.append(tmpFilNamewoExtension);
           resultFileName.append("_res.xml");
-          printf(resultFileName.c_str());
+          printf("Save to %s\n", resultFileName.c_str());
           doc.SaveFile(resultFileName.c_str());
         }
 

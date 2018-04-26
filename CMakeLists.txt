@@ -33,7 +33,10 @@ add_library(sick_scan_lib
     driver/src/tcp/Time.cpp
     driver/src/tcp/colaa.cpp
     driver/src/tcp/colab.cpp
-	driver/src/binScanf.cpp	)
+	driver/src/binScanf.cpp
+	driver/src/sick_scan_common_tcp.cpp
+	driver/src/sick_generic_parser.cpp
+	driver/src/sick_scan_common_nw.cpp)
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
 target_link_libraries(sick_scan_lib
     ${catkin_LIBRARIES})
@@ -41,9 +44,7 @@ target_link_libraries(sick_scan_lib
 add_executable(sick_generic_caller
     driver/src/sick_generic_laser.cpp
     driver/src/sick_generic_caller.cpp
-    driver/src/sick_scan_common_tcp.cpp
-    driver/src/sick_generic_parser.cpp
-	driver/src/sick_scan_common_nw.cpp
+
 	)
 target_link_libraries(sick_generic_caller sick_scan_lib)
 
