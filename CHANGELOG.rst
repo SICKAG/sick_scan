@@ -2,6 +2,11 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.0.13 (2018-05-02)
+-------------------
+* moved some cpp files to ensure Debian compatibility
+* Contributors: Unknown
+
 0.0.12 (2018-04-25)
 -------------------
 * Added script to start all test sequentially
