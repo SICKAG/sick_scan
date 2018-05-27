@@ -14,8 +14,10 @@
 #include <string.h>     // for memset()
 #include <netdb.h>      // for hostent
 #include <iostream>     // for cout
+#ifndef _MSC_VER
 #include <sys/poll.h>
 #include <poll.h>
+#endif
 
 Tcp::Tcp()
 {
@@ -50,14 +52,14 @@ bool Tcp::write(UINT8* buffer, UINT32 numberOfBytes)
 {
 	INT32 bytesSent;
 	bool result;
-	INT32* socketPtr = &m_connectionSocket;
-	
-	// Sende Daten an das Socket
 #ifdef _MSC_VER
+	SOCKET* socketPtr = &m_connectionSocket;
 	bytesSent = ::send(*socketPtr, (const char*)buffer, numberOfBytes, 0);
 #else
+	INT32* socketPtr = &m_connectionSocket;
 	bytesSent = ::send(*socketPtr, buffer, numberOfBytes, 0);
 #endif	
+	// Sende Daten an das Socket
 	if (bytesSent != (INT32)numberOfBytes)
 	{
 		printWarning("Tcp::write: Failed to send data to socket.");
@@ -372,7 +374,7 @@ void Tcp::stopReadThread()
  */
 UINT32 Tcp::getNumReadableBytes()
 {
-	return m_rxBuffer.size();
+	return (UINT32)m_rxBuffer.size();
 }
 
 

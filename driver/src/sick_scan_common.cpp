@@ -194,6 +194,7 @@ namespace sick_scan
 	{
 		expectedFrequency_ = this->parser_->getCurrentParamPtr()->getExpectedFrequency();
 
+		setSensorIsRadar(false);
 		init_cmdTables();
 #ifndef _MSC_VER
 		dynamic_reconfigure::Server<sick_scan::SickScanConfig>::CallbackType f;
@@ -639,10 +640,10 @@ namespace sick_scan
 		if (result != 0)
 		{
 			ROS_ERROR("Failed to init scanner Error Code: %d\nWaiting for timeout...\n"
-							  "If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed.\n"
-							  "This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. There are two ways to prevent this:\n"
-							  "1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.\n"
-							  "2. Use the parameter \"sopas_protocol_type\" to overwrite the default settings of the driver.", result);
+				"If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed.\n"
+				"This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. There are two ways to prevent this:\n"
+				"1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.\n"
+				"2. Use the parameter \"sopas_protocol_type\" to overwrite the default settings of the driver.", result);
 		}
 		return result;
 	}
@@ -799,7 +800,7 @@ namespace sick_scan
 		ros::NodeHandle pn("~");
 		pn.getParam("intensity", rssiFlag);
 		pn.getParam("intensity_resolution_16bit", rssiResolutionIs16Bit);
-    this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
+		this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
 
 		// parse active_echos entry and set flag array
 		pn.getParam("active_echos", activeEchos);
@@ -868,7 +869,7 @@ namespace sick_scan
 
 		setReadTimeOutInMs(shortTimeOutInMs);
 
-    bool restartDueToProcolChange = false;
+		bool restartDueToProcolChange = false;
 
 		for (int i = 0; i < this->sopasCmdChain.size(); i++)
 		{
@@ -935,31 +936,31 @@ namespace sick_scan
 			switch (cmdId)
 			{
 			case CMD_SET_TO_COLA_A_PROTOCOL:
-      {
+			{
 				bool protocolCheck = checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
-        if (false == protocolCheck)
-        {
-          restartDueToProcolChange = true;
-        }
+				if (false == protocolCheck)
+				{
+					restartDueToProcolChange = true;
+				}
 				useBinaryCmd = useBinaryCmdNow;
 				setReadTimeOutInMs(defaultTimeOutInMs);
-      }
+			}
 			break;
 			case CMD_SET_TO_COLA_B_PROTOCOL:
-      {
-        bool protocolCheck = checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
-        if (false == protocolCheck)
-        {
-          restartDueToProcolChange = true;
-        }
+			{
+				bool protocolCheck = checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
+				if (false == protocolCheck)
+				{
+					restartDueToProcolChange = true;
+				}
 				useBinaryCmd = useBinaryCmdNow;
 				setReadTimeOutInMs(defaultTimeOutInMs);
-      }
-      break;
+			}
+			break;
 
-				/*
-				SERIAL_NUMBER: Device ident must be read before!
-				*/
+			/*
+			SERIAL_NUMBER: Device ident must be read before!
+			*/
 
 			case CMD_DEVICE_IDENT: // FOR MRS6xxx the Device Ident holds all specific information (used instead of CMD_SERIAL_NUMBER)
 			{
@@ -1133,11 +1134,11 @@ namespace sick_scan
 			// ML: add here reply handling
 			}
 
-      if (restartDueToProcolChange)
-      {
-        return ExitError;
+			if (restartDueToProcolChange)
+			{
+				return ExitError;
 
-      }
+			}
 		}
 
 
@@ -1381,7 +1382,7 @@ namespace sick_scan
 		*/
 		//                              1    2     3
 		// Prepare flag array for echos
-        // Except for the LMS5xx scanner here the mask is hard 00 see SICK Telegram listing "Telegram structure: sWN LMDscandatacfg" for details
+		// Except for the LMS5xx scanner here the mask is hard 00 see SICK Telegram listing "Telegram structure: sWN LMDscandatacfg" for details
 
 		outputChannelFlagId = 0x00;
 		for (int i = 0; i < outputChannelFlag.size(); i++)
@@ -1393,13 +1394,13 @@ namespace sick_scan
 			outputChannelFlagId = 1;  // at least one channel must be set
 		}
 		if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0)
-    {
-      outputChannelFlagId = 1;
-      ROS_INFO("LMS 5xx detected overwriting output channel flag ID");
+		{
+			outputChannelFlagId = 1;
+			ROS_INFO("LMS 5xx detected overwriting output channel flag ID");
 
 			ROS_INFO("LMS 5xx detected overwriting resolution flag (only 8 bit supported)");
-  		this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(false);
- 			rssiResolutionIs16Bit = this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit();
+			this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(false);
+			rssiResolutionIs16Bit = this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit();
 		}
 		if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_MRS_1XXX_NAME) == 0)
 		{
@@ -1422,9 +1423,9 @@ namespace sick_scan
 		{
 			char requestLMDscandatacfg[MAX_STR_LEN];
 			// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
-            // CMD_SET_PARTIAL_SCANDATA_CFG = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
+			// CMD_SET_PARTIAL_SCANDATA_CFG = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
 			const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
-			sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0,rssiResolutionIs16Bit ? 1 : 0);
+			sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0, rssiResolutionIs16Bit ? 1 : 0);
 			if (useBinaryCmd)
 			{
 				std::vector<unsigned char> reqBinary;
@@ -1685,33 +1686,34 @@ namespace sick_scan
 
 	bool sick_scan::SickScanCommon::dumpDatagramForDebugging(unsigned char *buffer, int bufLen)
 	{
-
-			static int cnt = 0;
-			char szDumpFileName[255] = {0};
-			char szDir[255] = {0};
-		  if (cnt == 0)
-			{
-				ROS_INFO("Attention: verboseLevel is set to 1. Datagrams are stored in the /tmp folder.");
-			}
+		bool ret = true;
+		static int cnt = 0;
+		char szDumpFileName[255] = { 0 };
+		char szDir[255] = { 0 };
+		if (cnt == 0)
+		{
+			ROS_INFO("Attention: verboseLevel is set to 1. Datagrams are stored in the /tmp folder.");
+		}
 #ifdef _MSC_VER
-			strcpy(szDir,"C:\\temp\\");
+		strcpy(szDir, "C:\\temp\\");
 #else
-			strcpy(szDir,"/tmp/");
+		strcpy(szDir, "/tmp/");
 #endif
-			sprintf(szDumpFileName,"%ssick_datagram_%06d.bin", szDir, cnt);
-			bool isBinary = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
-			if (isBinary)
+		sprintf(szDumpFileName, "%ssick_datagram_%06d.bin", szDir, cnt);
+		bool isBinary = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
+		if (isBinary)
+		{
+			FILE *ftmp;
+			ftmp = fopen(szDumpFileName, "wb");
+			if (ftmp != NULL)
 			{
-				FILE *ftmp;
-				ftmp = fopen(szDumpFileName,"wb");
-				if (ftmp != NULL)
-				{
-					fwrite(buffer, bufLen, 1, ftmp);
-					fclose(ftmp);
-				}
+				fwrite(buffer, bufLen, 1, ftmp);
+				fclose(ftmp);
 			}
-			cnt++;
+		}
+		cnt++;
 
+		return(true);
 
 	}
 
@@ -1769,11 +1771,20 @@ namespace sick_scan
 			supported = true;
 		}
 
+
 		if (identStr.find("MRS6") != std::string::npos)  // received pattern contains 4 'x' but we check only for 3 'x' (MRS1104 should be MRS1xxx)
 		{
 			ROS_INFO("Deviceinfo %s found and supported by this driver.", identStr.c_str());
 			supported = true;
 		}
+
+		if (identStr.find("RMS3xx") != std::string::npos)   // received pattern contains 4 'x' but we check only for 3 'x' (MRS1104 should be MRS1xxx)
+		{
+			ROS_INFO("Deviceinfo %s found and supported by this driver.", identStr.c_str());
+			supported = true;
+		}
+
+
 		if (supported == false)
 		{
 			ROS_WARN("Device %s V%d.%d found and maybe unsupported by this driver.", device_string, version_major, version_minor);
@@ -2006,7 +2017,7 @@ namespace sick_scan
 
 									if (totalChannelCnt == numberOf16BitChannels)
 									{
-											parseOff += 2; // jump of number of 8 bit channels- already parsed above
+										parseOff += 2; // jump of number of 8 bit channels- already parsed above
 									}
 
 									if (totalChannelCnt >= numberOf16BitChannels)
@@ -2014,16 +2025,16 @@ namespace sick_scan
 										processDataLenValuesInBytes = 1; // then process 8 bit values ...
 									}
 									bCont = false;
-									strcpy(szChannel,"");
+									strcpy(szChannel, "");
 
 									if (totalChannelCnt < (numberOf16BitChannels + numberOf8BitChannels))
 									{
 										szChannel[5] = '\0';
-										strncpy(szChannel, (const char *) receiveBuffer + parseOff, 5);
+										strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
 									}
 									else
 									{
-									   // all channels processed (16 bit and 8 bit channels)
+										// all channels processed (16 bit and 8 bit channels)
 									}
 
 									if (strstr(szChannel, "DIST") == szChannel) {
@@ -2051,7 +2062,7 @@ namespace sick_scan
 										rssiCnt++;
 										bCont = true;
 										numberOfItems = 0;
-                                        // copy two byte value (unsigned short to  numberOfItems
+										// copy two byte value (unsigned short to  numberOfItems
 										memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
 										swap_endian((unsigned char*)&numberOfItems, 2); // swap
 
@@ -2081,18 +2092,18 @@ namespace sick_scan
 											unsigned short *data = (unsigned short *)(receiveBuffer + parseOff + 21);
 
 											unsigned char *swapPtr = (unsigned char *)data;
-                                            // copy RSSI-Values +2 for 16-bit values +1 for 8-bit value
+											// copy RSSI-Values +2 for 16-bit values +1 for 8-bit value
 											for (int i = 0; i < numberOfItems * processDataLenValuesInBytes; i += processDataLenValuesInBytes)
 											{
 												if (processDataLenValuesInBytes == 1)
-                        {
-                        }
-                        else
-                        {
-                        	unsigned char tmp;
-												  tmp = swapPtr[i + 1];
-												  swapPtr[i + 1] = swapPtr[i];
-												  swapPtr[i] = tmp;
+												{
+												}
+												else
+												{
+													unsigned char tmp;
+													tmp = swapPtr[i + 1];
+													swapPtr[i + 1] = swapPtr[i];
+													swapPtr[i] = tmp;
 												}
 											}
 											int idx = 0;
@@ -2116,22 +2127,22 @@ namespace sick_scan
 												break;
 											case process_rssi:
 												// Das muss vom Protokoll abgeleitet werden. !!!
-												    for (int i = 0; i < numberOfItems; i++)
-												    {
-													    idx = i + numberOfItems * (rssiCnt - 1);
-                              // we must select between 16 bit and 8 bit values
-                              float rssiVal = 0.0;
-                              if (processDataLenValuesInBytes == 2)
-															{
-                                rssiVal = (float)data[i];
-                              }
-                              else
-                              {
-                                unsigned char *data8Ptr = (unsigned char *)data;
-                                rssiVal = (float)data8Ptr[i];
-                              }
-                              msg.intensities[idx] = rssiVal * scaleFactor + scaleFactorOffset;
-												    }
+												for (int i = 0; i < numberOfItems; i++)
+												{
+													idx = i + numberOfItems * (rssiCnt - 1);
+													// we must select between 16 bit and 8 bit values
+													float rssiVal = 0.0;
+													if (processDataLenValuesInBytes == 2)
+													{
+														rssiVal = (float)data[i];
+													}
+													else
+													{
+														unsigned char *data8Ptr = (unsigned char *)data;
+														rssiVal = (float)data8Ptr[i];
+													}
+													msg.intensities[idx] = rssiVal * scaleFactor + scaleFactorOffset;
+												}
 												break;
 
 											case process_vang:
@@ -2659,16 +2670,16 @@ namespace sick_scan
 		}
 		else
 		{
-/*
-			// we must reconnect and set the new protocoltype
-			int iRet = this->close_device();
-			ROS_INFO("SOPAS - Close and reconnected to scanner due to protocol change and wait 15 sec. ");
-			ROS_INFO("SOPAS - Changing from %s to %s\n", shouldUseBinary ? "ASCII" : "BINARY", shouldUseBinary ? "BINARY" : "ASCII");
-			// Wait a few seconds after rebooting
-			ros::Duration(15.0).sleep();
+			/*
+						// we must reconnect and set the new protocoltype
+						int iRet = this->close_device();
+						ROS_INFO("SOPAS - Close and reconnected to scanner due to protocol change and wait 15 sec. ");
+						ROS_INFO("SOPAS - Changing from %s to %s\n", shouldUseBinary ? "ASCII" : "BINARY", shouldUseBinary ? "BINARY" : "ASCII");
+						// Wait a few seconds after rebooting
+						ros::Duration(15.0).sleep();
 
-			iRet = this->init_device();
-			*/
+						iRet = this->init_device();
+						*/
 			if (shouldUseBinary == true)
 			{
 				this->setProtocolType(CoLa_B);
@@ -2679,9 +2690,18 @@ namespace sick_scan
 			}
 
 			useBinaryCmdNow = shouldUseBinary;
-	    retValue= false;
+			retValue = false;
 		}
 		return(retValue);
+	}
+
+	void SickScanCommon::setSensorIsRadar(bool _isRadar)
+	{
+		sensorIsRadar = _isRadar;
+	}
+	bool SickScanCommon::getSensorIsRadar(void)
+	{
+		return(sensorIsRadar);
 	}
 
 	// SopasProtocol m_protocolId;

@@ -241,6 +241,26 @@ namespace sick_scan
 	}
 
 	/*!
+	\brief flag to mark the device as radar (instead of laser scanner)
+	\param _deviceIsRadar: false for laserscanner, true for radar (like rms_3xx)
+	\sa getDeviceIsRadar
+	*/
+	void ScannerBasicParam::setDeviceIsRadar(bool _deviceIsRadar)
+	{
+		deviceIsRadar = _deviceIsRadar;
+	}
+
+	/*!
+	\brief flag to mark the device as radar (instead of laser scanner)
+	\param _deviceIsRadar: false for laserscanner, true for radar (like rms_3xx)
+	\sa getDeviceIsRadar
+	*/
+	bool ScannerBasicParam::getDeviceIsRadar(void)
+	{
+		return(deviceIsRadar);
+	}
+
+	/*!
 	\brief flag to decide between usage of ASCII-sopas or BINARY-sopas
 	\return _useBinary: True for binary, False for ASCII
 	\sa getUseBinaryProtocol
@@ -292,7 +312,6 @@ namespace sick_scan
 		override_range_max_((float)10.0),
 		override_time_increment_((float)-1.0)
 	{
-
 		setScannerType(_scanType);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_TIM_5XX_NAME);
@@ -300,9 +319,11 @@ namespace sick_scan
         allowedScannerNames.push_back(SICK_SCANNER_LMS_1XX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_LMS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_6XXX_NAME);
+		allowedScannerNames.push_back(SICK_SCANNER_RMS_3XX_NAME); // Radar scanner
 		basicParams.resize(allowedScannerNames.size()); // resize to number of supported scanner types
 		for (int i = 0; i < basicParams.size(); i++) // set specific parameter for each scanner type - scanner type is identified by name
 		{
+			basicParams[i].setDeviceIsRadar(false); // Default
 			basicParams[i].setScannerName(allowedScannerNames[i]);  // set scanner type for this parameter object
 
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_1XXX_NAME) == 0)  // MRS1000 - 4 layer, 1101 shots per scan
@@ -314,6 +335,7 @@ namespace sick_scan
 				basicParams[i].setElevationDegreeResolution(2.5); // in [degree]
 				basicParams[i].setExpectedFrequency(50.0);
 				basicParams[i].setUseBinaryProtocol(true);
+				basicParams[i].setDeviceIsRadar(false); // Default
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)  // LMS1000 - 4 layer, 1101 shots per scan
 			{
@@ -324,6 +346,7 @@ namespace sick_scan
 				basicParams[i].setElevationDegreeResolution(0.0); // in [degree]
 				basicParams[i].setExpectedFrequency(50.0);
 				basicParams[i].setUseBinaryProtocol(true);
+				basicParams[i].setDeviceIsRadar(false); // Default
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_5XX_NAME) == 0) // TIM_5xx - 1 Layer, max. 811 shots per scan
             {
@@ -333,7 +356,8 @@ namespace sick_scan
                 basicParams[i].setAngularDegreeResolution(0.3333);
                 basicParams[i].setExpectedFrequency(15.0);
                 basicParams[i].setUseBinaryProtocol(true);
-            }
+				basicParams[i].setDeviceIsRadar(false); // Default
+			}
             if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0) // LMS_5xx - 1 Layer
             {
                 basicParams[i].setNumberOfMaximumEchos(1);
@@ -342,7 +366,8 @@ namespace sick_scan
                 basicParams[i].setAngularDegreeResolution(0.5);
                 basicParams[i].setExpectedFrequency(15.0);
                 basicParams[i].setUseBinaryProtocol(true);
-            }
+				basicParams[i].setDeviceIsRadar(false); // Default
+			}
             if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XX_NAME) == 0) // LMS_1xx - 1 Layer
             {
                 basicParams[i].setNumberOfMaximumEchos(1);
@@ -351,7 +376,8 @@ namespace sick_scan
                 basicParams[i].setAngularDegreeResolution(0.5);
                 basicParams[i].setExpectedFrequency(25.0);
                 basicParams[i].setUseBinaryProtocol(true);
-            }
+				basicParams[i].setDeviceIsRadar(false); // Default
+			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) //
 			{
 				basicParams[i].setNumberOfMaximumEchos(5);
@@ -361,7 +387,22 @@ namespace sick_scan
 				basicParams[i].setElevationDegreeResolution(1.25); // in [degree]
 				basicParams[i].setExpectedFrequency(50.0);
 				basicParams[i].setUseBinaryProtocol(true);
+				basicParams[i].setDeviceIsRadar(false); // Default
 			}
+
+			if (basicParams[i].getScannerName().compare(SICK_SCANNER_RMS_3XX_NAME) == 0) //
+			{
+				basicParams[i].setNumberOfMaximumEchos(1);
+				basicParams[i].setNumberOfLayers(0); // for radar scanner
+				basicParams[i].setNumberOfShots(65);
+				basicParams[i].setAngularDegreeResolution(0.00);
+				basicParams[i].setElevationDegreeResolution(0.00); // in [degree]
+				basicParams[i].setExpectedFrequency(0.00);
+				basicParams[i].setUseBinaryProtocol(false);
+				basicParams[i].setDeviceIsRadar(true);
+
+			}
+
 		}
 
 		int scannerIdx = lookUpForAllowedScanner(scannerType);

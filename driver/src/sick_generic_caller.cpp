@@ -63,7 +63,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 12th Dec 2017
+*  Last modified: 27th May 2018
 *
 *      Authors:
 *         Michael Lehning <michael.lehning@lehning.de>
@@ -90,8 +90,8 @@
 
 // 001.001.000 Switch to multithreaded processing of data
 #define SICK_GENERIC_MAJOR_VER "001"
-#define SICK_GENERIC_MINOR_VER "001"  
-#define SICK_GENERIC_PATCH_LEVEL "001"
+#define SICK_GENERIC_MINOR_VER "002"  
+#define SICK_GENERIC_PATCH_LEVEL "000"
 
 // 001.001.001: Documentation added
 #include <algorithm> // for std::min
@@ -125,9 +125,8 @@ int main(int argc, char **argv)
 
 	if (argc == 1) // just for testing without calling by roslaunch
 	{
-		//strcpy(nameTagVal, "__name:=sick_tim_5xx");
-		strcpy(nameTagVal, "__name:=sick_mrs_6xxx");
-		// strcpy(nameTagVal, "__name:=sick_mrs_1xxx"); // dann IP-Adresse auf ...2 stellen
+		// recommended call for internal debugging as an example: __name:=sick_rms_320 __internalDebug:=1
+		strcpy(nameTagVal, "__name:=sick_rms_3xx");  // sick_rms_320 -> radar
 		strcpy(logTagVal, "__log:=/tmp/tmp.log");
 		strcpy(internalDebugTagVal, "__internalDebug:=1");
 		argc_tmp = 4;

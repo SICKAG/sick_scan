@@ -276,7 +276,11 @@ namespace sick_scan
 
 		int  outputChannelFlagId;
 		bool checkForProtocolChangeAndMaybeReconnect(bool& useBinaryCmdNow);
+		void setSensorIsRadar(bool _isRadar);
+		bool getSensorIsRadar(void);
 		int readTimeOutInMs;
+private:
+	bool sensorIsRadar;
 	};
 
 } /* namespace sick_scan */

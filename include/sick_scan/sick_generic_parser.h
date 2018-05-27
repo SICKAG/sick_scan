@@ -35,12 +35,14 @@
 #ifndef SICK_GENERIC_PARSER_H_
 #define SICK_GENERIC_PARSER_H_
 
+// List of supported laser scanner and radar scanner
 #define SICK_SCANNER_LMS_1XXX_NAME "sick_lms_1xxx"
 #define SICK_SCANNER_MRS_1XXX_NAME "sick_mrs_1xxx"
 #define SICK_SCANNER_TIM_5XX_NAME "sick_tim_5xx"
 #define SICK_SCANNER_LMS_5XX_NAME "sick_lms_5xx"
 #define SICK_SCANNER_LMS_1XX_NAME "sick_lms_1xx"
 #define SICK_SCANNER_MRS_6XXX_NAME "sick_mrs_6xxx"
+#define SICK_SCANNER_RMS_3XX_NAME "sick_rms_3xx"
 #include "abstract_parser.h"
 
 #include "sensor_msgs/LaserScan.h"
@@ -64,8 +66,10 @@ namespace sick_scan
 		double getElevationDegreeResolution(void);
 		double getAngularDegreeResolution(void);
 		double getExpectedFrequency(void);
+		bool getDeviceIsRadar(void);
 		bool getUseBinaryProtocol(void);
 		void setUseBinaryProtocol(bool _useBinary);
+		void setDeviceIsRadar(bool _deviceIsRadar);
 		void setIntensityResolutionIs16Bit(bool _IntensityResolutionIs16Bit);
 		bool getIntensityResolutionIs16Bit(void);
       void setExpectedFrequency(double _freq);
@@ -80,6 +84,7 @@ namespace sick_scan
       double expectedFrequency;
 	  bool useBinaryProtocol;
 	  bool IntensityResolutionIs16Bit;
+	  bool deviceIsRadar;
 	};
 
 

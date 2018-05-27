@@ -66,9 +66,12 @@ private:
     struct sockaddr_in m_serverAddr;				// Local address
 	bool m_beVerbose;
 	Mutex m_socketMutex;
-	
+#ifndef _MSC_VER	
 	INT32 m_connectionSocket;	// Socket, wenn wir der Client sind (z.B. Verbindung zum Scanner)
+#else
+	SOCKET m_connectionSocket;	// Socket, wenn wir der Client sind (z.B. Verbindung zum Scanner)
 
+#endif
 	void readThreadFunction(bool& endThread, UINT16& waitTimeMs);
 	SickThread<Tcp, &Tcp::readThreadFunction> m_readThread;
 	INT32 readInputData();

@@ -131,8 +131,8 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 	if (false == nhPriv.getParam("scanner_type", scannerName))
 	{
 		ROS_ERROR("cannot find parameter ""scanner_type"" in the param set. Please specify scanner_type.");
-		ROS_ERROR("Try to set sick_tim_5xx as fallback.\n");
-		scannerName = "sick_tim_5xx";
+		ROS_ERROR("Try to set %s as fallback.\n", nodeName.c_str());
+		scannerName = nodeName;
 	}
 
 
