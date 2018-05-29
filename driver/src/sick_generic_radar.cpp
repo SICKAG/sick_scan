@@ -96,6 +96,14 @@ namespace sick_scan
 
 	}
 
+
+	float convertScaledIntValue(int value, float scale, float offset)
+	{
+		float val = 0;
+		val = (float)(value * scale + offset);
+		return(val);
+	}
+
 	float getFloatValue(std::string str)
 	{
 		float tmpVal = 0.0;
@@ -267,9 +275,10 @@ namespace sick_scan
 			}
 			std::vector<int> keyWordPos;
 			std::vector<float> keyWordScale;
-			std::vector<float> keyWordOffset;
+			std::vector<float> keyWordScaleOffset;
 			keyWordPos.resize(keyWordList.size());
 			keyWordScale.resize(keyWordList.size());
+			keyWordScaleOffset.resize(keyWordList.size());
 			for (int i = 0; i < keyWordPos.size(); i++)
 			{
 				keyWordPos[i] = -1;
@@ -324,9 +333,12 @@ namespace sick_scan
 				for (int i = 0; i < numKeyWords; i++)
 				{
 					int scaleLineIdx = keyWordPos[i] + 1;
+					int scaleOffsetLineIdx = keyWordPos[i] + 2;
 					std::string token = fields[scaleLineIdx];
-					keyWordScale[i] = getFloatValue(token);
-					printf("Keyword: %-6s %8.3lf\n", keyWordList[i].c_str(), keyWordScale[i]);
+					keyWordScale[i]      = getFloatValue(token);
+					token = fields[scaleOffsetLineIdx];
+					keyWordScaleOffset[i] = getFloatValue(token);
+					printf("Keyword: %-6s %8.3lf %8.3lf\n", keyWordList[i].c_str(), keyWordScale[i], keyWordScaleOffset[i]);
 				}
 
 				switch (iLoop)
@@ -360,27 +372,27 @@ namespace sick_scan
 							if (token.compare(DIST1_KEYWORD) == 0)
 							{
 								int distRaw = getHexValue(fields[dataRowIdx]);
-								dist = (float)distRaw * keyWordScale[j] * 0.001;
+								dist = convertScaledIntValue(distRaw,keyWordScale[j], keyWordScaleOffset[j]) * 0.001;
 							}
 							if (token.compare(AZMT1_KEYWORD) == 0)
 							{
 								int azimuthRaw = getShortValue(fields[dataRowIdx]);
-								azimuth = (float)azimuthRaw * keyWordScale[j];
+								azimuth = (float)convertScaledIntValue(azimuthRaw, keyWordScale[j], keyWordScaleOffset[j]);
 							}
 							if (token.compare(VRAD1_KEYWORD) == 0)
 							{
 								int vradRaw = getShortValue(fields[dataRowIdx]);
-								vrad = (float)vradRaw * keyWordScale[j];
+								vrad = (float)convertScaledIntValue(vradRaw, keyWordScale[j], keyWordScaleOffset[j]);
 							}
 							if (token.compare(MODE1_KEYWORD) == 0)
 							{
 								int modeRaw = getHexValue(fields[dataRowIdx]);
-								mode = (int)(modeRaw * keyWordScale[j] + 0.5);
+								mode = (int)(convertScaledIntValue(modeRaw,keyWordScale[j],keyWordScaleOffset[j]) + 0.5);
 							}
 							if (token.compare(AMPL1_KEYWORD) == 0)
 							{
-								int amplRaw = getHexValue(fields[dataRowIdx]);
-								ampl = (int)(amplRaw * keyWordScale[j] + 0.5);
+								int amplRaw = getShortValue(fields[dataRowIdx]);
+								ampl = (int)(convertScaledIntValue(amplRaw, keyWordScale[j],  keyWordScaleOffset[j]) + 0.5);
 							}
 						}
 						rawTargetList[i].Dist(dist);
@@ -404,30 +416,29 @@ namespace sick_scan
 						{
 							int dataRowIdx = keyWordPos[j] + 4 + i;
 							std::string token = keyWordList[j];
+							int intVal = getShortValue(fields[dataRowIdx]);
+							float val = convertScaledIntValue(intVal, keyWordScale[j], keyWordScaleOffset[j]);
+
 							if (token.compare(P3DX1_KEYWORD) == 0)
 							{
-								int pxRaw = getShortValue(fields[dataRowIdx]);
-								px = (float)pxRaw * keyWordScale[j] * 0.001;
+								px = val * 0.001f;
 							}
 							if (token.compare(P3DY1_KEYWORD) == 0)
 							{
-								int pyRaw = getShortValue(fields[dataRowIdx]);
-								py = (float)pyRaw * keyWordScale[j] * 0.001;
+								py = val * 0.001f;
 							}
 							if (token.compare(V3DX1_KEYWORD) == 0)
 							{
-								int vxRaw = getShortValue(fields[dataRowIdx]);
-								vx = (float)vxRaw * keyWordScale[j];
+								vx = val;
 							}
 							if (token.compare(V3DY1_KEYWORD) == 0)
 							{
-								int vyRaw = getShortValue(fields[dataRowIdx]);
-								vy = (float)vyRaw * keyWordScale[j];
+								vy = val;
+								
 							}
 							if (token.compare(OBJLEN_KEYWORD) == 0)
 							{
-								int objLenRaw = getShortValue(fields[dataRowIdx]);
-								objLen = (float)objLenRaw * keyWordScale[j];
+								objLen = val;
 							}
 							if (token.compare(OBJID_KEYWORD) == 0)
 							{
@@ -461,13 +472,10 @@ namespace sick_scan
 		float rawTargetFactorList[] = { 40.0f, 0.16f, 0.04f, 1.00f, 1.00f };
 		float objectFactorList[] = { 64.0f, 64.0f, 0.1f, 0.1f, 0.75f, 1.0f };
 
-		std::string dist1_intro = "DIST1 42200000 00000000";
+		std::string dist1_intro = "DIST1 42200000 0000000";
 		std::string azmt1_intro = "AZMT1 3E23D70A 00000000";
 		std::string vrad1_intro = "VRAD1 3D23D70A 00000000";
 		std::string ampl1_intro = "AMPL1 3F800000 00000000";
-		int rawTargetChannel16BitCnt = 4;
-		int rawTargetChannel8BitCnt = 1;
-		std::string mode1_intro = "MODE1 3F800000 00000000";
 
 		std::string pdx1_intro = "P3DX1 42800000 00000000";
 		std::string pdy1_intro = "P3DY1 42800000 00000000";
@@ -475,7 +483,10 @@ namespace sick_scan
 		std::string v3dy_intro = "V3DY1 3DCCCCCD 00000000";
 		std::string oblen_intro = "OBLE1 3F400000 00000000";
 
-
+		int rawTargetChannel16BitCnt = 4;
+		int rawTargetChannel8BitCnt = 1;
+		std::string mode1_intro = "MODE1 3F800000 00000000";
+		
 		std::string obid_intro = "OBID1 3F800000 00000000";
 
 
@@ -594,9 +605,17 @@ namespace sick_scan
 					val /= objectFactorList[idx];
 				}
 
-				int16_t shortVal = (int16_t)(val + 0.5);
-
-				sprintf(szDummy, "%08x", (int)val);
+				if (val > 0.0)
+				{
+					val += 0.5;
+				}
+				else
+				{
+					val -= 0.5;
+				}
+				int16_t shortVal = (int16_t)(val);
+				
+				sprintf(szDummy, "%08x", shortVal);
 				strcpy(szDummy, szDummy + 4);  // remove first 4 digits due to integer / short
 				resultStr += szDummy;
 				resultStr += " ";
@@ -642,9 +661,17 @@ namespace sick_scan
 					int idx = i - rawTargetChannel8BitCnt;
 					val /= objectFactorList[idx + offset];
 				}
-				int8_t shortVal = (int16_t)(val + 0.5);
-
-				sprintf(szDummy, "%08x", (int)val);
+				if (val > 0.0)
+				{
+					val += 0.5;
+				}
+				else
+				{
+					val -= 0.5;
+				}
+				int8_t shortVal = (int16_t)(val);
+				
+				sprintf(szDummy, "%08x", shortVal);
 				strcpy(szDummy, szDummy + 6);  // remove first 6 digits due to integer / short
 				resultStr += szDummy;
 				resultStr += " ";
