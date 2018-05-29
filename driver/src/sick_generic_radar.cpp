@@ -141,7 +141,6 @@ namespace sick_scan
 	int SickScanRadar::parseAsciiDatagram(char* datagram, size_t datagram_length, std::vector<SickScanRadarObject> &objectList, std::vector<SickScanRadarRawTarget> &rawTargetList)
 	{
 		int exitCode = ExitSuccess;
-		// echoMask introduced to get a workaround for cfg bug using MRS1104
 		ros::NodeHandle tmpParam("~");
 		bool dumpData = false;
 		int verboseLevel = 0;
@@ -337,7 +336,7 @@ namespace sick_scan
 					keyWordScale[i] = getFloatValue(token);
 					token = fields[scaleOffsetLineIdx];
 					keyWordScaleOffset[i] = getFloatValue(token);
-					printf("Keyword: %-6s %8.3lf %8.3lf\n", keyWordList[i].c_str(), keyWordScale[i], keyWordScaleOffset[i]);
+					// printf("Keyword: %-6s %8.3lf %8.3lf\n", keyWordList[i].c_str(), keyWordScale[i], keyWordScaleOffset[i]);
 				}
 
 				switch (iLoop)
@@ -471,7 +470,7 @@ namespace sick_scan
 		float rawTargetFactorList[] = { 40.0f, 0.16f, 0.04f, 1.00f, 1.00f };
 		float objectFactorList[] = { 64.0f, 64.0f, 0.1f, 0.1f, 0.75f, 1.0f };
 
-		std::string dist1_intro = "DIST1 42200000 0000000";
+		std::string dist1_intro = "DIST1 42200000 00000000";
 		std::string azmt1_intro = "AZMT1 3E23D70A 00000000";
 		std::string vrad1_intro = "VRAD1 3D23D70A 00000000";
 		std::string ampl1_intro = "AMPL1 3F800000 00000000";
@@ -683,23 +682,41 @@ namespace sick_scan
 		strcpy((char *)receiveBuffer, resultStr.c_str());
 	}
 
-	void SickScanRadar::simulateAsciiDatagramFromFile(unsigned char * receiveBuffer, int* pActual_length)
+	void SickScanRadar::simulateAsciiDatagramFromFile(unsigned char *receiveBuffer, int *pActual_length,
+                                                      std::string filePattern)
 	{
 		static int callCnt = 0;
-		std::string fileName = "C:\\temp\\scanTrain\\tmp000791.txt";
 		FILE *fin;
 		char szLine[1024] = { 0 };
 		char szDummyWord[1024] = { 0 };
 		int actual_length = 0;
-		receiveBuffer[0] = '\x02';
-		actual_length++;
 		int cnt = 0;
-		callCnt++;
-		if (callCnt % 2)
-		{
-			fileName = "c:\\temp\\scanVehicle\\tmp005964.txt";
-		}
-		fin = fopen(fileName.c_str(), "r");
+    char szFileName[1024] = {0};
+
+    receiveBuffer[0] = '\x02';
+    actual_length++;
+
+    for (int iLoop = 0; iLoop < 2; iLoop++)
+    {
+      sprintf(szFileName,filePattern.c_str(), callCnt);
+      callCnt++;
+		  fin = fopen(szFileName, "r");
+
+      if ( (fin == NULL) && (iLoop == 0))
+      {
+        callCnt = 0;  // reset to 0. This enables a loop over recorded raw data
+      }
+      else
+      {
+        break;
+      }
+
+      if ((iLoop == 1) && (fin == NULL))
+      {
+        ROS_ERROR("Can not find simulation file corresponding to pattern %s", filePattern.c_str());
+      }
+    }
+
 		while (fgets(szLine, 1024, fin) != NULL)
 		{
 			char *ptr = strchr(szLine, '\n');;
@@ -735,9 +752,9 @@ namespace sick_scan
 	{
 		int exitCode = ExitSuccess;
 
-		simulateAsciiDatagram(receiveBuffer, &actual_length);
+		// simulateAsciiDatagram(receiveBuffer, &actual_length);
 
-		// simulateAsciiDatagramFromFile(receiveBuffer, &actual_length);
+    simulateAsciiDatagramFromFile(receiveBuffer, &actual_length, "/mnt/hgfs/development/ros/bags/raw/trainSeq/tmp%06d.txt");
 
 		std::vector<SickScanRadarObject> objectList;
 		std::vector<SickScanRadarRawTarget> rawTargetList;

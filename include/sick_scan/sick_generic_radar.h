@@ -123,7 +123,7 @@ namespace sick_scan
 		void simulateAsciiDatagram(unsigned char * receiveBuffer, int* actual_length);
 	private:
 		SickScanCommon *commonPtr;
-		void simulateAsciiDatagramFromFile(unsigned char * receiveBuffer, int* actual_length);
+		void simulateAsciiDatagramFromFile(unsigned char *receiveBuffer, int *actual_length, std::string filePattern);
 	};
 
 } /* namespace sick_scan */
