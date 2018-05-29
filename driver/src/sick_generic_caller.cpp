@@ -1,36 +1,23 @@
 /**
 * \file
 * \brief Laser Scanner Entry Point
- *
+*
 * Copyright (C) 2018,2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
 * Copyright (C) 2018,2017, SICK AG, Waldkirch
 *
-* All rights reserved.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
 *
-* This class provides an interface for TCP/IP communication.
-* It also contains simple methods for accessing the essential contents of the SOPAS message
-* (for example, determining the payload and the SOPAS command used).
-* It based on an example of SICK AG.
+*       http://www.apache.org/licenses/LICENSE-2.0
 *
-* Doxygen example: http://www-numi.fnal.gov/offline_software/srt_public_context/WebDocs/doxygen-howto.html
+*   Unless required by applicable law or agreed to in writing, software
+*   distributed under the License is distributed on an "AS IS" BASIS,
+*   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*   See the License for the specific language governing permissions and
+*   limitations under the License.
 *
-*/
-
-/**
-* \file
-* \brief Entry Point
- *
-* Copyright (C) 2018,2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
-* Copyright (C) 2018,2017, SICK AG, Waldkirch
 *
-* All rights reserved.
-* \class SickScanCommonNw
-*
-* \brief Interface for TCP/IP
-*
-* Copyright (C) 2013, Osnabrück University
-* Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
-* Copyright (C) 2017, SICK AG, Waldkirch
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
@@ -72,6 +59,13 @@
 *
 * Based on the TiM communication example by SICK AG.
 *
+*
+*
+*  Copyright 2018 SICK AG
+*  Copyright 2018 Ing.-Büro Dr. Michael Lehning
+
+
+
 */
 
 #include <stdio.h>
