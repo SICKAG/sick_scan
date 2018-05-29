@@ -23,7 +23,7 @@ ROS Device Driver for Sick Laserscanner - supported scanner types:
 
 | **device name**    |  **part no.**                                                                                                                | **description**                                | **tested?**     |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|:---------------:|
-| MRS6124            | [6065086](https://www.sick.com/de/de/mess-und-detektionsloesungen/3d-lidar-sensoren/mrs6000/mrs6124r-131001/p/p533545)                                                                                                                     | 24 layer (standard)                            | ✔ [experimental]|
+| MRS6124            | [6065086](https://www.sick.com/de/de/mess-und-detektionsloesungen/3d-lidar-sensoren/mrs6000/mrs6124r-131001/p/p533545)   | 24 layer (standard)                            | ✔ [stable]|
 | MRS1104            | [1081208](https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044) | 4 layer                                        | ✔ [stable]|
 | LMS1104            | [unpublished] | 1 layer (based on MRS1104 technology) |  ✔ [experimental]|
 | TiM551             | [1060445](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)                 | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [stable]|
@@ -37,7 +37,7 @@ ROS Device Driver for Sick Laserscanner - supported scanner types:
 | LMS1xx-Family      | [e.g. 1041114](https://www.sick.com/media/docs/1/31/331/Operating_instructions_LMS1xx_Laser_Measurement_Sensors_en_IM0031331.PDF)| 1 layer max. range: 28m, ang. resol. 0.25 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
 | RMS3xx             | [8021530](https://www.sick.com/media/docs/4/04/504/Operating_instructions_RMS3xx_en_IM0075504.PDF)| Radar Sensor | ✔ [experimental]|
-|                    |                                                                                                   | Opening angle: #/- 50 [deg]   |                 |
+|                    |                                                                                                   | Opening angle: +/- 50 [deg]   |                 |
 
 ##  Start Node
 
@@ -53,7 +53,16 @@ For LMS1104:
 roslaunch sick_scan sick_lms_1xxx.launch
 
 For TiM551, TiM561, TiM571:
-roslaunch sick_scan sick_tim_5xx.launch#
+roslaunch sick_scan sick_tim_5xx.launch
+
+For LMS1xx-family:
+roslaunch sick_scan sick_lms_1xx.launch
+
+For LMS5xx-family:
+roslaunch sick_scan sick_lms_5xx.launch
+
+For RMS3xx-family:
+roslaunch sick_scan sick_rms_3xx.launch (under development - do not use)
 
 ### Start multiple Nodes
 
@@ -71,8 +80,7 @@ There are two ways to prevent this:
 
 ## Bugs and feature requests
 
-- General: Brand new driver especially for MRS6124 
-- Stability issues: Driver is experimental 
+- Stability issues: Driver is experimental for the RMS3xx 
 - Sopas protocol mapping:
 -- All scanners: COLA-B (Binary)
 - Software should be further tested, documented and beautified
