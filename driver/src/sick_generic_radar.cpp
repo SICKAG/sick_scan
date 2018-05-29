@@ -309,8 +309,8 @@ namespace sick_scan
 						int entriesNumTmp = getHexValue(fields[keyWordPos[i] + 3]);
 						if (entriesNumTmp != entriesNum)
 						{
-							ROS_WARN("Number of items for keyword %s differs from number of items for DIST1\n.",
-								keyWordList[i].c_str());
+							ROS_WARN("Number of items for keyword %s differs from number of items for %s\n.",
+								keyWordList[i].c_str(), keyWordList[0].c_str());
 							entriesNumOk = false;
 						}
 					}
@@ -465,8 +465,20 @@ namespace sick_scan
 		std::string azmt1_intro = "AZMT1 3E23D70A 00000000";
 		std::string vrad1_intro = "VRAD1 3D23D70A 00000000";
 		std::string ampl1_intro = "AMPL1 3F800000 00000000";
-		int channel8BitCnt = 1;
+		int rawTargetChannel16BitCnt = 4;
+		int rawTargetChannel8BitCnt = 1;
 		std::string mode1_intro = "MODE1 3F800000 00000000";
+
+		std::string pdx1_intro = "P3DX1 42800000 00000000";
+		std::string pdy1_intro = "P3DY1 42800000 00000000";
+		std::string v3dx_intro = "V3DX1 3DCCCCCD 00000000";
+		std::string v3dy_intro = "V3DY1 3DCCCCCD 00000000";
+		std::string oblen_intro = "OBLE1 3F400000 00000000";
+
+
+		std::string obid_intro = "OBID1 3F800000 00000000";
+
+
 
 		std::string trailer = "0 0 0 0 0 0\x3";
 
@@ -477,8 +489,20 @@ namespace sick_scan
 		channel16BitID.push_back(vrad1_intro);
 		channel16BitID.push_back(ampl1_intro);
 
-		channel8BitID.push_back(mode1_intro);
+		channel16BitID.push_back(pdx1_intro);
+		channel16BitID.push_back(pdy1_intro);
+		channel16BitID.push_back(v3dx_intro);
+		channel16BitID.push_back(v3dy_intro);
+		channel16BitID.push_back(oblen_intro);
 
+
+
+		channel8BitID.push_back(mode1_intro);
+		channel8BitID.push_back(obid_intro);
+
+		int channel8BitCnt = channel8BitID.size();
+		int objectChannel16BitCnt = 5;
+		channel16BitCnt = channel16BitID.size();
 		float x = 20.0;
 		float speed = 50.0; // [m/s]
 		std::vector<SickScanRadarRawTarget> rawTargetList;
@@ -498,19 +522,53 @@ namespace sick_scan
 			rawTargetList.push_back(rawTarget);
 		}
 
+		std::vector<SickScanRadarObject> objectList;
+
+		int objId = 0;
+		for (float x = 20; x <= 100.0; x += 10.0)
+		{
+			SickScanRadarObject vehicle;
+			float y = 0.0;
+			for (int iY = -1; iY <= 1; iY += 2)
+			{
+				y = iY * 2.0;
+
+				vehicle.P3Dx(x * 1000.0);
+				vehicle.P3Dy(y * 1000.0);
+				vehicle.V3Dx(y * 10.0f); // +/- 20 m/s
+				vehicle.V3Dy(0.1f); // just for testing
+				vehicle.ObjLength(6.0f + y);
+				vehicle.ObjId(objId++);
+				objectList.push_back(vehicle);
+			}
+
+
+		}
+
 		char szDummy[255] = { 0 };
 		std::string resultStr;
 		resultStr += header;
 		sprintf(szDummy, "%x ", channel16BitCnt);
 		resultStr += szDummy;
-		int valNum = rawTargetList.size();
 		for (int i = 0; i < channel16BitCnt; i++)
 		{
 			resultStr += channel16BitID[i];
+			int valNum = rawTargetList.size();
+			bool processRawTarget = true;
+			if (i < rawTargetChannel16BitCnt)
+			{
+				valNum = rawTargetList.size();
+			}
+			else
+			{
+				processRawTarget = false;
+				valNum = objectList.size();
+			}
+
 			sprintf(szDummy, " %x ", valNum);
 			resultStr += szDummy;
 			float val = 0.0;
-			for (int j = 0; j < rawTargetList.size(); j++)
+			for (int j = 0; j < valNum; j++)
 			{
 				switch (i)
 				{
@@ -518,9 +576,24 @@ namespace sick_scan
 				case 1: val = 1.0 / deg2rad * rawTargetList[j].Azimuth(); break;
 				case 2: val = rawTargetList[j].Vrad(); break;
 				case 3: val = rawTargetList[j].Ampl(); break;
+				case 4: val = objectList[j].P3Dx(); break;
+				case 5: val = objectList[j].P3Dy(); break;
+				case 6: val = objectList[j].V3Dx(); break;
+				case 7: val = objectList[j].V3Dy(); break;
+				case 8: val = objectList[j].ObjLength(); break;
 				}
 
-				val /= rawTargetFactorList[i];
+
+				if (processRawTarget)
+				{
+					val /= rawTargetFactorList[i];
+				}
+				else
+				{
+					int idx = i - rawTargetChannel16BitCnt;
+					val /= objectFactorList[idx];
+				}
+
 				int16_t shortVal = (int16_t)(val + 0.5);
 
 				sprintf(szDummy, "%08x", (int)val);
@@ -529,55 +602,60 @@ namespace sick_scan
 				resultStr += " ";
 			}
 		}
+
 		sprintf(szDummy, "%x ", channel8BitCnt);
 		resultStr += szDummy;
-		valNum = rawTargetList.size();
+		int valNum = rawTargetList.size();
 		for (int i = 0; i < channel8BitCnt; i++)
 		{
 			resultStr += channel8BitID[i];
+			float val = 0.0;
+			bool processRawTarget = true;
+			if (i < rawTargetChannel8BitCnt)
+			{
+				valNum = rawTargetList.size();
+			}
+			else
+			{
+				processRawTarget = false;
+				valNum = objectList.size();
+			}
 			sprintf(szDummy, " %x ", valNum);
 			resultStr += szDummy;
-			float val = 0.0;
-			for (int j = 0; j < rawTargetList.size(); j++)
+			for (int j = 0; j < valNum; j++)
 			{
 				switch (i)
 				{
 				case 0: val = rawTargetList[j].Mode(); break;
+				case 1: val = objectList[j].ObjId(); break;
 				}
 
-				val /= rawTargetFactorList[i];
+				int offset = 0;
+				if (processRawTarget)
+				{
+					offset = rawTargetChannel16BitCnt;
+					val /= rawTargetFactorList[i + offset];
+				}
+				else
+				{
+					offset = objectChannel16BitCnt;
+					int idx = i - rawTargetChannel8BitCnt;
+					val /= objectFactorList[idx + offset];
+				}
 				int8_t shortVal = (int16_t)(val + 0.5);
 
 				sprintf(szDummy, "%08x", (int)val);
-				strcpy(szDummy, szDummy + 6);  // remove first 4 digits due to integer / short
+				strcpy(szDummy, szDummy + 6);  // remove first 6 digits due to integer / short
 				resultStr += szDummy;
 				resultStr += " ";
 			}
 		}
 
 		resultStr += trailer;
-#if 0
-		std::string header = "sSN LMDradardata 1 1 112F6E9
-			5 : 0
-			6 : 0
-			7 : 13A9
-			8 : 0
-			9 : 0
-			10 : 9DD0D11
-			11 : 0
-			12 : 0
-			13 : 0
-			14 : 0
-			15 : B4C0
-			16 : 9C0
-			17 : 1
-			18 : 0
-			19 : 0
-			20 : 4"
-#endif
-		*actual_length = resultStr.length();
+
+			*actual_length = resultStr.length();
 		strcpy((char *)receiveBuffer, resultStr.c_str());
-	}
+		}
 
 	void SickScanRadar::simulateAsciiDatagramFromFile(unsigned char * receiveBuffer, int* pActual_length)
 	{
@@ -705,22 +783,22 @@ namespace sick_scan
 					valSingle[2] = 0.0;
 					valSingle[3] = rawTargetList[i].Vrad();
 					valSingle[4] = rawTargetList[i].Ampl();
-					
+
 					for (int j = 0; j < numChannels; j++)
 					{
 						valPtr[off] = valSingle[j];
 						off++;
 					}
-				}
+					}
 #ifndef _MSC_VER
 				cloud_pub_.publish(cloud_);
 #else
 				printf("PUBLISH:\n");
 #endif
+				}
+
 			}
-
-		}
 		return(exitCode);
-	}
+		}
 
-					}
+	}
