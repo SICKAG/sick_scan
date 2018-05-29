@@ -390,7 +390,7 @@ namespace sick_scan
 				basicParams[i].setDeviceIsRadar(false); // Default
 			}
 
-			if (basicParams[i].getScannerName().compare(SICK_SCANNER_RMS_3XX_NAME) == 0) //
+			if (basicParams[i].getScannerName().compare(SICK_SCANNER_RMS_3XX_NAME) == 0) // Radar
 			{
 				basicParams[i].setNumberOfMaximumEchos(1);
 				basicParams[i].setNumberOfLayers(0); // for radar scanner
@@ -398,8 +398,8 @@ namespace sick_scan
 				basicParams[i].setAngularDegreeResolution(0.00);
 				basicParams[i].setElevationDegreeResolution(0.00); // in [degree]
 				basicParams[i].setExpectedFrequency(0.00);
-				basicParams[i].setUseBinaryProtocol(false);
-				basicParams[i].setDeviceIsRadar(true);
+				basicParams[i].setUseBinaryProtocol(false); // due to problems by switching to binary
+				basicParams[i].setDeviceIsRadar(true); // Device is a radar
 
 			}
 

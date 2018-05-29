@@ -97,6 +97,7 @@ namespace sick_scan
 			CMD_SET_PARTIAL_SCANDATA_CFG,
 			CMD_STOP_SCANDATA,
 			CMD_START_SCANDATA,
+			CMD_START_RADARDATA,
 			CMD_START_MEASUREMENT,
 			CMD_STOP_MEASUREMENT,
 			CMD_SET_ECHO_FILTER,
@@ -186,6 +187,11 @@ namespace sick_scan
 		 */
 
 		SickScanCommonNw m_nw;
+
+		SickScanConfig* getConfigPtr()
+		{
+			return(&config_);
+		}
 	protected:
 		virtual int init_device() = 0;
 		virtual int init_scanner();
@@ -240,6 +246,9 @@ namespace sick_scan
 		diagnostic_updater::Updater diagnostics_;
 
 
+		// Dynamic Reconfigure
+		SickScanConfig config_;
+
 	private:
 		SopasProtocol m_protocolId;
 		// ROS
@@ -259,8 +268,7 @@ namespace sick_scan
 		diagnostic_updater::DiagnosedPublisher<sensor_msgs::LaserScan>* diagnosticPub_;
 		double expectedFrequency_;
 
-		// Dynamic Reconfigure
-		SickScanConfig config_;
+
 #ifndef _MSC_VER
 		dynamic_reconfigure::Server<sick_scan::SickScanConfig> dynamic_reconfigure_server_;
 #endif
