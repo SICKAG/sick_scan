@@ -24,14 +24,20 @@ ROS Device Driver for Sick Laserscanner - supported scanner types:
 | **device name**    |  **part no.**                                                                                                                | **description**                                | **tested?**     |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|:---------------:|
 | MRS6124            | [6065086](https://www.sick.com/de/de/mess-und-detektionsloesungen/3d-lidar-sensoren/mrs6000/mrs6124r-131001/p/p533545)                                                                                                                     | 24 layer (standard)                            | ✔ [experimental]|
-| MRS1104            | [1081208](https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044) | 4 layer                                        | ✔ [experimental]|
+| MRS1104            | [1081208](https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044) | 4 layer                                        | ✔ [stable]|
 | LMS1104            | [unpublished] | 1 layer (based on MRS1104 technology) |  ✔ [experimental]|
-| TiM551             | [1060445](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)           | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [experimental]|
-|                    |                                                                                                                              |  ang. resolution: 1.00[deg] Scan-Rate: 15 Hz   |                 |
-| TiM561             | [1071419](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)           | 1 layer max. range: 10m, ang. resol. 0.33 [deg]| ✔ [experimental]|
-|                    |                                                                                                                              |  ang. resolution: 0.33[deg] Scan-Rate: 15 Hz   |                 |
-| TiM571             | [1079742](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)           | 1 layer max. range: 25m, ang. resol. 0.33 [deg]| ✔ [experimental]|
-|                    |                                                                                                                              |  ang. resolution: 0.33[deg] Scan-Rate: 15 Hz   |                 |
+| TiM551             | [1060445](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)                 | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
+| TiM561             | [1071419](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)                 | 1 layer max. range: 10m, ang. resol. 0.33 [deg]| ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
+| TiM571             | [1079742](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)                 | 1 layer max. range: 25m, ang. resol. 0.33 [deg]| ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
+| LMS511-10100 PRO   | [1046135](https://www.sick.com/media/docs/4/14/514/Operating_instructions_LMS5xx_LASER_MEASUREMENT_SENSORS_en_IM0037514.PDF)     | 1 layer max. range: 80m, ang. resol. 0.167 [deg]| ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 100 Hz   |                 |
+| LMS1xx-Family      | [e.g. 1041114](https://www.sick.com/media/docs/1/31/331/Operating_instructions_LMS1xx_Laser_Measurement_Sensors_en_IM0031331.PDF)| 1 layer max. range: 28m, ang. resol. 0.25 [deg]| ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
+| RMS3xx             | [8021530](https://www.sick.com/media/docs/4/04/504/Operating_instructions_RMS3xx_en_IM0075504.PDF)| Radar Sensor | ✔ [experimental]|
+|                    |                                                                                                   | Opening angle: #/- 50 [deg]   |                 |
 
 ##  Start Node
 
