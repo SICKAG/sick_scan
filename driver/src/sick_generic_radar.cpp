@@ -148,8 +148,7 @@ namespace sick_scan
 		tmpParam.getParam("verboseLevel", verboseLevel);
 
 		// !!!!!
-
-		verboseLevel = 1;
+		// verboseLevel = 1;
 		int HEADER_FIELDS = 32;
 		char* cur_field;
 		size_t count;
@@ -783,7 +782,7 @@ namespace sick_scan
 					std::string channelRawTargetId[] = { "x", "y", "z", "vrad","amplitude" };
 					std::string channelObjectId[] = { "x", "y", "z", "vx","vy","vz","objLen","objId" };
 					std::vector<std::string> channelList;
-					std::string frameId = this->commonPtr->getConfigPtr()->frame_id;;
+					std::string frameId =  "laser"; //this->commonPtr->getConfigPtr()->frame_id;;
 					switch (iLoop)
 					{
 					case 0: numTargets = rawTargetList.size();
@@ -791,6 +790,7 @@ namespace sick_scan
 						{
 							channelList.push_back(channelRawTargetId[i]);
 						}
+						frameId = "laser"; // TODO - move to param list
 						break;
 					case 1: numTargets = objectList.size();
 						for (int i = 0; i < sizeof(channelObjectId) / sizeof(channelObjectId[0]); i++)
@@ -809,8 +809,8 @@ namespace sick_scan
 					std::vector<float> valSingle;
 					valSingle.resize(numChannels);
 					cloud_.header.stamp = timeStamp;
-					cloud_.header.frame_id =
-						cloud_.header.seq = 0;
+					cloud_.header.frame_id = frameId;
+					cloud_.header.seq = 0;
 					cloud_.height = 1; // due to multi echo multiplied by num. of layers
 					cloud_.width = numTargets;
 					cloud_.is_bigendian = false;
@@ -830,38 +830,36 @@ namespace sick_scan
 					int off = 0;
 					for (int i = 0; i < numTargets; i++)
 					{
-						switch (iLoop)
-						{
-						case 0:
-						{
-							float angle = deg2rad * rawTargetList[i].Azimuth();
-							valSingle[0] = rawTargetList[i].Dist() * cos(angle);
-							valSingle[1] = rawTargetList[i].Dist() * sin(angle);
-							valSingle[2] = 0.0;
-							valSingle[3] = rawTargetList[i].Vrad();
-							valSingle[4] = rawTargetList[i].Ampl();
-						}
-							break;
+						switch (iLoop) {
+              case 0: {
+                float angle = deg2rad * rawTargetList[i].Azimuth();
+                valSingle[0] = rawTargetList[i].Dist() * cos(angle);
+                valSingle[1] = rawTargetList[i].Dist() * sin(angle);
+                valSingle[2] = 0.0;
+                valSingle[3] = rawTargetList[i].Vrad();
+                valSingle[4] = rawTargetList[i].Ampl();
+              }
+                break;
 
-						case 1:
-							valSingle[0] = objectList[i].P3Dx();
-							valSingle[1] = objectList[i].P3Dy();
-							valSingle[2] = 0.0;
-							valSingle[3] = objectList[i].V3Dx();
-							valSingle[4] = objectList[i].V3Dy();
-							valSingle[5] = 0.0;
-							valSingle[6] = objectList[i].ObjLength();
-							valSingle[7] = objectList[i].ObjId();
-							break;
+              case 1:
+                valSingle[0] = objectList[i].P3Dx();
+                valSingle[1] = objectList[i].P3Dy();
+                valSingle[2] = 0.0;
+                valSingle[3] = objectList[i].V3Dx();
+                valSingle[4] = objectList[i].V3Dy();
+                valSingle[5] = 0.0;
+                valSingle[6] = objectList[i].ObjLength();
+                valSingle[7] = objectList[i].ObjId();
+                break;
+            }
 
 							for (int j = 0; j < numChannels; j++)
 							{
 								valPtr[off] = valSingle[j];
 								off++;
 							}
-						}
 #ifndef _MSC_VER
-						cloud_pub_.publish(cloud_);
+						this->commonPtr->cloud_pub_.publish(cloud_);
 #else
 						printf("PUBLISH:\n");
 #endif

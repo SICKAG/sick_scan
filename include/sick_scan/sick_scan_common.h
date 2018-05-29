@@ -192,7 +192,17 @@ namespace sick_scan
 		{
 			return(&config_);
 		}
-	protected:
+
+		// move back to private
+				/* FÜR MRS10000 brauchen wir einen Publish und eine NAchricht */
+				// Should we publish laser or point cloud?
+				// ros::Publisher cloud_pub_;
+				ros::Publisher cloud_pub_;
+				// sensor_msgs::PointCloud cloud_;
+				sensor_msgs::PointCloud2 cloud_;
+		//////
+
+		protected:
 		virtual int init_device() = 0;
 		virtual int init_scanner();
 		virtual int stop_scanner();
@@ -257,12 +267,6 @@ namespace sick_scan
 		ros::Publisher datagram_pub_;
 		bool publish_datagram_;
 
-		/* FÜR MRS10000 brauchen wir einen Publish und eine NAchricht */
-		  // Should we publish laser or point cloud?
-		  // ros::Publisher cloud_pub_;
-		ros::Publisher cloud_pub_;
-		// sensor_msgs::PointCloud cloud_;
-		sensor_msgs::PointCloud2 cloud_;
 
 		// Diagnostics
 		diagnostic_updater::DiagnosedPublisher<sensor_msgs::LaserScan>* diagnosticPub_;
