@@ -335,7 +335,7 @@ namespace sick_scan
 					int scaleLineIdx = keyWordPos[i] + 1;
 					int scaleOffsetLineIdx = keyWordPos[i] + 2;
 					std::string token = fields[scaleLineIdx];
-					keyWordScale[i]      = getFloatValue(token);
+					keyWordScale[i] = getFloatValue(token);
 					token = fields[scaleOffsetLineIdx];
 					keyWordScaleOffset[i] = getFloatValue(token);
 					printf("Keyword: %-6s %8.3lf %8.3lf\n", keyWordList[i].c_str(), keyWordScale[i], keyWordScaleOffset[i]);
@@ -372,7 +372,7 @@ namespace sick_scan
 							if (token.compare(DIST1_KEYWORD) == 0)
 							{
 								int distRaw = getHexValue(fields[dataRowIdx]);
-								dist = convertScaledIntValue(distRaw,keyWordScale[j], keyWordScaleOffset[j]) * 0.001;
+								dist = convertScaledIntValue(distRaw, keyWordScale[j], keyWordScaleOffset[j]) * 0.001;
 							}
 							if (token.compare(AZMT1_KEYWORD) == 0)
 							{
@@ -387,12 +387,12 @@ namespace sick_scan
 							if (token.compare(MODE1_KEYWORD) == 0)
 							{
 								int modeRaw = getHexValue(fields[dataRowIdx]);
-								mode = (int)(convertScaledIntValue(modeRaw,keyWordScale[j],keyWordScaleOffset[j]) + 0.5);
+								mode = (int)(convertScaledIntValue(modeRaw, keyWordScale[j], keyWordScaleOffset[j]) + 0.5);
 							}
 							if (token.compare(AMPL1_KEYWORD) == 0)
 							{
 								int amplRaw = getShortValue(fields[dataRowIdx]);
-								ampl = (int)(convertScaledIntValue(amplRaw, keyWordScale[j],  keyWordScaleOffset[j]) + 0.5);
+								ampl = (int)(convertScaledIntValue(amplRaw, keyWordScale[j], keyWordScaleOffset[j]) + 0.5);
 							}
 						}
 						rawTargetList[i].Dist(dist);
@@ -434,7 +434,7 @@ namespace sick_scan
 							if (token.compare(V3DY1_KEYWORD) == 0)
 							{
 								vy = val;
-								
+
 							}
 							if (token.compare(OBJLEN_KEYWORD) == 0)
 							{
@@ -486,7 +486,7 @@ namespace sick_scan
 		int rawTargetChannel16BitCnt = 4;
 		int rawTargetChannel8BitCnt = 1;
 		std::string mode1_intro = "MODE1 3F800000 00000000";
-		
+
 		std::string obid_intro = "OBID1 3F800000 00000000";
 
 
@@ -614,7 +614,7 @@ namespace sick_scan
 					val -= 0.5;
 				}
 				int16_t shortVal = (int16_t)(val);
-				
+
 				sprintf(szDummy, "%08x", shortVal);
 				strcpy(szDummy, szDummy + 4);  // remove first 4 digits due to integer / short
 				resultStr += szDummy;
@@ -670,7 +670,7 @@ namespace sick_scan
 					val -= 0.5;
 				}
 				int8_t shortVal = (int16_t)(val);
-				
+
 				sprintf(szDummy, "%08x", shortVal);
 				strcpy(szDummy, szDummy + 6);  // remove first 6 digits due to integer / short
 				resultStr += szDummy;
@@ -680,9 +680,9 @@ namespace sick_scan
 
 		resultStr += trailer;
 
-			*actual_length = resultStr.length();
+		*actual_length = resultStr.length();
 		strcpy((char *)receiveBuffer, resultStr.c_str());
-		}
+	}
 
 	void SickScanRadar::simulateAsciiDatagramFromFile(unsigned char * receiveBuffer, int* pActual_length)
 	{
@@ -749,6 +749,7 @@ namespace sick_scan
 		}
 		else
 		{
+			ros::Time timeStamp =ros::Time::now();
 			bool dataToProcess = false;
 			char *buffer_pos = (char *)receiveBuffer;
 			char *dstart = NULL;
@@ -774,58 +775,102 @@ namespace sick_scan
 
 			sensor_msgs::PointCloud2 cloud_;
 
-			int numTargets = rawTargetList.size();
-			if (dataToProcess && (numTargets > 0))
+			for (int iLoop = 0; iLoop < 2; iLoop++)
 			{
-				std::string channelRawTargetId[] = { "x", "y", "z", "vrad","amplitude" };
-				int numChannels = sizeof(channelRawTargetId) / sizeof(channelRawTargetId[0]);
-
-				std::vector<float> valSingle;
-				valSingle.resize(numChannels);
-				cloud_.header.stamp = ros::Time::now();
-				cloud_.header.frame_id = this->commonPtr->getConfigPtr()->frame_id;
-				cloud_.header.seq = 0;
-				cloud_.height = 1; // due to multi echo multiplied by num. of layers
-				cloud_.width = numTargets;
-				cloud_.is_bigendian = false;
-				cloud_.is_dense = true;
-				cloud_.point_step = numChannels * sizeof(float);
-				cloud_.row_step = cloud_.point_step * cloud_.width;
-				cloud_.fields.resize(numChannels);
-				for (int i = 0; i < numChannels; i++) {
-					cloud_.fields[i].name = channelRawTargetId[i];
-					cloud_.fields[i].offset = i * sizeof(float);
-					cloud_.fields[i].count = 1;
-					cloud_.fields[i].datatype = sensor_msgs::PointField::FLOAT32;
-				}
-
-				cloud_.data.resize(cloud_.row_step * cloud_.height);
-				float *valPtr = (float *)(&(cloud_.data[0]));
-				int off = 0;
-				for (int i = 0; i < numTargets; i++)
+				int numTargets = 0;
+				if (dataToProcess)
 				{
-					float angle = deg2rad * rawTargetList[i].Azimuth();
-					valSingle[0] = rawTargetList[i].Dist() * cos(angle);
-					valSingle[1] = rawTargetList[i].Dist() * sin(angle);
-					valSingle[2] = 0.0;
-					valSingle[3] = rawTargetList[i].Vrad();
-					valSingle[4] = rawTargetList[i].Ampl();
-
-					for (int j = 0; j < numChannels; j++)
+					std::string channelRawTargetId[] = { "x", "y", "z", "vrad","amplitude" };
+					std::string channelObjectId[] = { "x", "y", "z", "vx","vy","vz","objLen","objId" };
+					std::vector<std::string> channelList;
+					std::string frameId = this->commonPtr->getConfigPtr()->frame_id;;
+					switch (iLoop)
 					{
-						valPtr[off] = valSingle[j];
-						off++;
+					case 0: numTargets = rawTargetList.size();
+						for (int i = 0; i < sizeof(channelRawTargetId) / sizeof(channelRawTargetId[0]); i++)
+						{
+							channelList.push_back(channelRawTargetId[i]);
+						}
+						break;
+					case 1: numTargets = objectList.size();
+						for (int i = 0; i < sizeof(channelObjectId) / sizeof(channelObjectId[0]); i++)
+						{
+							channelList.push_back(channelObjectId[i]);
+						}
+						frameId = "Objects"; // TODO - move to param list
+						break;
 					}
+					if (numTargets == 0)
+					{
+						continue;
 					}
+					int numChannels = channelList.size();
+
+					std::vector<float> valSingle;
+					valSingle.resize(numChannels);
+					cloud_.header.stamp = timeStamp;
+					cloud_.header.frame_id =
+						cloud_.header.seq = 0;
+					cloud_.height = 1; // due to multi echo multiplied by num. of layers
+					cloud_.width = numTargets;
+					cloud_.is_bigendian = false;
+					cloud_.is_dense = true;
+					cloud_.point_step = numChannels * sizeof(float);
+					cloud_.row_step = cloud_.point_step * cloud_.width;
+					cloud_.fields.resize(numChannels);
+					for (int i = 0; i < numChannels; i++) {
+						cloud_.fields[i].name = channelList[i];
+						cloud_.fields[i].offset = i * sizeof(float);
+						cloud_.fields[i].count = 1;
+						cloud_.fields[i].datatype = sensor_msgs::PointField::FLOAT32;
+					}
+
+					cloud_.data.resize(cloud_.row_step * cloud_.height);
+					float *valPtr = (float *)(&(cloud_.data[0]));
+					int off = 0;
+					for (int i = 0; i < numTargets; i++)
+					{
+						switch (iLoop)
+						{
+						case 0:
+						{
+							float angle = deg2rad * rawTargetList[i].Azimuth();
+							valSingle[0] = rawTargetList[i].Dist() * cos(angle);
+							valSingle[1] = rawTargetList[i].Dist() * sin(angle);
+							valSingle[2] = 0.0;
+							valSingle[3] = rawTargetList[i].Vrad();
+							valSingle[4] = rawTargetList[i].Ampl();
+						}
+							break;
+
+						case 1:
+							valSingle[0] = objectList[i].P3Dx();
+							valSingle[1] = objectList[i].P3Dy();
+							valSingle[2] = 0.0;
+							valSingle[3] = objectList[i].V3Dx();
+							valSingle[4] = objectList[i].V3Dy();
+							valSingle[5] = 0.0;
+							valSingle[6] = objectList[i].ObjLength();
+							valSingle[7] = objectList[i].ObjId();
+							break;
+
+							for (int j = 0; j < numChannels; j++)
+							{
+								valPtr[off] = valSingle[j];
+								off++;
+							}
+						}
 #ifndef _MSC_VER
-				cloud_pub_.publish(cloud_);
+						cloud_pub_.publish(cloud_);
 #else
-				printf("PUBLISH:\n");
+						printf("PUBLISH:\n");
 #endif
+					}
 				}
-
 			}
-		return(exitCode);
-		}
 
+		}
+		return(exitCode);
 	}
+
+}
