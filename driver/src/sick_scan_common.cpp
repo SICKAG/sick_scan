@@ -64,6 +64,8 @@
 #endif
 
 #include "sick_scan/binScanf.hpp"
+#include <sick_scan/RadarScan.h>
+
 
 
 
@@ -226,6 +228,7 @@ namespace sick_scan
 		//
 		cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 100);
 
+		radarScan_pub_ = nh_.advertise<sick_scan::RadarScan>("radar", 100);
 		// scan publisher
 		pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 1000);
 

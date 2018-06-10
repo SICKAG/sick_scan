@@ -65,6 +65,9 @@ public:
 
     int getReplyMode();
 
+		void setEmulSensor(bool _emulFlag);
+
+		bool getEmulSensor();
 
 	SopasEventMessage findFrameInReceiveBuffer();
 	void processFrame(SopasEventMessage& frame);
@@ -120,6 +123,7 @@ public:
 		UINT8 m_receiveBuffer[480000]; ///< Low-Level receive buffer for all data 
 
 		bool m_beVerbose;
+				bool m_emulSensor;
 
         boost::asio::io_service io_service_;
         boost::asio::ip::tcp::socket socket_;

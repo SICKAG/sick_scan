@@ -65,6 +65,8 @@
 #include <iterator>
 #include <boost/lexical_cast.hpp>
 #include <vector>
+#include <sick_scan/sick_generic_radar.h>
+
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
@@ -83,6 +85,80 @@ static int getDiagnosticErrorCode()
 }
 namespace sick_scan
 {
+   bool emulateReply(UINT8*requestData, int requestLen, std::vector<unsigned char>* replyVector)
+   {
+     std::string request;
+     std::string reply;
+     std::vector<std::string> keyWordList;
+     std::vector<std::string> answerList;
+
+     keyWordList.push_back("sMN SetAccessMode");
+     answerList.push_back("sAN SetAccessMode 1");
+
+     keyWordList.push_back("sWN EIHstCola");
+     answerList.push_back("sWA EIHstCola");
+
+     keyWordList.push_back("sRN FirmwareVersion");
+     answerList.push_back("sRA FirmwareVersion 8 1.0.0.0R");
+
+     keyWordList.push_back("sRN SCdevicestate");
+     answerList.push_back("sRA SCdevicestate 0");
+
+     keyWordList.push_back("sRN ODoprh");
+     answerList.push_back("sRA ODoprh 451");
+
+     keyWordList.push_back("sRN ODpwrc");
+     answerList.push_back("sRA ODpwrc 20");
+
+     keyWordList.push_back("sRN LocationName");
+     answerList.push_back("sRA LocationName B not defined");
+
+     keyWordList.push_back("sEN LMDradardata 1");
+     answerList.push_back("sEA LMDradardata 1");
+
+     for (int i = 0; i < requestLen; i++)
+     {
+       request += (char)requestData[i];
+     }
+     for (int i = 0; i < keyWordList.size(); i++)
+     {
+       if (request.find(keyWordList[i]) != std::string::npos)
+       {
+         reply = (char)0x02;
+         reply += answerList[i];
+         reply += (char)0x03;
+       }
+     }
+
+     replyVector->clear();
+     for (int i = 0; i < reply.length(); i++)
+     {
+       replyVector->push_back((unsigned char)reply[i]);
+     }
+
+/*
+ * [ INFO] [1528529344.549395616]: Sending  : sMN SetAccessMode 3 F4724744
+[ INFO] [1528529344.561586132]: Receiving: <STX>sAN SetAccessMode 1<ETX>
+[ INFO] [1528529344.762744671]: Sending  : sWN EIHstCola 0
+[ INFO] [1528529344.773724438]: Receiving: <STX>sWA EIHstCola<ETX>
+[ INFO] [1528529344.974179025]: Sending  : sRN FirmwareVersion
+[ INFO] [1528529344.984661053]: Receiving: <STX>sRA FirmwareVersion 8 1.0.0.0R<ETX>
+[ INFO] [1528529345.185611387]: Sending  : sRN SCdevicestate
+[ INFO] [1528529345.196674196]: Receiving: <STX>sRA SCdevicestate 0<ETX>
+[ INFO] [1528529345.397188260]: Sending  : sRN ODoprh
+[ INFO] [1528529345.408031755]: Receiving: <STX>sRA ODoprh 451<ETX>
+[ INFO] [1528529345.614470312]: Sending  : sRN ODpwrc
+[ INFO] [1528529345.625206208]: Receiving: <STX>sRA ODpwrc 20<ETX>
+[ INFO] [1528529345.833883454]: Sending  : sRN LocationName
+[ INFO] [1528529345.844817147]: Receiving: <STX>sRA LocationName B not defined<ETX>
+[ INFO] [1528529345.847471777]: Sending  : sEN LMDradardata 1
+[ INFO] [1528529345.858786921]: Receiving: <STX>sEA LMDradardata 1<ETX>
+ */
+
+     return(true);
+   }
+
+
 
 	SickScanCommonTcp::SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser* parser, char cola_dialect_id)
 		:
@@ -171,7 +247,25 @@ namespace sick_scan
 		}
 	}
 #endif
+/*!
+		\brief Set emulation flag (using emulation instead of "real" scanner - currently implemented for radar
+		\param _emulFlag: Flag to switch emulation on or off
+		\return
+*/
+	void SickScanCommonTcp::setEmulSensor(bool _emulFlag)
+	{
+		m_emulSensor = _emulFlag;
+	}
 
+/*!
+		\brief get emulation flag (using emulation instead of "real" scanner - currently implemented for radar
+		\param
+		\return bool: Flag to switch emulation on or off
+*/
+	bool SickScanCommonTcp::getEmulSensor()
+	{
+		return(m_emulSensor);
+	}
 
 	//
 	// Look for 23-frame (STX/ETX) in receive buffer.
@@ -550,7 +644,13 @@ namespace sick_scan
 		sscanf(port_.c_str(), "%d", &portInt);
 		m_nw.init(hostname_, portInt, disconnectFunctionS, (void*)this);
 		m_nw.setReadCallbackFunction(readCallbackFunctionS, (void*)this);
+    if (this->getEmulSensor())
+    {
+      ROS_INFO("Sensor emulation is switched on - network traffic is switch off.");
+    } else
+    {
 		m_nw.connect();
+    }
 		return ExitSuccess;
 	}
 
@@ -670,7 +770,14 @@ namespace sick_scan
 				msgLen = 8 + dataLen + 1; // 8 Msg. Header + Packet +
 			}
 #if 1
-			m_nw.sendCommandBuffer((UINT8*)request, msgLen);
+      if (getEmulSensor())
+      {
+        emulateReply((UINT8*)request, msgLen, reply);
+      }
+      else
+      {
+        m_nw.sendCommandBuffer((UINT8*)request, msgLen);
+      }
 #else
 
 			/*
@@ -694,44 +801,69 @@ namespace sick_scan
 		char buffer[BUF_SIZE];
 		int bytes_read;
 		// !!!
-		if (readWithTimeout(getReadTimeOutInMs(), buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
-		{
-			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after %d ms",getReadTimeOutInMs());
-			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after timeout.");
-			return ExitError;
-		}
+    if (getEmulSensor())
+    {
 
-		if (reply)
-		{
-			reply->resize(bytes_read);
-			std::copy(buffer, buffer + bytes_read, &(*reply)[0]);
-		}
+    }
+    else
+    {
+		  if (readWithTimeout(getReadTimeOutInMs(), buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
+		  {
+  			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after %d ms",getReadTimeOutInMs());
+  			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after timeout.");
+  			return ExitError;
+	  	}
 
+
+		  if (reply)
+		  {
+  			reply->resize(bytes_read);
+  			std::copy(buffer, buffer + bytes_read, &(*reply)[0]);
+  		}
+    }
 		return ExitSuccess;
 	}
 
 	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 	{
 		this->setReplyMode(1);
-		const int maxWaitInMs = getReadTimeOutInMs();
-		std::vector<unsigned char> dataBuffer;
+
+    if (this->getEmulSensor())
+    {
+      // boost::this_thread::sleep(boost::posix_time::milliseconds(waitingTimeInMs));
+      ros::Time timeStamp = ros::Time::now();
+      uint32_t nanoSec = timeStamp.nsec;
+      double waitTime10Hz = 10.0 * (double)nanoSec / 1E9;  // 10th of sec. [0..10[
+
+      uint32_t waitTime = (int)waitTime10Hz ; // round down
+
+      double waitTimeUntilNextTime10Hz = 1/10.0 * (1.0 - (waitTime10Hz - waitTime));
+
+      ros::Duration(waitTimeUntilNextTime10Hz).sleep();
+      SickScanRadar radar(this);
+      radar.simulateAsciiDatagram(receiveBuffer, actual_length);
+    }
+    else
+    {
+		  const int maxWaitInMs = getReadTimeOutInMs();
+		  std::vector<unsigned char> dataBuffer;
 #if 1 // prepared for reconnect
-		bool retVal = this->recvQueue.waitForIncomingObject(maxWaitInMs);
-		if (retVal == false)
-		{
-			ROS_WARN("Timeout during waiting of new datagram");
-			return ExitError;
-		}
-		else
-		{
-			dataBuffer = this->recvQueue.pop();
-		}
+  		bool retVal = this->recvQueue.waitForIncomingObject(maxWaitInMs);
+	  	if (retVal == false)
+		  {
+			  ROS_WARN("Timeout during waiting for new datagram");
+			  return ExitError;
+		  }
+		  else
+		  {
+			  dataBuffer = this->recvQueue.pop();
+		  }
 #endif
 		// dataBuffer = this->recvQueue.pop();
-
-		long size = dataBuffer.size();
-		memcpy(receiveBuffer, &(dataBuffer[0]), size);
-		*actual_length = size;
+      long size = dataBuffer.size();
+	  	memcpy(receiveBuffer, &(dataBuffer[0]), size);
+		  *actual_length = size;
+    }
 
 #if 0
 		static int cnt = 0;

@@ -109,6 +109,7 @@ int main(int argc, char **argv)
 	int argc_tmp;
 	std::string scannerName = "????";
 
+
 	argc_tmp = argc;
 	argv_tmp = argv;
 
@@ -116,6 +117,7 @@ int main(int argc, char **argv)
 	char nameTagVal[MAX_STR_LEN] = { 0 };
 	char logTagVal[MAX_STR_LEN] = { 0 };
 	char internalDebugTagVal[MAX_STR_LEN] = { 0 };
+	char sensorEmulVal[MAX_STR_LEN] = { 0 };
 
 	if (argc == 1) // just for testing without calling by roslaunch
 	{
@@ -123,13 +125,15 @@ int main(int argc, char **argv)
 		strcpy(nameTagVal, "__name:=sick_rms_3xx");  // sick_rms_320 -> radar
 		strcpy(logTagVal, "__log:=/tmp/tmp.log");
 		strcpy(internalDebugTagVal, "__internalDebug:=1");
-		argc_tmp = 4;
+		strcpy(sensorEmulVal, "__emulSensor:=1");
+		argc_tmp = 5;
 		argv_tmp = (char **)malloc(sizeof(char *) * argc_tmp);
 
 		argv_tmp[0] = argv[0];
 		argv_tmp[1] = nameTagVal;
 		argv_tmp[2] = logTagVal;
 		argv_tmp[3] = internalDebugTagVal;
+		argv_tmp[4] = sensorEmulVal;
 
 	}
     ROS_INFO("sick_generic_caller V. %s.%s.%s", SICK_GENERIC_MAJOR_VER, SICK_GENERIC_MINOR_VER, SICK_GENERIC_PATCH_LEVEL);

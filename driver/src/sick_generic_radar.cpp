@@ -55,6 +55,7 @@
 #include <sick_scan/sick_scan_common_tcp.h>
 #include <sick_scan/sick_generic_parser.h>
 #include <sick_scan/sick_generic_radar.h>
+#include <sick_scan/RadarScan.h>
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
@@ -464,6 +465,11 @@ namespace sick_scan
 
 	void SickScanRadar::simulateAsciiDatagram(unsigned char * receiveBuffer, int* actual_length)
 	{
+    static int callCnt = 0;
+
+    // callCnt++;
+
+    // end
 		std::string header = "\x2sSN LMDradardata 1 1 112F6E9 0 0 533A 0 0 28C7DDDC 0 0 0 0 CB00 780 1 0 0 ";
 		int channel16BitCnt = 4;
 		// Faktoren fuer Rohziele: 40.0 0.16 0.04 1.00 1.00
@@ -534,18 +540,19 @@ namespace sick_scan
 		std::vector<SickScanRadarObject> objectList;
 
 		int objId = 0;
-		for (float x = 20; x <= 100.0; x += 10.0)
+		for (float x = 20; x <= 100.0; x += 50.0)
 		{
 			SickScanRadarObject vehicle;
 			float y = 0.0;
 			for (int iY = -1; iY <= 1; iY += 2)
 			{
 				y = iY * 2.0;
+        float speed = y * 10.0f;
+        vehicle.V3Dx(speed); // +/- 20 m/s
+        vehicle.V3Dy(0.1f); // just for testing
 
-				vehicle.P3Dx(x * 1000.0);
+				vehicle.P3Dx((x + 0.1 * speed * (callCnt % 20)) * 1000.0);
 				vehicle.P3Dy(y * 1000.0);
-				vehicle.V3Dx(y * 10.0f); // +/- 20 m/s
-				vehicle.V3Dy(0.1f); // just for testing
 				vehicle.ObjLength(6.0f + y);
 				vehicle.ObjId(objId++);
 				objectList.push_back(vehicle);
@@ -752,9 +759,24 @@ namespace sick_scan
 	{
 		int exitCode = ExitSuccess;
 
-		// simulateAsciiDatagram(receiveBuffer, &actual_length);
+		enum enumSimulationMode {EMULATE_OFF, EMULATE_SYN, EMULATE_FROM_FILE};
 
-    simulateAsciiDatagramFromFile(receiveBuffer, &actual_length, "/mnt/hgfs/development/ros/bags/raw/trainSeq/tmp%06d.txt");
+		int simulationMode = EMULATE_SYN;
+
+		switch(simulationMode)
+		{
+			case EMULATE_OFF: // do nothing - use real data
+				break;
+			case EMULATE_SYN: simulateAsciiDatagram(receiveBuffer, &actual_length);
+				break;
+			case EMULATE_FROM_FILE: simulateAsciiDatagramFromFile(receiveBuffer, &actual_length, "/mnt/hgfs/development/ros/bags/raw/trainSeq/tmp%06d.txt");
+				break;
+			default:
+				printf("Simulation Mode unknown\n");
+
+		}
+
+
 
 		std::vector<SickScanRadarObject> objectList;
 		std::vector<SickScanRadarRawTarget> rawTargetList;
@@ -790,7 +812,12 @@ namespace sick_scan
 			}
 
 			sensor_msgs::PointCloud2 cloud_;
+			sick_scan::RadarScan radarMsg_;
 
+
+      //
+      // First loop: looking for raw targets
+      // Second loop: looking for tracking objects
 			for (int iLoop = 0; iLoop < 2; iLoop++)
 			{
 				int numTargets = 0;
@@ -880,10 +907,57 @@ namespace sick_scan
 #else
 						printf("PUBLISH:\n");
 #endif
+            if (iLoop == 0)
+            {
+              // is this a deep copy ???
+              radarMsg_.targets = cloud_;
+            }
 					}
 				}
 			}
+      // Publishing radar messages
+      // ...
+      radarMsg_.header.stamp = timeStamp;
+      radarMsg_.header.frame_id = "Radar";
+      radarMsg_.header.seq = 0;
 
+      radarMsg_.objects.resize(objectList.size());
+      for (int i = 0; i < radarMsg_.objects.size(); i++)
+      {
+        float heading = atan2( objectList[i].V3Dy(), objectList[i].V3Dx());
+
+        radarMsg_.objects[i].velocity.twist.linear.x = objectList[i].V3Dx();
+        radarMsg_.objects[i].velocity.twist.linear.y = objectList[i].V3Dy();
+        radarMsg_.objects[i].velocity.twist.linear.z = 0.0;
+
+        radarMsg_.objects[i].bounding_box_center.position.x = objectList[i].P3Dx();
+        radarMsg_.objects[i].bounding_box_center.position.y = objectList[i].P3Dy();
+        radarMsg_.objects[i].bounding_box_center.position.z = 0.0;
+        radarMsg_.objects[i].bounding_box_center.orientation.x = cos(heading);
+        radarMsg_.objects[i].bounding_box_center.orientation.y = sin(heading);
+        radarMsg_.objects[i].bounding_box_center.orientation.z = 0.0;
+        radarMsg_.objects[i].bounding_box_center.orientation.w = 1.0; // homogeneous coordinates
+
+
+        radarMsg_.objects[i].bounding_box_size.x = objectList[i].ObjLength();
+        radarMsg_.objects[i].bounding_box_size.y = 1.7;
+        radarMsg_.objects[i].bounding_box_size.z = 1.7;
+        for (int ii = 0; ii < 6; ii++)
+        {
+          int mainDiagOffset = ii * 6 + ii;  // build eye-matrix
+          radarMsg_.objects[i].object_box_center.covariance[mainDiagOffset] = 1.0;  // it is a little bit hacky ...
+          radarMsg_.objects[i].velocity.covariance[mainDiagOffset] = 1.0;
+        }
+        radarMsg_.objects[i].object_box_center.pose = radarMsg_.objects[i].bounding_box_center;
+        radarMsg_.objects[i].object_box_size= radarMsg_.objects[i].bounding_box_size;
+
+
+
+
+
+      }
+
+      this->commonPtr->radarScan_pub_.publish(radarMsg_);
 		}
 		return(exitCode);
 	}

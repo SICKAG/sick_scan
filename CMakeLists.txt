@@ -1,12 +1,30 @@
+####################################################
+# CMakeLists.txt for project sick_scan
+####################################################
 cmake_minimum_required(VERSION 2.8.3)
 project(sick_scan)
+
+# By uncommenting the following lines you can list all variable names ...
+# --- CUT ---
+# get_cmake_property(_variableNames VARIABLES)
+# list (SORT _variableNames)
+# foreach (_variableName ${_variableNames})
+#	message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
+# --- CUT ---
 
 find_package(catkin REQUIRED
     COMPONENTS
       roscpp
       sensor_msgs
       diagnostic_updater
-      dynamic_reconfigure)
+      dynamic_reconfigure
+      geometry_msgs
+      std_msgs
+      sensor_msgs
+	  message_generation
+		)
+
 
 find_package(PkgConfig REQUIRED)
 
@@ -14,11 +32,30 @@ find_package(Boost REQUIRED COMPONENTS system)
 
 generate_dynamic_reconfigure_options(cfg/SickScan.cfg)
 
+
+add_message_files(
+		FILES
+		RadarObject.msg
+		RadarPreHeaderDeviceBlock.msg
+		RadarPreHeaderMeasurementParam1Block.msg
+		RadarPreHeaderStatusBlock.msg
+        RadarPreHeader.msg
+		RadarScan.msg
+)
+
+generate_messages(
+        DEPENDENCIES
+        std_msgs
+        geometry_msgs
+        sensor_msgs
+)
+
 catkin_package(
-    DEPENDS Boost
-    CATKIN_DEPENDS roscpp sensor_msgs diagnostic_updater dynamic_reconfigure
-    LIBRARIES sick_scan_lib
-    INCLUDE_DIRS include )
+        DEPENDS Boost
+        CATKIN_DEPENDS roscpp sensor_msgs diagnostic_updater dynamic_reconfigure message_runtime
+        LIBRARIES sick_scan_lib
+        INCLUDE_DIRS include )
+
 
 include_directories(include include/tcp include/tinyxml ${catkin_INCLUDE_DIRS} )
 
@@ -45,9 +82,15 @@ target_link_libraries(sick_scan_lib
 add_executable(sick_generic_caller
     driver/src/sick_generic_laser.cpp
     driver/src/sick_generic_caller.cpp
-
 	)
+
+add_executable(sick_scan_radar_object_marker
+        tools/src/sick_scan_radar_object_marker.cpp
+        )
+
+
 target_link_libraries(sick_generic_caller sick_scan_lib)
+target_link_libraries(sick_scan_radar_object_marker sick_scan_lib)
 
 add_executable(sick_scan_test
 	test/src/sick_scan_test.cpp

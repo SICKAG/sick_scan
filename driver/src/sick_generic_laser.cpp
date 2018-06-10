@@ -70,6 +70,7 @@
 
 
 #endif
+
 #include <sick_scan/sick_scan_common_tcp.h>
 
 #include <sick_scan/sick_generic_parser.h>
@@ -78,30 +79,30 @@
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
 #define _USE_MATH_DEFINES
+
 #include <math.h>
 #include "string"
 #include <stdio.h>
 #include <stdlib.h>
 
-bool getTagVal(std::string tagVal, std::string& tag, std::string& val)
-{
-	bool ret = false;
-	std::size_t pos;
-	pos = tagVal.find(":=");
-	tag = "";
-	val = "";
-	if (pos == std::string::npos)
-	{
-		ret = false;
-	}
-	else
-	{
-		tag = tagVal.substr(0, pos);
-		val = tagVal.substr(pos + 2);
-		ret = true;
-	}
-	return(ret);
-}
+bool getTagVal(std::string tagVal, std::string &tag, std::string &val)
+  {
+  bool ret = false;
+  std::size_t pos;
+  pos = tagVal.find(":=");
+  tag = "";
+  val = "";
+  if (pos == std::string::npos)
+  {
+    ret = false;
+  } else
+  {
+    tag = tagVal.substr(0, pos);
+    val = tagVal.substr(pos + 2);
+    ret = true;
+  }
+  return (ret);
+  }
 
 /*!
 \brief Internal Startup routine. In the future the scannerName should be coded in a specific param-Entry 
@@ -114,157 +115,173 @@ bool getTagVal(std::string tagVal, std::string& tag, std::string& val)
 \sa main
 */
 int mainGenericLaser(int argc, char **argv, std::string nodeName)
-{
-	std::string tag;
-	std::string val;
+  {
+  std::string tag;
+  std::string val;
 
-	bool doInternalDebug = false;
+  bool doInternalDebug = false;
+  bool emulSensor = false;
+  for (int i = 0; i < argc; i++)
+  {
+    std::string s = argv[i];
+    if (getTagVal(s, tag, val))
+    {
+      if (tag.compare("__internalDebug") == 0)
+      {
+        int debugState = 0;
+        sscanf(val.c_str(), "%d", &debugState);
+        if (debugState > 0)
+        {
+          doInternalDebug = true;
+        }
+      }
+      if (tag.compare("__emulSensor") == 0)
+      {
+        int dummyState = 0;
+        sscanf(val.c_str(), "%d", &dummyState);
+        if (dummyState > 0)
+        {
+          emulSensor = true;
+        }
+      }
+    }
+  }
 
-	for (int i = 0; i < argc; i++)
-	{
-		std::string s = argv[i];
-		if (getTagVal(s, tag, val))
-		{
-			if (tag.compare("__internalDebug") == 0)
-			{
-				int debugState = 0;
-				sscanf(val.c_str(), "%d", &debugState);
-				if (debugState > 0)
-				{
-					doInternalDebug = true;
-				}
-			}
-		}
-	}
+  ros::init(argc, argv, nodeName);  // scannerName holds the node-name
+  ros::NodeHandle nhPriv("~");
 
-	ros::init(argc, argv, nodeName);  // scannerName holds the node-name
-	ros::NodeHandle nhPriv("~");
-
-	std::string scannerName;
-	if (false == nhPriv.getParam("scanner_type", scannerName))
-	{
-		ROS_ERROR("cannot find parameter ""scanner_type"" in the param set. Please specify scanner_type.");
-		ROS_ERROR("Try to set %s as fallback.\n", nodeName.c_str());
-		scannerName = nodeName;
-	}
+  std::string scannerName;
+  if (false == nhPriv.getParam("scanner_type", scannerName))
+  {
+    ROS_ERROR("cannot find parameter ""scanner_type"" in the param set. Please specify scanner_type.");
+    ROS_ERROR("Try to set %s as fallback.\n", nodeName.c_str());
+    scannerName = nodeName;
+  }
 
 
-	if (doInternalDebug)
-	{
+  if (doInternalDebug)
+  {
 #ifdef _MSC_VER
-		nhPriv.setParam("name", scannerName);
-		rossimu_settings(nhPriv);  // just for tiny simulations under Visual C++
+    nhPriv.setParam("name", scannerName);
+    rossimu_settings(nhPriv);  // just for tiny simulations under Visual C++
 #endif
-	}
+  }
 
 // check for TCP - use if ~hostname is set.
-	bool useTCP = false;
-	std::string hostname;
-	if (nhPriv.getParam("hostname", hostname)) {
-		useTCP = true;
-	}
-	std::string port;
-	nhPriv.param<std::string>("port", port, "2112");
+  bool useTCP = false;
+  std::string hostname;
+  if (nhPriv.getParam("hostname", hostname))
+  {
+    useTCP = true;
+  }
+  std::string port;
+  nhPriv.param<std::string>("port", port, "2112");
 
-	int timelimit;
-	nhPriv.param("timelimit", timelimit, 5);
+  int timelimit;
+  nhPriv.param("timelimit", timelimit, 5);
 
-	bool subscribe_datagram;
-	int device_number;
-	nhPriv.param("subscribe_datagram", subscribe_datagram, false);
-	nhPriv.param("device_number", device_number, 0);
-
-
-	sick_scan::SickGenericParser* parser = new sick_scan::SickGenericParser(scannerName);
-
-	double param;
-	char colaDialectId = 'A'; // A or B (Ascii or Binary)
-
-	if (nhPriv.getParam("range_min", param))
-	{
-		parser->set_range_min(param);
-	}
-	if (nhPriv.getParam("range_max", param))
-	{
-		parser->set_range_max(param);
-	}
-	if (nhPriv.getParam("time_increment", param))
-	{
-		parser->set_time_increment(param);
-	}
-
-	/*
-	 *  Check, if parameter for protocol type is set
-	 */
-	bool use_binary_protocol = true;
-	if (true == nhPriv.getParam("use_binary_protocol", use_binary_protocol))
-	{
-		ROS_INFO("Found sopas_protocol_type param overwriting default protocol:");
-		if (use_binary_protocol==true)
-		{
-			ROS_INFO("Binary protocol activated");
-		}
-		else
-		{
-			if(parser->getCurrentParamPtr()->getNumberOfLayers()>4)
-			{
-				nhPriv.setParam("sopas_protocol_type", true);
-				use_binary_protocol=true;
-				ROS_WARN("This scanner type does not support ASCII communication.\n"
-								 "Binary communication has been activated.\n"
-								 "The parameter \"sopas_protocol_type\" has been set to \"True\".");
-			}
-			else
-			{
-				ROS_INFO("ASCII protocol activated");
-			}
-
-		}
-		parser->getCurrentParamPtr()->setUseBinaryProtocol(use_binary_protocol);
-	}
+  bool subscribe_datagram;
+  int device_number;
+  nhPriv.param("subscribe_datagram", subscribe_datagram, false);
+  nhPriv.param("device_number", device_number, 0);
 
 
-	if (parser->getCurrentParamPtr()->getUseBinaryProtocol())
-	{
-		colaDialectId = 'B';
-	}
-	else
-	{
-		colaDialectId = 'A';
-	}
+  sick_scan::SickGenericParser *parser = new sick_scan::SickGenericParser(scannerName);
 
-	sick_scan::SickScanCommon* s = NULL;
+  double param;
+  char colaDialectId = 'A'; // A or B (Ascii or Binary)
 
-	int result = sick_scan::ExitError;
-	while (ros::ok())
-	{
+  if (nhPriv.getParam("range_min", param))
+  {
+    parser->set_range_min(param);
+  }
+  if (nhPriv.getParam("range_max", param))
+  {
+    parser->set_range_max(param);
+  }
+  if (nhPriv.getParam("time_increment", param))
+  {
+    parser->set_time_increment(param);
+  }
+
+  /*
+   *  Check, if parameter for protocol type is set
+   */
+  bool use_binary_protocol = true;
+  if (true == nhPriv.getParam("emul_sensor", emulSensor))
+  {
+    ROS_INFO("Found emul_sensor overwriting default settings. Emulation: %s\n", emulSensor ? "True" : "False");
+  }
+  if (true == nhPriv.getParam("use_binary_protocol", use_binary_protocol))
+  {
+    ROS_INFO("Found sopas_protocol_type param overwriting default protocol:");
+    if (use_binary_protocol == true)
+    {
+      ROS_INFO("Binary protocol activated");
+    } else
+    {
+      if (parser->getCurrentParamPtr()->getNumberOfLayers() > 4)
+      {
+        nhPriv.setParam("sopas_protocol_type", true);
+        use_binary_protocol = true;
+        ROS_WARN("This scanner type does not support ASCII communication.\n"
+                         "Binary communication has been activated.\n"
+                         "The parameter \"sopas_protocol_type\" has been set to \"True\".");
+      } else
+      {
+        ROS_INFO("ASCII protocol activated");
+      }
+    }
+    parser->getCurrentParamPtr()->setUseBinaryProtocol(use_binary_protocol);
+  }
+
+
+  if (parser->getCurrentParamPtr()->getUseBinaryProtocol())
+  {
+    colaDialectId = 'B';
+  } else
+  {
+    colaDialectId = 'A';
+  }
+
+  sick_scan::SickScanCommonTcp *s = NULL;
+
+  int result = sick_scan::ExitError;
+  while (ros::ok())
+  {
     ROS_INFO("Start initialising scanner ...");
-		// attempt to connect/reconnect
-		delete s;  // disconnect scanner
-        if (useTCP)
-		  s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser, colaDialectId);
-        else
-        {
-           ROS_ERROR("TCP is not switched on. Probably hostname or port not set. Use roslaunch to start node.");
-           exit(-1);
-        }
+    // attempt to connect/reconnect
+    delete s;  // disconnect scanner
+    if (useTCP)
+      s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser, colaDialectId);
+    else
+    {
+      ROS_ERROR("TCP is not switched on. Probably hostname or port not set. Use roslaunch to start node.");
+      exit(-1);
+    }
 
-		result = s->init();
 
-		sick_scan::SickScanConfig cfg;
+    if (emulSensor)
+    {
+      s->setEmulSensor(true);
+    }
+    result = s->init();
 
-		while (ros::ok() && (result == sick_scan::ExitSuccess))
-		{
-			ros::spinOnce();
-			result = s->loopOnce();
-		}
+    sick_scan::SickScanConfig cfg;
 
-		if (result == sick_scan::ExitFatal)
-			return result;
+    while (ros::ok() && (result == sick_scan::ExitSuccess))
+    {
+      ros::spinOnce();
+      result = s->loopOnce();
+    }
 
-	}
+    if (result == sick_scan::ExitFatal)
+      return result;
 
-	delete s; // close connnect
-	delete parser; // close parser
-	return result;
-}
+  }
+
+  delete s; // close connnect
+  delete parser; // close parser
+  return result;
+
+  }

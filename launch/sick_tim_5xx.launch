@@ -34,7 +34,7 @@ Check IP-address, if you scanner is not found after roslaunch.
     <param name="max_ang" type="double" value="2.35619449" />
     <param name="range_max" type="double" value="100.0" />
     <param name="intensity" type="bool" value="True" />
-    <param name="hostname" type="string" value="192.168.0.61" />
+    <param name="hostname" type="string" value="192.168.0.71" />
     <param name="port" type="string" value="2112" />
     <param name="timelimit" type="int" value="5" />
     
