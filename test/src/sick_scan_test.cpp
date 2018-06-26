@@ -741,6 +741,7 @@ int main(int argc, char **argv)
 		exit(-1);
 	}
 
+  bool launch_only = false;
 	boost::filesystem::path p(testCtrlXmlFileName);
 	boost::filesystem::path parentPath = p.parent_path();
 	std::string pathName = parentPath.string();
@@ -771,7 +772,21 @@ int main(int argc, char **argv)
 			if (paramListNode != NULL)
 			{
 				std::vector<paramEntryAscii> paramList = getParamList(paramListNode);
-				std::string testLaunchFile;
+        for (int i = 0; i < paramList.size(); i++)
+        {
+          if (paramList[i].getName().compare("launch_only") == 0)
+          {
+            if (paramList[i].getValue().compare("true") == 0)
+            {
+              printf("launch_only set to true. Just modifying launch file and launch (without testing).");
+              launch_only = true;
+            }
+          }
+
+
+        }
+
+        std::string testLaunchFile;
 				createTestLaunchFile(launchFileFullName, paramList, testLaunchFile);
 				std::string commandLine;
 				boost::filesystem::path p(testLaunchFile);
@@ -782,6 +797,13 @@ int main(int argc, char **argv)
         // int result = std::system(commandLine.c_str());
 
         pid_t pidId = launchRosFile(commandLine.c_str());
+
+        if (launch_only)
+        {
+          printf("Launch file [ %s ] started ...\n", commandLine.c_str());
+          printf("No further testing...\n");
+          exit(0);
+        }
 				startCallbackTest(argc, argv); // get 10 pointcloud messages 
 
         ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
