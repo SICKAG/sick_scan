@@ -33,13 +33,6 @@ for i in *.xml; do
     fi
     if [ "$doChecking" == true ]
     then
-      echo "OK"
-    else
-      echo "False"
-    fi
-    echo "Check? $doChecking"
-    if [ "$doChecking" == true ]
-    then
      echo "Checking $ipaddress"
      ping -c 1 "$ipaddress"
      if [ "$?" -eq 0 ]
