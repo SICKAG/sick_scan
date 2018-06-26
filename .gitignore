@@ -46,3 +46,5 @@ test/src/CMakeLists\.txt
 test/tmp/
 
 *.7z
+
+*.res

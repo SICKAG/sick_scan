@@ -841,6 +841,7 @@ namespace sick_scan
 
       ros::Duration(waitTimeUntilNextTime10Hz).sleep();
       SickScanRadar radar(this);
+			radar.setEmulation(true);
       radar.simulateAsciiDatagram(receiveBuffer, actual_length);
     }
     else

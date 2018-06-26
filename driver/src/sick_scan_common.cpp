@@ -64,6 +64,7 @@
 #endif
 
 #include "sick_scan/binScanf.hpp"
+// if there is a missing RadarScan.h, try to run catkin_make in der workspace-root
 #include <sick_scan/RadarScan.h>
 
 
@@ -646,7 +647,7 @@ namespace sick_scan
 				"If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed.\n"
 				"This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. There are two ways to prevent this:\n"
 				"1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.\n"
-				"2. Use the parameter \"sopas_protocol_type\" to overwrite the default settings of the driver.", result);
+				"2. Use the parameter \"use_binary_protocol\" to overwrite the default settings of the driver.", result);
 		}
 		return result;
 	}
@@ -691,7 +692,24 @@ namespace sick_scan
 		sopasCmdVec[CMD_START_SCANDATA] = "\x02sEN LMDscandata 1\x03";
 		
 		sopasCmdVec[CMD_START_RADARDATA] = "\x02sEN LMDradardata 1\x03";
-		// TODO: CMD_STOP_RADARDATA????
+
+    /*
+     * Radar specific commands
+     */
+    sopasCmdVec[CMD_SET_TRANSMIT_RAWTARGETS_ON] = "\x02sWN TransmitTargets 1\x03";  // transmit raw target for radar
+    sopasCmdVec[CMD_SET_TRANSMIT_RAWTARGETS_OFF] = "\x02sWN TransmitTargets 0\x03";  // do not transmit raw target for radar
+		sopasCmdVec[CMD_SET_TRANSMIT_OBJECTS_ON] = "\x02sWN TransmitObjects 1\x03";  // transmit objects from radar tracking
+		sopasCmdVec[CMD_SET_TRANSMIT_OBJECTS_OFF] = "\x02sWN TransmitObjects 0\x03";  // do not transmit objects from radar tracking
+		sopasCmdVec[CMD_SET_TRACKING_MODE_0] = "\x02sWN TCTrackingMode 0\x03";  // set object tracking mode to BASIC
+    sopasCmdVec[CMD_SET_TRACKING_MODE_1] = "\x02sWN TCTrackingMode 1\x03";  // set object tracking mode to TRAFFIC
+
+
+		sopasCmdVec[CMD_LOAD_APPLICATION_DEFAULT] = "\x02sMN mSCloadappdef\x03";  // load application default
+		sopasCmdVec[CMD_DEVICE_TYPE] = "\x02sRN DItype\x03";  // ask for radar device type
+		sopasCmdVec[CMD_ORDER_NUMBER] = "\x02sRN OrdNum\x03";  // ask for radar order number
+
+
+
 		sopasCmdVec[CMD_START_MEASUREMENT] = "\x02sMN LMCstartmeas\x03";
 		sopasCmdVec[CMD_STOP_MEASUREMENT] = "\x02sMN LMCstopmeas\x03";
 		sopasCmdVec[CMD_APPLICATION_MODE_FIELD_OFF] = "\x02sWN SetActiveApplications 1 FEVL 0\x03"; // <STX>sWN{SPC}SetActiveApplications{SPC}1{SPC}FEVL{SPC}1<ETX>
@@ -757,6 +775,8 @@ namespace sick_scan
 		}
 		if (parser_->getCurrentParamPtr()->getDeviceIsRadar() == true)
 		{
+			sopasCmdChain.push_back(CMD_LOAD_APPLICATION_DEFAULT); // load application default for radar
+
 			tryToStopMeasurement = false;
 			// do not stop measurement for RMS320 - the RMS320 does not support the stop command 
 		}
@@ -881,6 +901,7 @@ namespace sick_scan
 		setReadTimeOutInMs(shortTimeOutInMs);
 
 		bool restartDueToProcolChange = false;
+
 
 		for (int i = 0; i < this->sopasCmdChain.size(); i++)
 		{
@@ -1029,6 +1050,7 @@ namespace sick_scan
 				if (useBinaryCmd)
 				{
 					long dummy0, dummy1;
+          deviceState = 0x00; // must be set to zero (because only one byte will be copied)
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_DEVICE_STATE]), "%4y%4ysRA SCdevicestate %1y", &dummy0, &dummy1, &deviceState);
 				}
 				else
@@ -1187,7 +1209,9 @@ namespace sick_scan
 
 			if (0 == result)
 			{
-				int askTmpAngleRes10000th, askTmpAngleStart10000th, askTmpAngleEnd10000th;
+				int askTmpAngleRes10000th = 0;
+        int askTmpAngleStart10000th = 0;
+        int askTmpAngleEnd10000th = 0;
 				char dummy0[MAX_STR_LEN] = { 0 };
 				char dummy1[MAX_STR_LEN] = { 0 };
 				int  dummyInt = 0;
@@ -1530,10 +1554,71 @@ namespace sick_scan
 		std::vector<int> startProtocolSequence;
 		bool deviceIsRadar = false;
 		if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
-		{
+    {
+      ros::NodeHandle tmpParam("~");
+      bool transmitRawTargets = true;
+      bool transmitObjects = true;
+      int trackingMode = 0;
+      std::string trackingModeDescription[] = {"BASIC","VEHICLE"};
+
+      int numTrackingModes = sizeof(trackingModeDescription)/sizeof(trackingModeDescription[0]);
+
+      tmpParam.getParam("transmit_raw_targets", transmitRawTargets);
+      tmpParam.getParam("transmit_objects", transmitObjects);
+      tmpParam.getParam("tracking_mode", trackingMode);
+
+      if ( (trackingMode < 0) || (trackingMode >= numTrackingModes))
+      {
+        ROS_WARN("tracking mode id invalid. Switch to tracking mode 0");
+        trackingMode = 0;
+      }
+      ROS_INFO("Raw target transmission is switched [%s]", transmitRawTargets ? "ON" : "OFF");
+      ROS_INFO("Object transmission is switched [%s]", transmitObjects ? "ON" : "OFF");
+      ROS_INFO("Tracking mode is set to id [%d] [%s]", trackingMode, trackingModeDescription[trackingMode].c_str());
+
 			deviceIsRadar = true;
+
+			// Asking some informational from the radar
+			startProtocolSequence.push_back(CMD_DEVICE_TYPE);
+			startProtocolSequence.push_back(CMD_SERIAL_NUMBER);
+			startProtocolSequence.push_back(CMD_ORDER_NUMBER);
+
+      /*
+       * With "sWN TCTrackingMode 0" BASIC-Tracking activated
+       * With "sWN TCTrackingMode 1" TRAFFIC-Tracking activated
+       *
+       */
+      if (transmitRawTargets)
+      {
+        startProtocolSequence.push_back(CMD_SET_TRANSMIT_RAWTARGETS_ON);  // raw targets will be transmitted
+      }
+      else
+      {
+        startProtocolSequence.push_back(CMD_SET_TRANSMIT_RAWTARGETS_OFF);  // NO raw targets will be transmitted
+      }
+
+      if (transmitObjects)
+      {
+        startProtocolSequence.push_back(CMD_SET_TRANSMIT_OBJECTS_ON);  // tracking objects will be transmitted
+      }
+      else
+      {
+        startProtocolSequence.push_back(CMD_SET_TRANSMIT_OBJECTS_OFF);  // NO tracking objects will be transmitted
+      }
+
+      switch(trackingMode)
+      {
+        case 0: startProtocolSequence.push_back(CMD_SET_TRACKING_MODE_0); break;
+        case 1: startProtocolSequence.push_back(CMD_SET_TRACKING_MODE_1); break;
+        default: ROS_DEBUG("Tracking mode switching sequence unknown\n"); break;
+
+      }
+       // leave user level
+
+//      sWN TransmitTargets 1
 			// initializing sequence for radar based devices
-			startProtocolSequence.push_back(CMD_START_RADARDATA);
+      startProtocolSequence.push_back(CMD_RUN);  // leave user level
+      startProtocolSequence.push_back(CMD_START_RADARDATA);
 		}
 		else
 		{
@@ -1639,6 +1724,7 @@ namespace sick_scan
 						if (useBinaryCmd)
 						{
 							long dummy0, dummy1;
+              deviceState = 0;
 							iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_DEVICE_STATE]), "%4y%4ysRA SCdevicestate %1y", &dummy0, &dummy1, &deviceState);
 						}
 						else
@@ -1931,6 +2017,7 @@ namespace sick_scan
 
 						if (idVal == 0x02020202)
 						{
+              // binary message
 							if (lenVal < actual_length)
 							{
 								short elevAngleX200 = 0;  // signed short (F5 B2  -> Layer 24
@@ -1953,6 +2040,13 @@ namespace sick_scan
 
 								memcpy(&measurementFrequencyDiv100, receiveBuffer + 56, 4);
 								swap_endian((unsigned char*)&measurementFrequencyDiv100, 4);
+
+
+                msg.scan_time = 		1.0 / (scanFrequencyX100 / 100.0);
+                msg.time_increment = 1.0 / (measurementFrequencyDiv100 * 100.0);
+
+                msg.range_min = parser_->get_range_min();
+                msg.range_max = parser_->get_range_max();
 
 								memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
 								swap_endian((unsigned char*)&numberOf16BitChannels, 2);
@@ -1982,10 +2076,6 @@ namespace sick_scan
 									parseOff += numberOfItems * 2;
 								}
 
-								if (parseOff < 0)
-								{
-									printf("STOP!");
-								}
 								// now we can read the number of 8-Bit-Channels
 								memcpy(&numberOf8BitChannels, receiveBuffer + parseOff, 2);
 								swap_endian((unsigned char*)&numberOf8BitChannels, 2);
@@ -2134,6 +2224,7 @@ namespace sick_scan
 											memcpy(&sizeOfSingleAngularStepDiv10000, receiveBuffer + parseOff + 17, 2);
 											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
 
+
 											swap_endian((unsigned char*)&scaleFactor, 4);
 											swap_endian((unsigned char*)&scaleFactorOffset, 4);
 											swap_endian((unsigned char*)&startAngleDiv10000, 4);
@@ -2169,9 +2260,10 @@ namespace sick_scan
 													sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
 													sizeOfSingleAngularStep *= (M_PI / 180.0);
 
-													msg.angle_min = startAngle;
-													msg.angle_increment = sizeOfSingleAngularStep;
-													msg.angle_max = startAngle + (numberOfItems - 1) * sizeOfSingleAngularStep;
+                          msg.angle_min = startAngle  / 180.0 * M_PI - M_PI / 2;
+                          msg.angle_increment = sizeOfSingleAngularStep;
+                          msg.angle_max = msg.angle_min + (numberOfItems - 1) * msg.angle_increment;
+
 													for (int i = 0; i < numberOfItems; i++)
 													{
 														idx = i + numberOfItems * (distChannelCnt - 1);
@@ -2222,6 +2314,9 @@ namespace sick_scan
 							}
 						}
 					}
+
+
+          parser_->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001);
 
 					success = ExitSuccess;
 					// change Parsing Mode

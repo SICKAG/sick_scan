@@ -129,6 +129,16 @@ namespace sick_scan
 		return(tmpVal);
 	}
 
+  void SickScanRadar::setEmulation(bool _emul)
+  {
+    emul = _emul;
+  }
+
+  bool SickScanRadar::getEmulation(void)
+  {
+    return(emul);
+  }
+
 	/*!
 	\brief Parsing Ascii datagram
 	\param datagram: Pointer to datagram data
@@ -467,7 +477,7 @@ namespace sick_scan
 	{
     static int callCnt = 0;
 
-    // callCnt++;
+    callCnt++;
 
     // end
 		std::string header = "\x2sSN LMDradardata 1 1 112F6E9 0 0 533A 0 0 28C7DDDC 0 0 0 0 CB00 780 1 0 0 ";
@@ -759,19 +769,27 @@ namespace sick_scan
 	{
 		int exitCode = ExitSuccess;
 
-		enum enumSimulationMode {EMULATE_OFF, EMULATE_SYN, EMULATE_FROM_FILE};
+		enum enumSimulationMode {EMULATE_OFF, EMULATE_SYN, EMULATE_FROM_FILE_TRAIN, EMULATE_FROM_FILE_CAR};
 
-		int simulationMode = EMULATE_SYN;
+		int simulationMode = EMULATE_OFF;
 
+    if (this->getEmulation())
+    {
+      simulationMode = EMULATE_SYN;
+
+    }
 		switch(simulationMode)
 		{
 			case EMULATE_OFF: // do nothing - use real data
 				break;
 			case EMULATE_SYN: simulateAsciiDatagram(receiveBuffer, &actual_length);
 				break;
-			case EMULATE_FROM_FILE: simulateAsciiDatagramFromFile(receiveBuffer, &actual_length, "/mnt/hgfs/development/ros/bags/raw/trainSeq/tmp%06d.txt");
+			case EMULATE_FROM_FILE_TRAIN: simulateAsciiDatagramFromFile(receiveBuffer, &actual_length, "/mnt/hgfs/development/ros/bags/raw/trainSeq/tmp%06d.txt");
 				break;
-			default:
+      case EMULATE_FROM_FILE_CAR: simulateAsciiDatagramFromFile(receiveBuffer, &actual_length, "/mnt/hgfs/development/ros/bags/raw/carSeq/tmp%06d.txt");
+        break;
+
+      default:
 				printf("Simulation Mode unknown\n");
 
 		}

@@ -83,11 +83,12 @@
 #define MAX_NAME_LEN (1024)
 
 // 001.001.000 Switch to multithreaded processing of data
+// 001.001.001: Documentation added
+// 001.002.001: Bug in bin_scanf fixed (number of counted arguments was always 1)
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "002"  
-#define SICK_GENERIC_PATCH_LEVEL "000"
+#define SICK_GENERIC_PATCH_LEVEL "001"
 
-// 001.001.001: Documentation added
 #include <algorithm> // for std::min
 
 
@@ -122,10 +123,12 @@ int main(int argc, char **argv)
 	if (argc == 1) // just for testing without calling by roslaunch
 	{
 		// recommended call for internal debugging as an example: __name:=sick_rms_320 __internalDebug:=1
-		strcpy(nameTagVal, "__name:=sick_rms_3xx");  // sick_rms_320 -> radar
+		// strcpy(nameTagVal, "__name:=sick_rms_3xx");  // sick_rms_320 -> radar
+		strcpy(nameTagVal, "__name:=sick_tim_5xx");  // sick_rms_320 -> radar
 		strcpy(logTagVal, "__log:=/tmp/tmp.log");
 		strcpy(internalDebugTagVal, "__internalDebug:=1");
-		strcpy(sensorEmulVal, "__emulSensor:=1");
+		// strcpy(sensorEmulVal, "__emulSensor:=1");
+    strcpy(sensorEmulVal, "__emulSensor:=0");
 		argc_tmp = 5;
 		argv_tmp = (char **)malloc(sizeof(char *) * argc_tmp);
 

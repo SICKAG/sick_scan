@@ -99,8 +99,14 @@ namespace sick_scan
 			sensor_msgs::LaserScan &msg, int &numEchos, int& echoMask);
 
 
+		void checkScanTiming(float time_increment, float scan_time, float angle_increment, float tol);
+
 		void set_range_min(float min);
 		void set_range_max(float max);
+
+    float get_range_min(void);
+    float get_range_max(void);
+
 		void set_time_increment(float time);
 		void setScannerType(std::string s);
 		std::string getScannerType(void);

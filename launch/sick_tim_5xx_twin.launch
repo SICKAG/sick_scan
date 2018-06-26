@@ -8,7 +8,7 @@
      1. Global Options->Fixed Frame: map
      2. Pointcloud2->Topic: /cloud_1
      3. Pointcloud2->Topic: /cloud_2
-
+     4. Modify the given ip addresses to your local setup.
      Remark: Add two Pointcloud2-Visualizer to the Displays-Windows.
      You can also add two Laserscan-Visualizer. Please set the topic for laserscan-Visualizer to /scan_1 and /scan_2 in this case.
 

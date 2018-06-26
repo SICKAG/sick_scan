@@ -98,6 +98,20 @@ namespace sick_scan
 			CMD_STOP_SCANDATA,
 			CMD_START_SCANDATA,
 			CMD_START_RADARDATA,
+			// start of radar specific commands
+			CMD_SET_TRANSMIT_RAWTARGETS_ON,  // transmit raw target for radar
+  		CMD_SET_TRANSMIT_RAWTARGETS_OFF, // do not transmit raw target for radar
+
+      CMD_SET_TRANSMIT_OBJECTS_ON,  // transmit raw target for radar
+      CMD_SET_TRANSMIT_OBJECTS_OFF, // do not transmit raw target for radar
+
+			CMD_SET_TRACKING_MODE_0,  // set radar tracking mode to "BASIC"
+			CMD_SET_TRACKING_MODE_1,  // set radar tracking mode to "TRAFFIC"
+
+      CMD_LOAD_APPLICATION_DEFAULT, // load application default
+      CMD_DEVICE_TYPE,
+      CMD_ORDER_NUMBER,
+      // end of radar specific commands
 			CMD_START_MEASUREMENT,
 			CMD_STOP_MEASUREMENT,
 			CMD_SET_ECHO_FILTER,

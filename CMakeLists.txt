@@ -13,6 +13,7 @@ project(sick_scan)
 # endforeach()
 # --- CUT ---
 
+
 find_package(catkin REQUIRED
     COMPONENTS
       roscpp
@@ -31,7 +32,6 @@ find_package(PkgConfig REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 
 generate_dynamic_reconfigure_options(cfg/SickScan.cfg)
-
 
 add_message_files(
 		FILES
@@ -75,6 +75,7 @@ add_library(sick_scan_lib
 	driver/src/sick_generic_radar.cpp
 	driver/src/sick_generic_parser.cpp
 	driver/src/sick_scan_common_nw.cpp)
+
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
 target_link_libraries(sick_scan_lib
     ${catkin_LIBRARIES})
