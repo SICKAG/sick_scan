@@ -207,14 +207,22 @@ binVfscanf(FILE *fp, const char *fmt, va_list ap)
 }
 
 
-/*
- *  vsscanf(buf,fmt,ap)
- */
+/*!
+\brief sscanf-like function
+       In addition to standard sscanf a format identifier "y" is introduced to parse big endian
+\param bufOrg: Ptr. to original data
+\param s: format identifier
+\param ap: variable numer of arguments
+\param bufLen: length of buffer in bytes
+\return number of parsed arguments
+*/
+
 static int
 binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 {
-	int             count, noassign, width, base, lflag;
-	const char     *tc;
+	int             count, noassign, base, lflag;
+	unsigned long   width;
+  const char     *tc;
 	char           *t, tmp[MAXLN];
 	const char *buf;
 	const char *bufEnd;
@@ -222,20 +230,21 @@ binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 	bufEnd = buf + bufLen;
 
 	count = noassign = width = lflag = 0;
+	// Parse Inputbuffer buf
 	while (*s && (buf < bufEnd))
 	{
-		while (binIsspace(*s))
+		while (binIsspace(*s)) // skipping blanks
 			s++;
-		if (*s == '%') {
+		if (*s == '%') { // maybe a format identifier
 			s++;
 			for (; *s; s++) {
-				if (strchr("dibouxycsefg%", *s))
+				if (strchr("dibouxycsefg%", *s)) // check allowed format identifier
 					break;
-				if (*s == '*')
+				if (*s == '*')  // length identifier
 					noassign = 1;
-				else if (*s == 'l' || *s == 'L')
+				else if (*s == 'l' || *s == 'L') // long flag
 					lflag = 1;
-				else if (*s >= '1' && *s <= '9') {
+				else if (*s >= '1' && *s <= '9') {  // length of argument
 					for (tc = s; isdigit(*s); s++);
 					strncpy(tmp, tc, s - tc);
 					tmp[s - tc] = '\0';
@@ -290,14 +299,18 @@ binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 				if (base == 1)  // binary data - plain copy without string function
 				{
 					memcpy(tmp, buf, width);
-					unsigned long *destAdr = va_arg(ap, unsigned long *);
+					unsigned char *destAdr = va_arg(ap, unsigned char *);
 					unsigned long destVal = 0;
 					for (int i = 0; i < width; i++)  // Big Endian - MSB first - convention for SOPAS-Binary
 					{
 						destVal <<= 8;
 						destVal |= (unsigned char)(0xFF & tmp[i]);
 					}
-					*destAdr = destVal;
+          for (int i = 0; i < width; i++)  // Big Endian - MSB first - convention for SOPAS-Binary
+          {
+            unsigned char val = (unsigned char)(0xFF & (destVal >> (i * 8)));
+            destAdr[i] = val;
+          }
 				}
 				else
 				{
