@@ -2432,8 +2432,14 @@ namespace sick_scan
 								{
 									const char* cpFrameId = config_.frame_id.c_str();
 									sprintf(szTmp, "%s_%+04d_DIST%d", cpFrameId, msg.header.seq, i + 1);
-									msg.header.frame_id = std::string(szTmp);
-								}
+                }
+                else
+                {
+                  strcpy(szTmp, config_.frame_id.c_str());
+                }
+
+                msg.header.frame_id = std::string(szTmp);
+
 							}
 
 #ifndef _MSC_VER
@@ -2443,7 +2449,8 @@ namespace sick_scan
 							}
 							if (sendMsg & 	outputChannelFlagId)  // publish only configured channels - workaround for cfg-bug MRS1104
 							{
-								diagnosticPub_->publish(msg);
+
+                pub_.publish(msg);
 							}
 #else
 							printf("MSG received...");
