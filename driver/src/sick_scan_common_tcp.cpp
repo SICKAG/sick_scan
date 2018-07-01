@@ -466,8 +466,10 @@ namespace sick_scan
 		recvQueue.push(std::vector<unsigned char>(frame.getRawData(), frame.getRawData() + frame.size()));
 
 	}
+      
 	void SickScanCommonTcp::readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
 	{
+    ros::Time rcvTimeStamp = ros::Time::now(); // stamp received datagram
 		bool beVerboseHere = false;
 		printInfoMessage("SickScanCommonNw::readCallbackFunction(): Called with " + toString(numOfBytes) + " available bytes.", beVerboseHere);
 

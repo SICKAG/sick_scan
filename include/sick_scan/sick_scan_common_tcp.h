@@ -47,6 +47,20 @@
 #include "template_queue.h"
 namespace sick_scan
 {
+/* class prepared for optimized time stamping */
+
+class DatagramWithTimeStamp
+{
+		DatagramWithTimeStamp(ros::Time timeStamp_, std::vector<unsigned char> datagram_)
+		{
+       timeStamp = timeStamp_;
+			 datagram = datagram_;
+ 		}
+private:
+	  ros::Time timeStamp;
+		std::vector<unsigned char> datagram;
+};
+
 
 class SickScanCommonTcp : public SickScanCommon
     {

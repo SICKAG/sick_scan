@@ -784,7 +784,8 @@ namespace sick_scan
 		if (tryToStopMeasurement)
 		{
 			sopasCmdChain.push_back(CMD_STOP_MEASUREMENT);
-			if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 24)
+      int numberOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
+			if ( (numberOfLayers == 4) || (numberOfLayers == 24) )
 			{
 				// just measuring - Application setting not supported
 				// "Old" device ident command "SRi 0" not supported
@@ -1004,6 +1005,10 @@ namespace sick_scan
 				else
 				{
 					long dummy0, dummy1, identLen, versionLen;
+          dummy0 = 0;
+          dummy1 = 0;
+          identLen = 0;
+          versionLen = 0;
 
 					const char *scanMask0 = "%04y%04ysRA DeviceIdent %02y";
 					const char *scanMask1 = "%02y";
@@ -1011,11 +1016,13 @@ namespace sick_scan
 					int scanDataLen0 = binScanfGuessDataLenFromMask(scanMask0);
 					int scanDataLen1 = binScanfGuessDataLenFromMask(scanMask1); // should be: 2
 					binScanfVec(&replyDummy, scanMask0, &dummy0, &dummy1, &identLen);
-					printf("IdentLen: %ld\n", identLen);
+
 					std::string identStr = binScanfGetStringFromVec(&replyDummy, scanDataLen0, identLen);
 					int off = scanDataLen0 + identLen; // consuming header + fixed part + ident
 
 					std::vector<unsigned char> restOfReplyDummy = std::vector<unsigned char>(replyDummy.begin() + off, replyDummy.end());
+
+          versionLen = 0;
 					binScanfVec(&restOfReplyDummy, "%02y", &versionLen);
 					std::string versionStr = binScanfGetStringFromVec(&restOfReplyDummy, scanDataLen1, versionLen);
 					std::string fullIdentVersionInfo = identStr + " V" + versionStr;
@@ -1049,7 +1056,8 @@ namespace sick_scan
 				int iRetVal = 0;
 				if (useBinaryCmd)
 				{
-					long dummy0, dummy1;
+					long dummy0 = 0x00;
+          long dummy1 = 0x00;
           deviceState = 0x00; // must be set to zero (because only one byte will be copied)
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_DEVICE_STATE]), "%4y%4ysRA SCdevicestate %1y", &dummy0, &dummy1, &deviceState);
 				}
@@ -1087,10 +1095,14 @@ namespace sick_scan
 				if (useBinaryCmd)
 				{
 					long dummy0, dummy1;
+          dummy0 = 0;
+          dummy1 = 0;
+          operationHours = 0;
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_OPERATION_HOURS]), "%4y%4ysRA ODoprh %4y", &dummy0, &dummy1, &operationHours);
 				}
 				else
 				{
+          operationHours = 0;
 					iRetVal = sscanf(sopasReplyStrVec[CMD_OPERATION_HOURS].c_str(), "sRA ODoprh %x", &operationHours);
 				}
 				if (iRetVal > 0)
@@ -1108,6 +1120,7 @@ namespace sick_scan
 				if (useBinaryCmd)
 				{
 					long dummy0, dummy1;
+          powerOnCount = 0;
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_POWER_ON_COUNT]), "%4y%4ysRA ODpwrc %4y", &dummy0, &dummy1, &powerOnCount);
 				}
 				else
@@ -1134,6 +1147,10 @@ namespace sick_scan
 					long dummy0, dummy1, locationNameLen;
 					const char *binLocationNameMask = "%4y%4ysRA LocationName %2y";
 					int prefixLen = binScanfGuessDataLenFromMask(binLocationNameMask);
+          dummy0 = 0;
+          dummy1 = 0;
+          locationNameLen = 0;
+
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_LOCATION_NAME]), binLocationNameMask, &dummy0, &dummy1, &locationNameLen);
 					if (iRetVal > 0)
 					{
@@ -1230,6 +1247,13 @@ namespace sick_scan
 
 				if (useBinaryCmd)
 				{
+          iDummy0 = 0;
+          iDummy1 = 0;
+          dummyInt = 0;
+          askTmpAngleRes10000th = 0;
+          askTmpAngleStart10000th = 0;
+          askTmpAngleEnd10000th = 0;
+
 					const char *askOutputAngularRangeBinMask = "%4y%4ysRA LMPoutputRange %2y%4y%4y%4y";
 					numArgs = binScanfVec(&sopasReplyBinVec[CMD_GET_OUTPUT_RANGES], askOutputAngularRangeBinMask, &iDummy0, &iDummy1,
 						&dummyInt,
@@ -1360,6 +1384,8 @@ namespace sick_scan
 				int  askAngleStart10000th = 0;
 				int askAngleEnd10000th = 0;
 				int iDummy0, iDummy1;
+        iDummy0 =0;
+        iDummy1 = 0;
 				std::string askOutputAngularRangeStr = replyToString(askOutputAngularRangeReply);
 				// Binary-Reply Tab. 63
 				// 0x20 Space
@@ -1371,7 +1397,24 @@ namespace sick_scan
 
 				int numArgs;
 
-				if (useBinaryCmd)
+        /*
+         *
+         *  Initialize variables
+         */
+
+        iDummy0 = 0;
+        iDummy1 = 0;
+        dummyInt = 0;
+        askAngleRes10000th = 0;
+        askAngleStart10000th = 0;
+        askAngleEnd10000th = 0;
+
+        /*
+         *   scan values
+         *
+         */
+
+        if (useBinaryCmd)
 				{
 					const char *askOutputAngularRangeBinMask = "%4y%4ysRA LMPoutputRange %2y%4y%4y%4y";
 					numArgs = binScanfVec(&sopasReplyBinVec[CMD_GET_OUTPUT_RANGES], askOutputAngularRangeBinMask, &iDummy0, &iDummy1,
@@ -1724,6 +1767,8 @@ namespace sick_scan
 						if (useBinaryCmd)
 						{
 							long dummy0, dummy1;
+              dummy0 = 0;
+              dummy1 = 0;
               deviceState = 0;
 							iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_DEVICE_STATE]), "%4y%4ysRA SCdevicestate %1y", &dummy0, &dummy1, &deviceState);
 						}
@@ -1931,6 +1976,9 @@ namespace sick_scan
 
 
 		int result = get_datagram(receiveBuffer, 65536, &actual_length, useBinaryProtocol);
+    ros::Time recvTimeStamp = ros::Time::now();  // timestamp incoming package, maybe better: timestamp after receiving
+                                                 // tcp packet
+
 		if (result != 0)
 		{
 			ROS_ERROR("Read Error when getting datagram: %i.", result);
@@ -1961,6 +2009,7 @@ namespace sick_scan
 			dumpDatagramForDebugging(receiveBuffer, actual_length);
 		}
 
+
 		bool deviceIsRadar = false;
 
 		if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar() == true)
@@ -1978,9 +2027,10 @@ namespace sick_scan
 		}
 		else
 		{
+
 			sensor_msgs::LaserScan msg;
 
-
+      msg.header.stamp = recvTimeStamp;
 			double elevationAngleInRad = 0.0;
 			/*
 			 * datagrams are enclosed in <STX> (0x02), <ETX> (0x03) pairs
@@ -2467,7 +2517,7 @@ namespace sick_scan
 						const int numChannels = 4; // x y z i (for intensity)
 
 
-						cloud_.header.stamp = ros::Time::now();
+						cloud_.header.stamp = recvTimeStamp;
 						cloud_.header.frame_id = config_.frame_id;
 						cloud_.header.seq = 0;
 						cloud_.height = numOfLayers * numValidEchos; // due to multi echo multiplied by num. of layers
