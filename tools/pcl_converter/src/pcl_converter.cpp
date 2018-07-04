@@ -15,93 +15,14 @@ ros::Publisher pub;
 GnuPlotPalette pal;
 bool usingPal = false;
 
+bool ignoreIntensityMissing = true;
+
 double minRange = 255.99* 0.25;
 double maxRange = 0.00;
 float  minRangeGreyVal =   0.0;
 float  maxRangeGreyVal = 255.99;
 
-void
-cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
-{
-  // Create a container for the data.
-  sensor_msgs::PointCloud2 cloud_;
-
-
-
-  // Do data processing here...
-  cloud_ = *input;
-  std::string channelId[] = { "x", "y", "z", "intensity","rgb" };
-
-  const int numChannels = sizeof(channelId)/sizeof(channelId[0]); // rgbx y z i (for intensity)
-
-  cloud_.header.stamp = input->header.stamp;
-  cloud_.header.frame_id = input->header.frame_id;
-  cloud_.header.seq = input->header.seq;
-  cloud_.is_bigendian = false;
-  cloud_.is_dense = true;
-  cloud_.point_step = numChannels * sizeof(float); // remark sizeof(float) is the same as sizeof(uint32) - a little bit hacky
-  cloud_.row_step = cloud_.point_step * cloud_.width;
-  cloud_.fields.resize(numChannels);
-  for (int i = 0; i < numChannels; i++) {
-      cloud_.fields[i].name = channelId[i];
-      cloud_.fields[i].offset = i * sizeof(float);
-      cloud_.fields[i].count = 1;
-      if (i == (numChannels - 1) )
-      {
-        cloud_.fields[i].datatype =  sensor_msgs::PointField::FLOAT32;
-      }
-    else
-      {
-        cloud_.fields[i].datatype = sensor_msgs::PointField::FLOAT32;
-
-      }
-
-    }
-
-    cloud_.data.resize(cloud_.row_step * cloud_.height);
-
-    for (int i = 0; i < cloud_.height; i++)
-    {
-      for (int j = 0; j < cloud_.width; j++)
-      {
-        long adroffSrc = i * input->row_step + j * input->point_step;
-        long adroffDest = i * cloud_.row_step + j * cloud_.point_step;
-        const unsigned char *srcPtr = &(input->data[0]) + adroffSrc;
-        const unsigned char *destPtr = &(cloud_.data[0]) + adroffDest;
-        memcpy((void *)destPtr, (void *)srcPtr, input->point_step);
-        float intensity;
-        memcpy(&intensity, srcPtr + 3* sizeof(float), sizeof(float));
-        if (intensity > 255.0)
-        {
-          intensity = 255.0;
-        }
-        if (intensity < 0.0)
-        {
-          intensity = 0.0;
-        }
-        unsigned char r,g,b;
-        unsigned char grey = (unsigned char)intensity;
-
-        r = grey;
-        g = grey;
-        b = grey;
-        if (usingPal)
-        {
-          r = pal.getRbgValue(grey, 0);
-          g = pal.getRbgValue(grey, 1);
-          b = pal.getRbgValue(grey, 2);
-        }
-        float greyDest;
-        greyDest = r << 16 | g << 8 | b;
-        memcpy((void *)(destPtr + 4 * sizeof(float)), &greyDest, sizeof(uint32_t));
-
-
-      }
-    }
-
-  // Publish the data.
-  pub.publish (cloud_);
-}
+int numEchoOutput = 1;
 
 
   /** \brief Copy the RGB fields of a PCLPointCloud2 msg into pcl::PCLImage format
@@ -124,6 +45,15 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
     int conversionTask = 3;
     float range_eps = 0.1;
 
+
+    int heightUsed = cloud->height;
+    if (numEchoOutput == 1)
+    {
+      if (heightUsed > 24)
+      {
+        heightUsed = 24;
+      }
+    }
     // Get the index we need
     for (size_t d = 0; d < cloud->fields.size (); ++d)
     {
@@ -149,7 +79,17 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
       }
     }
     if(rgb_index == -1)
-      throw std::runtime_error ("No rgb field!!");
+    {
+      if (ignoreIntensityMissing)
+      {
+        return;
+        // intensity flag is missing - ignore the scan
+      }
+      else
+      {
+        throw std::runtime_error ("No intensity entry!!");
+      }
+    }
 
     int heightStretch = 5;
 
@@ -169,11 +109,11 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
       imgChannelCnt++;
     }
 
-    if (cloud->width == 0 && cloud->height == 0)
+    if (cloud->width == 0 && heightUsed == 0)
       throw std::runtime_error ("Needs to be a dense like cloud!!");
     else
     {
-      msg.height = heightStretch * cloud->height * imgChannelCnt;
+      msg.height = heightStretch * heightUsed * imgChannelCnt;
       msg.width = cloud->width;
       if (useHDFormat)
       {
@@ -201,9 +141,9 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
 
 
 
-    int maxY = imgChannelCnt * heightStretch * cloud->height;
+    int maxY = imgChannelCnt * heightStretch * heightUsed;
 
-    for (size_t y = 0; y < cloud->height; y++)
+    for (size_t y = 0; y < heightUsed; y++)
     {
       for (size_t x = 0; x < cloud->width; x++)
       {
@@ -223,7 +163,7 @@ cloud_cb (const sensor_msgs::PointCloud2ConstPtr& input)
            for (int rowInner = 0; rowInner < heightStretch; rowInner++)
         {
           int  rowTmp = (y * heightStretch + rowInner);
-          rowTmp += encodingCnt * heightStretch * cloud->height;
+          rowTmp += encodingCnt * heightStretch * heightUsed;
 
            int rowInnerIdx = maxY -  (rowTmp) - 1;
            int xTmp = x;
