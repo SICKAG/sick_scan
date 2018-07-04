@@ -229,6 +229,10 @@ namespace sick_scan
 		//
 		cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 100);
 
+		// just for debugging, but very helpful for the start
+		cloud_radar_rawtarget_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_radar_rawtarget", 100);
+		cloud_radar_track_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_radar_track", 100);
+
 		radarScan_pub_ = nh_.advertise<sick_scan::RadarScan>("radar", 100);
 		// scan publisher
 		pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 1000);
@@ -2025,8 +2029,8 @@ namespace sick_scan
 		{
 			SickScanRadar radar(this);
 			int errorCode = ExitSuccess;
-			// parse radar telegram
-			errorCode = radar.parseDatagram((unsigned char *)receiveBuffer, actual_length, useBinaryProtocol);
+			// parse radar telegram and send pointcloud2-debug messages
+			errorCode = radar.parseDatagram(recvTimeStamp, (unsigned char *)receiveBuffer, actual_length, useBinaryProtocol);
 			return errorCode; // return success to continue looping
 		}
 		else

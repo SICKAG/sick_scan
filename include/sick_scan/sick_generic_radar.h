@@ -120,7 +120,7 @@ namespace sick_scan
 		}
 		void setEmulation(bool _emul);
 		bool getEmulation(void);
-		int parseDatagram(unsigned char *receiveBuffer, int actual_length, bool useBinaryProtocol);	
+		int parseDatagram(ros::Time timeStamp, unsigned char *receiveBuffer, int actual_length, bool useBinaryProtocol);
 		int parseAsciiDatagram(char* datagram, size_t datagram_length, std::vector<SickScanRadarObject> &objectList, std::vector<SickScanRadarRawTarget> &rawTargetList); /* , SickScanConfig &config, */ // sensor_msgs::LaserScan &msg, int &numEchos, int &echoMask);
 		void simulateAsciiDatagram(unsigned char * receiveBuffer, int* actual_length);
 	private:

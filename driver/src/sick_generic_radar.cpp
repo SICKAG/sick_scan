@@ -765,7 +765,7 @@ namespace sick_scan
 		fclose(fin);
 	}
 
-	int SickScanRadar::parseDatagram(unsigned char *receiveBuffer, int actual_length, bool useBinaryProtocol)
+	int SickScanRadar::parseDatagram(ros::Time timeStamp, unsigned char *receiveBuffer, int actual_length, bool useBinaryProtocol)
 	{
 		int exitCode = ExitSuccess;
 
@@ -805,7 +805,6 @@ namespace sick_scan
 		}
 		else
 		{
-			ros::Time timeStamp =ros::Time::now();
 			bool dataToProcess = false;
 			char *buffer_pos = (char *)receiveBuffer;
 			char *dstart = NULL;
@@ -833,10 +832,11 @@ namespace sick_scan
 			sick_scan::RadarScan radarMsg_;
 
 
+			enum RADAR_PROC_LIST {RADAR_PROC_RAW_TARGET, RADAR_PROC_TRACK, RADAR_PROC_NUM};
       //
       // First loop: looking for raw targets
       // Second loop: looking for tracking objects
-			for (int iLoop = 0; iLoop < 2; iLoop++)
+			for (int iLoop = 0; iLoop < RADAR_PROC_NUM; iLoop++)
 			{
 				int numTargets = 0;
 				if (dataToProcess)
@@ -844,22 +844,22 @@ namespace sick_scan
 					std::string channelRawTargetId[] = { "x", "y", "z", "vrad","amplitude" };
 					std::string channelObjectId[] = { "x", "y", "z", "vx","vy","vz","objLen","objId" };
 					std::vector<std::string> channelList;
-					std::string frameId =  "laser"; //this->commonPtr->getConfigPtr()->frame_id;;
+					std::string frameId =  "radar"; //this->commonPtr->getConfigPtr()->frame_id;;
 					switch (iLoop)
 					{
-					case 0: numTargets = rawTargetList.size();
+					case RADAR_PROC_RAW_TARGET: numTargets = rawTargetList.size();
 						for (int i = 0; i < sizeof(channelRawTargetId) / sizeof(channelRawTargetId[0]); i++)
 						{
 							channelList.push_back(channelRawTargetId[i]);
 						}
-						frameId = "laser"; // TODO - move to param list
+						frameId = "radar"; // TODO - move to param list
 						break;
-					case 1: numTargets = objectList.size();
+					case RADAR_PROC_TRACK: numTargets = objectList.size();
 						for (int i = 0; i < sizeof(channelObjectId) / sizeof(channelObjectId[0]); i++)
 						{
 							channelList.push_back(channelObjectId[i]);
 						}
-						frameId = "Objects"; // TODO - move to param list
+						frameId = "radar"; // TODO - move to param list
 						break;
 					}
 					if (numTargets == 0)
@@ -892,40 +892,51 @@ namespace sick_scan
 					int off = 0;
 					for (int i = 0; i < numTargets; i++)
 					{
-						switch (iLoop) {
-              case 0: {
-                float angle = deg2rad * rawTargetList[i].Azimuth();
-                valSingle[0] = rawTargetList[i].Dist() * cos(angle);
-                valSingle[1] = rawTargetList[i].Dist() * sin(angle);
-                valSingle[2] = 0.0;
-                valSingle[3] = rawTargetList[i].Vrad();
-                valSingle[4] = rawTargetList[i].Ampl();
-              }
-                break;
-
-              case 1:
-                valSingle[0] = objectList[i].P3Dx();
-                valSingle[1] = objectList[i].P3Dy();
-                valSingle[2] = 0.0;
-                valSingle[3] = objectList[i].V3Dx();
-                valSingle[4] = objectList[i].V3Dy();
-                valSingle[5] = 0.0;
-                valSingle[6] = objectList[i].ObjLength();
-                valSingle[7] = objectList[i].ObjId();
-                break;
-            }
-
-							for (int j = 0; j < numChannels; j++)
+						switch (iLoop)
+						{
+							case 0:
 							{
-								valPtr[off] = valSingle[j];
-								off++;
+								float angle = deg2rad * rawTargetList[i].Azimuth();
+								valSingle[0] = rawTargetList[i].Dist() * cos(angle);
+								valSingle[1] = rawTargetList[i].Dist() * sin(angle);
+								valSingle[2] = 0.0;
+								valSingle[3] = rawTargetList[i].Vrad();
+								valSingle[4] = rawTargetList[i].Ampl();
 							}
+								break;
+
+							case 1:
+								valSingle[0] = objectList[i].P3Dx();
+								valSingle[1] = objectList[i].P3Dy();
+								valSingle[2] = 0.0;
+								valSingle[3] = objectList[i].V3Dx();
+								valSingle[4] = objectList[i].V3Dy();
+								valSingle[5] = 0.0;
+								valSingle[6] = objectList[i].ObjLength();
+								valSingle[7] = objectList[i].ObjId();
+								break;
+						}
+
+						for (int j = 0; j < numChannels; j++)
+						{
+							valPtr[off] = valSingle[j];
+							off++;
+						}
 #ifndef _MSC_VER
-						this->commonPtr->cloud_pub_.publish(cloud_);
+						switch (iLoop)
+						{
+							case RADAR_PROC_RAW_TARGET:
+								this->commonPtr->cloud_radar_rawtarget_pub_.publish(cloud_);
+								break;
+							case RADAR_PROC_TRACK:
+								this->commonPtr->cloud_radar_track_pub_.publish(cloud_);
+								break;
+						}
+
 #else
 						printf("PUBLISH:\n");
 #endif
-            if (iLoop == 0)
+            if (iLoop == RADAR_PROC_RAW_TARGET)
             {
               // is this a deep copy ???
               radarMsg_.targets = cloud_;
@@ -936,7 +947,7 @@ namespace sick_scan
       // Publishing radar messages
       // ...
       radarMsg_.header.stamp = timeStamp;
-      radarMsg_.header.frame_id = "Radar";
+      radarMsg_.header.frame_id = "radar";
       radarMsg_.header.seq = 0;
 
       radarMsg_.objects.resize(objectList.size());

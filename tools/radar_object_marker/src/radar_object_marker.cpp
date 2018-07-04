@@ -383,6 +383,7 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
     rawTargets.markers[i].points[1].z = pts3d[2];
   }
 
+
   pub.publish(rawTargets);
 #if 1
   visualization_msgs::MarkerArray object_boxes;

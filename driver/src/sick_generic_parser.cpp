@@ -554,6 +554,10 @@ namespace sick_scan
 
 	void SickGenericParser::checkScanTiming(float time_increment, float scan_time, float angle_increment, float tol)
 	{
+		if (this->getCurrentParamPtr()->getNumberOfLayers() > 1)
+		{
+			return;
+		}
 
 		float expected_time_increment = this->getCurrentParamPtr()->getNumberOfLayers() * scan_time * angle_increment / (2.0 * M_PI);
 		if (fabs(expected_time_increment - time_increment) > 0.00001)
