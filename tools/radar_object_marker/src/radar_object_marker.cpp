@@ -1,4 +1,6 @@
 /*
+ * Copyright (C) 2018, SICK AG
+ * Copyright (C) 2018, Ing.-Buero Dr. Michael Lehning
  * Copyright (C) 2016, DFKI GmbH
  * All rights reserved.
  *
@@ -25,10 +27,6 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
- *      Authors:
- *         Martin Günther <martin.guenther@dfki.de>
- *         Jochen Sprickerhof <ros@jochen.sprickerhof.de>
  *
  */
 

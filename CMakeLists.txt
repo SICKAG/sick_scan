@@ -23,8 +23,10 @@ find_package(catkin REQUIRED
       geometry_msgs
       std_msgs
       sensor_msgs
-	  message_generation
-		)
+      message_generation
+      pcl_conversions
+      pcl_ros
+)
 
 
 find_package(PkgConfig REQUIRED)
@@ -57,7 +59,7 @@ catkin_package(
         INCLUDE_DIRS include )
 
 
-include_directories(include include/tcp include/tinyxml ${catkin_INCLUDE_DIRS} )
+include_directories(include include/tinyxml ${catkin_INCLUDE_DIRS} )
 
 add_library(sick_scan_lib
     driver/src/sick_scan_common.cpp
@@ -85,13 +87,27 @@ add_executable(sick_generic_caller
     driver/src/sick_generic_caller.cpp
 	)
 
-add_executable(sick_scan_radar_object_marker
-        tools/src/sick_scan_radar_object_marker.cpp
+#
+#  radar_object_marker (receives radar msg. and publishes marker array for rviz or similar
+#
+add_executable(radar_object_marker
+        tools/radar_object_marker/src/radar_object_marker.cpp
         )
+target_link_libraries(radar_object_marker sick_scan_lib)
+#
+#
+#
+
+
+add_executable(pcl_converter tools/pcl_converter/src/pcl_converter.cpp tools/pcl_converter/src/gnuplotPaletteReader.cpp)
+
+target_link_libraries(pcl_converter ${catkin_LIBRARIES})
+
+# add_executable( pcl_find_plane tools/pcl_converter/src/pcl_find_plane.cpp)
+# target_link_libraries(pcl_find_plane ${catkin_LIBRARIES})
 
 
 target_link_libraries(sick_generic_caller sick_scan_lib)
-target_link_libraries(sick_scan_radar_object_marker sick_scan_lib)
 
 add_executable(sick_scan_test
 	test/src/sick_scan_test.cpp

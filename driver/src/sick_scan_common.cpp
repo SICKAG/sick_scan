@@ -1967,6 +1967,7 @@ namespace sick_scan
 	*/
 	int SickScanCommon::loopOnce()
 	{
+    static int cnt = 0;
 		diagnostics_.update();
 
 		unsigned char receiveBuffer[65536];
@@ -1974,10 +1975,13 @@ namespace sick_scan
 		static unsigned int iteration_count = 0;
 		bool useBinaryProtocol = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
 
+    ros::Time recvTimeStamp = ros::Time::now();  // timestamp incoming package, will be overwritten by get_datagram
+    // tcp packet
+    ros::Time recvTimeStampPush = ros::Time::now();  // timestamp
 
-		int result = get_datagram(receiveBuffer, 65536, &actual_length, useBinaryProtocol);
-    ros::Time recvTimeStamp = ros::Time::now();  // timestamp incoming package, maybe better: timestamp after receiving
-                                                 // tcp packet
+		int result = get_datagram(recvTimeStamp, receiveBuffer, 65536, &actual_length, useBinaryProtocol);
+
+    ros::Duration dur = recvTimeStampPush - recvTimeStamp;
 
 		if (result != 0)
 		{

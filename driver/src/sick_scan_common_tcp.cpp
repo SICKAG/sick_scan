@@ -448,7 +448,7 @@ namespace sick_scan
  * hereingekommen sind.
  */
 
-	void SickScanCommonTcp::processFrame(SopasEventMessage& frame)
+	void SickScanCommonTcp::processFrame(ros::Time timeStamp, SopasEventMessage& frame)
 	{
 
 		if (getProtocolType() == CoLa_A)
@@ -463,10 +463,12 @@ namespace sick_scan
 		}
 
 		// Push frame to recvQueue
-		recvQueue.push(std::vector<unsigned char>(frame.getRawData(), frame.getRawData() + frame.size()));
 
-	}
-      
+    DatagramWithTimeStamp dataGramWidthTimeStamp(timeStamp, std::vector<unsigned char>(frame.getRawData(), frame.getRawData() + frame.size()));
+		// recvQueue.push(std::vector<unsigned char>(frame.getRawData(), frame.getRawData() + frame.size()));
+    recvQueue.push(dataGramWidthTimeStamp);
+    	}
+
 	void SickScanCommonTcp::readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
 	{
     ros::Time rcvTimeStamp = ros::Time::now(); // stamp received datagram
@@ -515,7 +517,7 @@ namespace sick_scan
 				{
 					// A frame was found in the buffer, so process it now.
 					printInfoMessage("SickScanCommonNw::readCallbackFunction(): Processing a frame of length " + ::toString(frame.size()) + " bytes.", beVerboseHere);
-					processFrame(frame);
+					processFrame(rcvTimeStamp, frame);
 					UINT32 bytesToMove = m_numberOfBytesInReceiveBuffer - size;
 					memmove(&(m_receiveBuffer[0]), &(m_receiveBuffer[size]), bytesToMove); // payload+magic+length+s+checksum
 					m_numberOfBytesInReceiveBuffer = bytesToMove;
@@ -529,113 +531,6 @@ namespace sick_scan
 			// Either we have not read data from our buffer for a long time, or something has gone wrong. To re-sync,
 			// we clear the input buffer here.
 			m_numberOfBytesInReceiveBuffer = 0;
-		}
-	}
-
-	void SickScanCommonTcp::readCallbackFunctionOld(UINT8* buffer, UINT32& numOfBytes)
-	{
-		// should be member variable in the future
-
-
-#if 0
-
-		this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-
-		if (this->getReplyMode() == 0)
-		{
-			this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-			return;
-		}
-#endif
-
-		// starting with 0x02 - but no magic word -> ASCII-Command-Reply
-		if ((numOfBytes < 2) && (m_alreadyReceivedBytes == 0))
-		{
-			return;  // ultra short message (only 1 byte) must be nonsense 
-		}
-		if ((buffer[0] == 0x02) && (buffer[1] != 0x02)) // no magic word, but received initial 0x02 -> guess Ascii reply
-		{
-			if (numOfBytes > 0)
-			{
-				// check last character of message - must be 0x03 
-				char lastChar = buffer[numOfBytes - 1];  // check last for 0x03
-				if (lastChar == 0x03)  
-				{
-					memcpy(m_packetBuffer, buffer, numOfBytes);
-					m_alreadyReceivedBytes = numOfBytes;
-					recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + numOfBytes));
-					m_alreadyReceivedBytes = 0;
-				}
-				else
-				{
-
-					ROS_WARN("Dropping packages???\n");
-					FILE *fout = fopen("/tmp/package.bin", "wb");
-					if (fout != NULL)
-					{
-						fwrite(m_packetBuffer, 1, numOfBytes, fout);
-						fclose(fout);
-					}
-				}
-			}
-		}
-
-		if ((numOfBytes < 9) && (m_alreadyReceivedBytes == 0))
-		{
-			return;
-		}
-
-
-		// check magic word for cola B
-		if ((m_alreadyReceivedBytes > 0) || (buffer[0] == 0x02 && buffer[1] == 0x02 && buffer[2] == 0x02 && buffer[3] == 0x02))
-		{
-			std::string command;
-			UINT16 nextData = 4;
-			UINT32 numberBytes = numOfBytes;
-			if (m_alreadyReceivedBytes == 0)
-			{
-				const char *packetKeyWord = "sSN LMDscandata";
-				m_lastPacketSize = colab::getIntegerFromBuffer<UINT32>(buffer, nextData);
-				//
-				m_lastPacketSize += 9; // Magic number + CRC
-
-				// Check for "normal" command reply
-				if (strncmp((char *)(buffer + 8), packetKeyWord, strlen(packetKeyWord)) != 0)
-				{
-					// normal command reply
-					this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-					return;
-				}
-
-				// probably a scan
-				if (m_lastPacketSize > 4000)
-				{
-					INT16 topmostLayerAngle = 1350 * 2 - 62; // for identification of first layer of a scan
-					UINT16 layerPos = 24 + 26;
-					INT16 layerAngle = colab::getIntegerFromBuffer<INT16>(buffer, layerPos);
-
-					if (layerAngle == topmostLayerAngle)
-					{
-						// wait for all 24 layers
-						// m_lastPacketSize = m_lastPacketSize * 24;
-
-						// traceDebug(MRS6xxxB_VERSION) << "Received new scan" << std::endl;
-					}
-				}
-			}
-
-			// copy
-			memcpy(m_packetBuffer + m_alreadyReceivedBytes, buffer, numOfBytes);
-			m_alreadyReceivedBytes += numberBytes;
-
-			if (m_alreadyReceivedBytes < m_lastPacketSize)
-			{
-				// wait for completeness of packet
-				return;
-			}
-
-			m_alreadyReceivedBytes = 0;
-			recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + m_lastPacketSize));
 		}
 	}
 
@@ -714,9 +609,10 @@ namespace sick_scan
 			return(ExitError);
 		}
 		boost::condition_variable cond_;
-		std::vector<unsigned char> recvData = this->recvQueue.pop();
-		*bytes_read = recvData.size();
-		memcpy(buffer, &(recvData[0]), recvData.size());
+    DatagramWithTimeStamp datagramWithTimeStamp = this->recvQueue.pop();
+
+    *bytes_read = datagramWithTimeStamp.datagram.size();
+		memcpy(buffer, &(datagramWithTimeStamp.datagram[0]), datagramWithTimeStamp.datagram.size());
 		return(ExitSuccess);
 	}
 
@@ -826,7 +722,8 @@ namespace sick_scan
 		return ExitSuccess;
 	}
 
-	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
+
+	int SickScanCommonTcp::get_datagram(ros::Time& recvTimeStamp, unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 	{
 		this->setReplyMode(1);
 
@@ -845,6 +742,7 @@ namespace sick_scan
       SickScanRadar radar(this);
 			radar.setEmulation(true);
       radar.simulateAsciiDatagram(receiveBuffer, actual_length);
+      recvTimeStamp = ros::Time::now();
     }
     else
     {
@@ -859,7 +757,10 @@ namespace sick_scan
 		  }
 		  else
 		  {
-			  dataBuffer = this->recvQueue.pop();
+        DatagramWithTimeStamp datagramWithTimeStamp = this->recvQueue.pop();
+        recvTimeStamp = datagramWithTimeStamp.timeStamp;
+			  dataBuffer = datagramWithTimeStamp.datagram;
+
 		  }
 #endif
 		// dataBuffer = this->recvQueue.pop();
