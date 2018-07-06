@@ -40,21 +40,21 @@
 *
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-
+#define WIN32_LEAN_AND_MEAN
 #include "boost/filesystem.hpp"
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
+#include <algorithm> // for std::min
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <iostream>
+#ifndef _MSC_VER
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 #include <cstdio>
 #include <cstdlib>
@@ -70,7 +70,6 @@
 
 #include "tinystr.h"
 #include "tinyxml.h"
-#include <boost/algorithm/string.hpp>
 
 #define MAX_NAME_LEN (1024)
 
@@ -79,7 +78,6 @@
 #define SICK_SCAN_TEST_MINOR_VER "000"  
 #define SICK_SCAN_TEST_PATCH_LEVEL "000"
 
-#include <algorithm> // for std::min
 
 
 class paramEntryAscii
@@ -184,29 +182,8 @@ private:
 
 void sudokill(pid_t tokill)
 {
-
+#ifndef _MSC_VER
   kill(tokill, SIGTERM);
-#if 0
-  char *killstr;
-  int status;
-  pid_t pid;
-
-  if (asprintf(&killstr, "%d", tokill) < 0)
-    printf("asprintf() failed");
-
-  pid = fork();
-  switch (pid)
-  {
-    case -1:
-      printf( "fork() failed");
-    case 0:
-      execlp("sudo", "sudo", "kill", killstr, (char *) NULL);
-      printf( "execlp() failed");
-    default:
-      while (wait(&status) != pid);
-  }
-
-  free(killstr);
 #endif
   sleep(5);
 }
@@ -698,10 +675,7 @@ int main(int argc, char **argv)
 
 	std::string nodeName = ros::this_node::getName();
 
-	std::string nodeNameSpace =ros::this_node::getNamespace();
-
 	printf("Nodename:  %s\n", nodeName.c_str());
-	printf("Namespace: %s\n", nodeNameSpace.c_str());
 	bool bFnd = getPackageRootFolder(argv[0], packageRootFolder);
 
 	printf("Package Path: %s\n", packageRootFolder.c_str());
