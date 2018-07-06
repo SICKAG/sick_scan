@@ -29,10 +29,10 @@ Through this indirect time measurement via the frequency change of the transmitt
 ## Raw Targets
 
 Raw targets correspond to individual reflectors that are detected by the radar. Each individual reflector carries the following information:
-* range
+* Range
 * Horizontal angle (azimuth)
 * Doppler speed
-* reflectivity of the target (aka rcs - radar cross section)
+* Reflectivity of the target (aka rcs - radar cross section)
 
 The radar RMS3xx does not resolve elevation angles.  Therefore, the radar assumes the elevation values (z values) with 0.0. The error in distance estimation is usually negligible and is 0.4% (1.0 - cos(5°)) at an elevation angle of 5° compared to horizontal.
 
@@ -50,4 +50,92 @@ The tracking object therefore has the following properties:
 * Direction of travel as an angle in the X/Y plane 
 * Vehicle speed
 * Vehicle length
+
+## ROS message for Radar
+
+After parsing the telegram, the driver sends an ROS message of type RadarScan. RadarScan consists of the following components:
+```
+Header header
+RadarPreHeader radarPreHeader
+sensor_msgs/PointCloud2 targets
+sick_scan/RadarObject[] objects
+```
+### RadarPreHeader
+The radar preheader contains information that provides general information about the radar. This data record can usually be ignored for object recognition with regard to raw targets and tracking objects.
+For details please refer to the message specification of Sick.
+
+### targets
+
+The list with the raw targetss of type sick_scan/targets contains the information about the raw targets.
+Each raw target contains the following data fields in a pointcloud2-message (height: 1, width: number of raw targets):
+```
+ std::string channelRawTargetId[] = { "x", "y", "z", "vrad","amplitude" };
+```
+This raw target contains cartesian coordinates, which are derived from range and azimuth angle (horizontal angle) in the following way (code snippet):
+```
+valSingle[0] = rawTargetList[i].Dist() cos(angle);    // x
+valSingle[1] = rawTargetList[i].Dist() * sin(angle);  // y
+valSingle[2] = 0.0;                                   // z 
+valSingle[3] = rawTargetList[i].Vrad();               // vrad  
+valSingle[4] = rawTargetList[i].Ampl();               // amplitude
+```
+
+
+### objects
+
+The list with the objects of type sick_scan/RadarObject[] contains the information about the track objects. 
+
+```
+int32 id
+
+time tracking_time                          // valid
+time last_seen                              // not set
+
+geometry_msgs/TwistWithCovariance velocity  // valid
+
+geometry_msgs/Pose bounding_box_center      // valid 
+geometry_msgs/Vector3 bounding_box_size     // valid
+
+geometry_msgs/PoseWithCovariance object_box_center // valid
+geometry_msgs/Vector3 object_box_size              // valid
+
+geometry_msgs/Point[] contour_points        // not set   
+```
+
+Please note that not all fields are filled in the object messages. The message specification contains valid ones in the areas marked here in the code section.
+
+The corresponding code fills the object list in the following manner:
+
+```
+        float heading = atan2( objectList[i].V3Dy(), objectList[i].V3Dx());
+
+        radarMsg_.objects[i].velocity.twist.linear.x = objectList[i].V3Dx();
+        radarMsg_.objects[i].velocity.twist.linear.y = objectList[i].V3Dy();
+        radarMsg_.objects[i].velocity.twist.linear.z = 0.0;
+
+        radarMsg_.objects[i].bounding_box_center.position.x = objectList[i].P3Dx();
+        radarMsg_.objects[i].bounding_box_center.position.y = objectList[i].P3Dy();
+        radarMsg_.objects[i].bounding_box_center.position.z = 0.0;
+        radarMsg_.objects[i].bounding_box_center.orientation.x = cos(heading);
+        radarMsg_.objects[i].bounding_box_center.orientation.y = sin(heading);
+        radarMsg_.objects[i].bounding_box_center.orientation.z = 0.0;
+        radarMsg_.objects[i].bounding_box_center.orientation.w = 1.0; // homogeneous coordinates
+
+
+        radarMsg_.objects[i].bounding_box_size.x = objectList[i].ObjLength();
+        radarMsg_.objects[i].bounding_box_size.y = 1.7;
+        radarMsg_.objects[i].bounding_box_size.z = 1.7;
+        for (int ii = 0; ii < 6; ii++)
+        {
+          int mainDiagOffset = ii * 6 + ii;  // build eye-matrix
+          radarMsg_.objects[i].object_box_center.covariance[mainDiagOffset] = 1.0;  // it is a little bit hacky ...
+          radarMsg_.objects[i].velocity.covariance[mainDiagOffset] = 1.0;
+        }
+        radarMsg_.objects[i].object_box_center.pose = radarMsg_.objects[i].bounding_box_center;
+        radarMsg_.objects[i].object_box_size= radarMsg_.objects[i].bounding_box_size;
+
+```
+As you can see there are default values for object height and object width of 1.7 (typical private vehicle)
+
+
 
