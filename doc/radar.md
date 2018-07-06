@@ -5,8 +5,9 @@
 - [Measuring Principle](#measuring-principle)
 - [Raw Targets](#raw-targets)
 - [Tracking Objects](#tracking-objects)
-- [Bugs and feature requests](#bugs-and-feature-requests)
-- [Testing](#testing)
+- [ROS message for Radar](#ros-message-for-radar)
+- [Visualization](#visualization)
+- [Launch Files](#launch-files)
 
 ## Introduction
 
@@ -136,6 +137,21 @@ The corresponding code fills the object list in the following manner:
 
 ```
 As you can see there are default values for object height and object width of 1.7 (typical private vehicle)
+
+## Visualization
+
+For the visualization a ROS node was developed, which receives 
+the radar messages and exports them as boxes for the objects and as arrows for the raw data. 
+The ROS node radar_object_marker receives the radar data and exports marker arrays that can be visualized in rviz.
+
+## Launch Files
+
+The following launch files serve as examples for use:
+
+* sick_rms_3xx.launch: Communication with the RMS3xx and sending of radar ROS messages after successful parsing of SOPAS telegrams coming directly from the radar.
+* radar_object_marker.launch : Conversion of radar messages to visualization messages
+* sick_rms_3xx_emul.launch: Additionally an emulation was created, which allows testing the interface chain without a physical radar.
+
 
 
 
