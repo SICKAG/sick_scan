@@ -30,13 +30,24 @@ Through this indirect time measurement via the frequency change of the transmitt
 
 Raw targets correspond to individual reflectors that are detected by the radar. Each individual reflector carries the following information:
 * range
-Horizontal angle (azimuth)
-Doppler speed
-reflectivity of the target
+* Horizontal angle (azimuth)
+* Doppler speed
+* reflectivity of the target (aka rcs - radar cross section)
 
 The radar RMS3xx does not resolve elevation angles.  Therefore, the radar assumes the elevation values (z values) with 0.0. The error in distance estimation is usually negligible and is 0.4% (1.0 - cos(5°)) at an elevation angle of 5° compared to horizontal.
 
 ## Tracking Objects
 
-Tracking objects are determined from the raw targets via a tracking procedure over the spatial and temporal distribution of the raw targets. The track method estimates the location, direction and speed of the object based on an initial estimate.  After initialization, new raw targets are assigned to the track if they "fit" to the track.  This process is called "gating". Once these raw targets have been assigned to the track, the track is updated and the new estimate is used for further processing.
+Tracking objects are determined from the raw targets via a tracking procedure over the spatial and temporal
+distribution of the raw targets. The track method estimates the location, direction and speed of the object based on an initial estimate.  After initialization, new raw targets are assigned to the track if they "fit" to the track.  This process is called "gating". Once these raw targets have been assigned to the track, 
+the track is updated and the new estimate is used for further processing.
+
+The distribution of raw targets over the object also determines the object length during the tracking process.
+
+The tracking object therefore has the following properties:
+* Distance from radar in Cartesian coordinates
+* Direction vector in Cartesian coordinates
+* Direction of travel as an angle in the X/Y plane 
+* Vehicle speed
+* Vehicle length
 
