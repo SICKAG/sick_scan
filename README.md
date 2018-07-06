@@ -4,6 +4,7 @@
 - [Supported Hardware](#supported-hardware)
 - [Start node](#start-node)
 - [Bugs and feature requests](#bugs-and-feature-requests)
+- [Radar](doc/radar.md)
 - [Testing](#testing)
 - [Creators](#creators)
 
@@ -62,7 +63,7 @@ For LMS5xx-family:
 roslaunch sick_scan sick_lms_5xx.launch
 
 For RMS3xx-family:
-roslaunch sick_scan sick_rms_3xx.launch (under development - do not use)
+roslaunch sick_scan sick_rms_3xx.launch (under development)
 
 ### Start multiple Nodes
 
