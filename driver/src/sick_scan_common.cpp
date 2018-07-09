@@ -2009,6 +2009,13 @@ namespace sick_scan
 
 		/* Dump Binary Protocol */
 		ros::NodeHandle tmpParam("~");
+
+
+
+    std::string echoForSlam = "";
+    bool slamBundle = false;
+    tmpParam.getParam("slam_echo", echoForSlam);
+    tmpParam.getParam("slam_bundle", slamBundle);
 		bool dumpData = false;
 		int verboseLevel = 0;
 		tmpParam.getParam("verboseLevel", verboseLevel);
@@ -2440,9 +2447,60 @@ namespace sick_scan
 
 				if (success == ExitSuccess)
 				{
-					std::vector<float> rangeTmp = msg.ranges;  // copy all range value
+          bool elevationPreCalculated = false;
+          double elevationAngleDegree = 0.0;
+
+
+          std::vector<float> rangeTmp = msg.ranges;  // copy all range value
 					std::vector<float> intensityTmp = msg.intensities; // copy all intensity value
-						// XXX  - HIER MEHRERE SCANS publish, falls Mehrzielszenario läuft
+
+
+          // Helpful: https://answers.ros.org/question/191265/pointcloud2-access-data/
+          // https://gist.github.com/yuma-m/b5dcce1b515335c93ce8
+          // Copy to pointcloud
+          int layer = 0;
+          int baseLayer = 0;
+          bool useGivenElevationAngle = false;
+          switch (numOfLayers)
+          {
+            case 1: // TIM571 etc.
+              baseLayer = 0;
+              break;
+            case 4:
+
+              baseLayer = -1;
+              if (msg.header.seq == 250) layer = -1;
+              else if (msg.header.seq == 0) layer = 0;
+              else if (msg.header.seq == -250) layer = 1;
+              else if (msg.header.seq == -500) layer = 2;
+              elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
+              elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
+              // 0.0436332 /*2.5 degrees*/;
+              break;
+            case 24: // Preparation for MRS6000
+              baseLayer = -1;
+              layer = (msg.header.seq - (-2638)) / 125;
+              layer = (23 - layer) - 1;
+#if 0
+            elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
+							elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
+#endif
+
+              elevationPreCalculated = true;
+              if (vang_vec.size() > 0)
+              {
+                useGivenElevationAngle = true;
+              }
+              break;
+            default:assert(0); break; // unsupported
+
+          }
+
+
+
+
+
+          // XXX  - HIER MEHRERE SCANS publish, falls Mehrzielszenario läuft
 					if (numEchos > 5)
 					{
 						ROS_WARN("Too much echos");
@@ -2489,7 +2547,7 @@ namespace sick_scan
 								if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() > 1)
 								{
 									const char* cpFrameId = config_.frame_id.c_str();
-#if 1
+#if 0
                   sprintf(szTmp, "%s_%+04d_DIST%d", cpFrameId, msg.header.seq, i + 1);
 #else // experimental
                   char szSignName[10] = {0};
@@ -2502,7 +2560,7 @@ namespace sick_scan
                     strcpy(szSignName,"POS");
 
                   }
-									sprintf(szTmp, "%s_%s_%04d_DIST%d", cpFrameId, szSignName, abs(msg.header.seq), i + 1);
+									sprintf(szTmp, "%s_%s_%03d_DIST%d", cpFrameId, szSignName, abs(msg.header.seq), i + 1);
 #endif
                 }
                 else
@@ -2511,9 +2569,40 @@ namespace sick_scan
                 }
 
                 msg.header.frame_id = std::string(szTmp);
+                // Hector slam can only process ONE valid frame id.
+                if (echoForSlam.length() > 0)
+                {
+                  if (slamBundle)
+                  {
+                    // try to map first echos to horizontal layers.
+                    if (i == 0)
+                    {
+                      // first echo
+                      msg.header.frame_id = echoForSlam;
+                      strcpy(szTmp, echoForSlam.c_str());  //
+                      if (elevationAngleInRad != 0.0)
+                      {
+                        float cosVal = cos(elevationAngleInRad);
+                        int rangeNum = msg.ranges.size();
+                        for (int j = 0; j < rangeNum; j++)
+                        {
+                          msg.ranges[j] *= cosVal;
+                        }
+                      }
+                    }
+                  }
 
-							}
+                  if (echoForSlam.compare(szTmp) == 0)
+                  {
+                    sendMsg = true;
+                  }
+                  else
+                  {
+                    sendMsg = false;
+                  }
+                }
 
+              }
 #ifndef _MSC_VER
 							if (numOfLayers > 4)
 							{
@@ -2533,9 +2622,6 @@ namespace sick_scan
 
 					if (publishPointCloud == true)
 					{
-						bool elevationPreCalculated = false;
-						double elevationAngleDegree = 0.0;
-
 						const int numChannels = 4; // x y z i (for intensity)
 
 
@@ -2559,46 +2645,6 @@ namespace sick_scan
 
 						cloud_.data.resize(cloud_.row_step * cloud_.height);
 
-						// Helpful: https://answers.ros.org/question/191265/pointcloud2-access-data/
-						// https://gist.github.com/yuma-m/b5dcce1b515335c93ce8
-						// Copy to pointcloud
-						int layer = 0;
-						int baseLayer = 0;
-						bool useGivenElevationAngle = false;
-						switch (numOfLayers)
-						{
-						case 1: // TIM571 etc.
-							baseLayer = 0;
-							break;
-						case 4:
-
-							baseLayer = -1;
-							if (msg.header.seq == 250) layer = -1;
-							else if (msg.header.seq == 0) layer = 0;
-							else if (msg.header.seq == -250) layer = 1;
-							else if (msg.header.seq == -500) layer = 2;
-							elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
-							elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
-							// 0.0436332 /*2.5 degrees*/;
-							break;
-						case 24: // Preparation for MRS6000
-							baseLayer = -1;
-							layer = (msg.header.seq - (-2638)) / 125;
-							layer = (23 - layer) - 1;
-#if 0
-							elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
-							elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
-#endif
-
-							elevationPreCalculated = true;
-							if (vang_vec.size() > 0)
-							{
-								useGivenElevationAngle = true;
-							}
-							break;
-						default:assert(0); break; // unsupported
-
-						}
 
 						for (size_t iEcho = 0; iEcho < numValidEchos; iEcho++)
 						{
