@@ -7,39 +7,39 @@
 
      The result looks like this:
      For /scan:
-       frame_id: laser_+250_DIST1
-       frame_id: laser_+250_DIST2
-       frame_id: laser_+250_DIST3
-       frame_id: laser_-500_DIST1
-       frame_id: laser_-500_DIST2
-       frame_id: laser_-500_DIST3
-       frame_id: laser_+000_DIST1
-       frame_id: laser_+000_DIST2
-       frame_id: laser_+000_DIST3
-       frame_id: laser_-250_DIST1
-       frame_id: laser_-250_DIST2
-       frame_id: laser_-250_DIST3
+       frame_id: laser_POS_250_DIST1
+       frame_id: laser_POS_250_DIST2
+       frame_id: laser_POS_250_DIST3
+       frame_id: laser_NEG_500_DIST1
+       frame_id: laser_NEG_500_DIST2
+       frame_id: laser_NEG_500_DIST3
+       frame_id: laser_POS_000_DIST1
+       frame_id: laser_POS_000_DIST2
+       frame_id: laser_POS_000_DIST3
+       frame_id: laser_NEG_250_DIST1
+       frame_id: laser_NEG_250_DIST2
+       frame_id: laser_NEG_250_DIST3
      For /cloud:
 
   -->
 <launch>
   <node pkg="tf" type="static_transform_publisher" name="map_laser" args="0 0 0 0 0 0 1 map laser 100" />
 
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_500_DIST1" args="5  0 -2 0 0 0 1 map laser_-500_DIST1 100" />
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_500_DIST2" args="5  0 -2 0 0 0 1 map laser_-500_DIST2 100" />
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_500_DIST3" args="5  0 -2 0 0 0 1 map laser_-500_DIST3 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_500_DIST1" args="5  0 -2 0 0 0 1 map laser_NEG_500_DIST1 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_500_DIST2" args="5  0 -2 0 0 0 1 map laser_NEG_500_DIST2 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_500_DIST3" args="5  0 -2 0 0 0 1 map laser_NEG_500_DIST3 100" />
 
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_250_DIST1" args="5  0 -1 0 0 0 1 map laser_-250_DIST1 100" />
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_250_DIST2" args="5  0 -1 0 0 0 1 map laser_-250_DIST2 100" />
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_250_DIST3" args="5  0 -1 0 0 0 1 map laser_-250_DIST3 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_250_DIST1" args="5  0 -1 0 0 0 1 map laser_NEG_250_DIST1 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_250_DIST2" args="5  0 -1 0 0 0 1 map laser_NEG_250_DIST2 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_250_DIST3" args="5  0 -1 0 0 0 1 map laser_NEG_250_DIST3 100" />
 
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_000_DIST1" args="5  0 +0 0 0 0 1 map laser_+000_DIST1 100" />
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_000_DIST2" args="5  0 +0 0 0 0 1 map laser_+000_DIST2 100" />
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_000_DIST3" args="5  0 +0 0 0 0 1 map laser_+000_DIST3 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_000_DIST1" args="5  0 +0 0 0 0 1 map laser_POS_000_DIST1 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_000_DIST2" args="5  0 +0 0 0 0 1 map laser_POS_000_DIST2 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_000_DIST3" args="5  0 +0 0 0 0 1 map laser_POS_000_DIST3 100" />
 
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_250_DIST1" args="5  0 +1 0 0 0 1 map laser_+250_DIST1 100" />
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_250_DIST2" args="5  0 +1 0 0 0 1 map laser_+250_DIST2 100" />
-  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_250_DIST3" args="5  0 +1 0 0 0 1 map laser_+250_DIST3 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_250_DIST1" args="5  0 +1 0 0 0 1 map laser_POS_250_DIST1 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_250_DIST2" args="5  0 +1 0 0 0 1 map laser_POS_250_DIST2 100" />
+  <node pkg="tf" type="static_transform_publisher" name="map_laser_POS_250_DIST3" args="5  0 +1 0 0 0 1 map laser_POS_250_DIST3 100" />
 
   <node name="sick_mrs_1xxx" pkg="sick_scan" type="sick_generic_caller" respawn="false" output="screen">
     <param name="scanner_type" type="string" value="sick_mrs_1xxx"/>

@@ -4,6 +4,7 @@
 - [Supported Hardware](#supported-hardware)
 - [Start node](#start-node)
 - [Bugs and feature requests](#bugs-and-feature-requests)
+- [SLAM-Support](doc/slam.md)
 - [Radar](doc/radar.md)
 - [Testing](#testing)
 - [Creators](#creators)
