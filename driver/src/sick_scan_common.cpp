@@ -2489,7 +2489,21 @@ namespace sick_scan
 								if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() > 1)
 								{
 									const char* cpFrameId = config_.frame_id.c_str();
-									sprintf(szTmp, "%s_%+04d_DIST%d", cpFrameId, msg.header.seq, i + 1);
+#if 1
+                  sprintf(szTmp, "%s_%+04d_DIST%d", cpFrameId, msg.header.seq, i + 1);
+#else // experimental
+                  char szSignName[10] = {0};
+                  if ((int)msg.header.seq < 0)
+                  {
+                    strcpy(szSignName,"NEG");
+                  }
+                  else
+                  {
+                    strcpy(szSignName,"POS");
+
+                  }
+									sprintf(szTmp, "%s_%s_%04d_DIST%d", cpFrameId, szSignName, abs(msg.header.seq), i + 1);
+#endif
                 }
                 else
                 {
