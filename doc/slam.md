@@ -32,6 +32,8 @@ Please start rviz after the launch.
 
 The image in rviz should look like this:
 
+ ![Example rviz setup for map display](slam_006.PNG)
+
 ## MRS1104-SLAM-Support
 
 Since Hector-Slam expects only one laser scan frame with a unique identifier for the laser scans, the following parameters were added to the driver.

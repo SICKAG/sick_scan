@@ -101,11 +101,36 @@ namespace sick_scan
      keyWordList.push_back("sRN FirmwareVersion");
      answerList.push_back("sRA FirmwareVersion 8 1.0.0.0R");
 
-     keyWordList.push_back("sRN SCdevicestate");
-     answerList.push_back("sRA SCdevicestate 0");
+		 keyWordList.push_back("sRN OrdNum");
+		 answerList.push_back("sRA OrdNum 7 1234567");
 
-     keyWordList.push_back("sRN ODoprh");
-     answerList.push_back("sRA ODoprh 451");
+		 keyWordList.push_back("sWN TransmitTargets 1");
+		 answerList.push_back("sWA TransmitTargets");
+
+		 keyWordList.push_back("sWN TransmitObjects 1");
+		 answerList.push_back("sWA TransmitObjects");
+
+		 keyWordList.push_back("sWN TCTrackingMode 0");
+		 answerList.push_back("sWA TCTrackingMode");
+
+		 keyWordList.push_back("sRN SCdevicestate");
+     answerList.push_back("sRA SCdevicestate 1");
+
+		 keyWordList.push_back("sRN DItype");
+		 answerList.push_back("sRA DItype D RMS3xx-xxxxxx");
+
+		 keyWordList.push_back("sRN ODoprh");
+		 answerList.push_back("sRA ODoprh 451");
+
+		 keyWordList.push_back("sMN mSCloadappdef");
+		 answerList.push_back("sAN mSCloadappdef");
+
+
+		 keyWordList.push_back("sRN SerialNumber");
+		 answerList.push_back("sRA SerialNumber 8 18020073");
+
+		 keyWordList.push_back("sMN Run");
+     answerList.push_back("sAN Run 1s");
 
      keyWordList.push_back("sRN ODpwrc");
      answerList.push_back("sRA ODpwrc 20");
