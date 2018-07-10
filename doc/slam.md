@@ -4,6 +4,7 @@
 - [Introduction](#introduction)
 - [Principle](#measuring-principle)
 - [Launch Files](#launch-files)
+- [Example Setup](#example-setup)
 - [MRS1104 SLAM Support](#MRS1104-SLAM-Support)
 
 ## Introduction
@@ -39,6 +40,10 @@ The image in rviz should look like this:
 Since Hector-Slam expects only one laser scan frame with a unique identifier for the laser scans, the following parameters were added to the driver.
 
 slam_echo: The name of the echo is entered here, which is filtered out of all possible 12 echoes. This should be "laser_POS_000_DIST1". This exports the first hit in the position with an elevation angle of 0°. If you want to use the layers with elevation angles -2.5°, 2.5° and 5.0°, you can set another flag with the name slam_bundle to True. If this flag is set, the oblique distances are multiplied by the cosine in this direction to obtain the projection onto the XY plane. This quadruples the number of points and increases the scan rate from 12.5 Hz to 50 Hz. However, for oblique impact surfaces (i.e. no vertical walls) this method can lead to larger estimation errors. In this case slam_bundle should be set to false.
+
+## Example Setup
+
+To make SLAM testing even easier, the <catkin_workspace>/src/sick_scan/tools/setup_sick_scan_slam.sh script was created. When you execute this script, a new workspace is created fully automatically, which contains both the sick_scan repo. and the hector_slam repo. The scanner and the SLAM process are then started. rviz is also started to visualize the data.
 
 
 
