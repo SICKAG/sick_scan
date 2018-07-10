@@ -54,7 +54,7 @@ generate_messages(
 
 catkin_package(
         DEPENDS Boost
-        CATKIN_DEPENDS roscpp sensor_msgs diagnostic_updater dynamic_reconfigure message_runtime
+        CATKIN_DEPENDS message_runtime roscpp sensor_msgs diagnostic_updater dynamic_reconfigure
         LIBRARIES sick_scan_lib
         INCLUDE_DIRS include )
 
@@ -78,7 +78,7 @@ add_library(sick_scan_lib
 	driver/src/sick_generic_parser.cpp
 	driver/src/sick_scan_common_nw.cpp)
 
-add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
+add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(sick_scan_lib
     ${catkin_LIBRARIES})
 
@@ -117,6 +117,7 @@ add_executable(sick_scan_test
 	driver/src/tinyxml/tinyxmlparser.cpp
 	)
 target_link_libraries(sick_scan_test sick_scan_lib)
+
 
 # Destinations:
 # LIB for library
