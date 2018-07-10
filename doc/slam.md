@@ -44,6 +44,12 @@ slam_echo: The name of the echo is entered here, which is filtered out of all po
 ## Example Setup
 
 To make SLAM testing even easier, the <catkin_workspace>/src/sick_scan/tools/setup_sick_scan_slam.sh script was created. When you execute this script, a new workspace is created fully automatically, which contains both the sick_scan repo. and the hector_slam repo. The scanner and the SLAM process are then started. rviz is also started to visualize the data.
+Start of script:
+```
+cd <catkin-workspace>/src/sick_scan/tools
+. setup_sick_scan_slam.sh 
+```
+
 
 
 
