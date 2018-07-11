@@ -47,9 +47,13 @@ ros::Publisher pub;
 
 void callback(const sick_scan::RadarScan::ConstPtr &oa)
   {
+  enum TARGET_MARKER_TYPE {TARGET_MARKER_ARROW, TARGET_MARKER_NUM, TARGET_MARKER_BALL};
+  visualization_msgs::MarkerArray rawTargetArray[TARGET_MARKER_NUM];  // ball and arrow
 
-  visualization_msgs::MarkerArray rawTargets;
-  rawTargets.markers.resize(oa->targets.width);
+  for (int i = 0; i < TARGET_MARKER_NUM; i++)
+  {
+    rawTargetArray[i].markers.resize(oa->targets.width);
+  }
 
   int coordIdx[3] = {0};
   int vradIdx = -1;
@@ -83,7 +87,7 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
     // printf("%s\n", fieldName.c_str());
   }
 
-
+  int numRawTargets = oa->targets.width;
   for (size_t i = 0; i < oa->targets.width; i++)
   {
     int tmpId = i;
@@ -108,31 +112,49 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
       vrad = *valPtr;
     }
 
-    rawTargets.markers[i].header = oa->header;
-    rawTargets.markers[i].ns = "rawtargets";
-    rawTargets.markers[i].id = tmpId;
-    rawTargets.markers[i].type = visualization_msgs::Marker::ARROW;
-    rawTargets.markers[i].action = visualization_msgs::Marker::ADD;
-    rawTargets.markers[i].scale.x = 0.1;
-    rawTargets.markers[i].scale.y = 0.2;
-    rawTargets.markers[i].color.a = 0.75;
-    rawTargets.markers[i].color.r = GLASBEY_LUT[tmpId*3] / 255.0;
-    rawTargets.markers[i].color.g = GLASBEY_LUT[tmpId*3+1] / 255.0;
-    rawTargets.markers[i].color.b = GLASBEY_LUT[tmpId*3+2] / 255.0;
-    rawTargets.markers[i].lifetime = ros::Duration(0.5);
+    for (int iLoop = 0; iLoop < TARGET_MARKER_NUM; iLoop++)
+    {
 
-    rawTargets.markers[i].points.resize(2);
-    rawTargets.markers[i].points[0].x = pts3d[0];
-    rawTargets.markers[i].points[0].y = pts3d[1];
-    rawTargets.markers[i].points[0].z = pts3d[2];
-    float lineOfSight = atan2(pts3d[1], pts3d[0]);
-    rawTargets.markers[i].points[1].x = pts3d[0] + cos(lineOfSight) * vrad * 0.1;
-    rawTargets.markers[i].points[1].y = pts3d[1] + sin(lineOfSight) * vrad * 0.1;
-    rawTargets.markers[i].points[1].z = pts3d[2];
+      rawTargetArray[iLoop].markers[i].header = oa->header;
+      rawTargetArray[iLoop].markers[i].ns = "rawtargets";
+      rawTargetArray[iLoop].markers[i].id = tmpId + iLoop * numRawTargets;
+      switch (iLoop)
+      {
+        case TARGET_MARKER_ARROW:
+          rawTargetArray[iLoop].markers[i].type = visualization_msgs::Marker::ARROW;
+          rawTargetArray[iLoop].markers[i].scale.x = 0.1;
+          rawTargetArray[iLoop].markers[i].scale.y = 0.2;
+          break;
+        case TARGET_MARKER_BALL:
+          rawTargetArray[iLoop].markers[i].type = visualization_msgs::Marker::SPHERE;
+          rawTargetArray[iLoop].markers[i].scale.x = ballRadius;
+          rawTargetArray[iLoop].markers[i].scale.y = ballRadius;
+          break;
+
+      }
+      rawTargetArray[iLoop].markers[i].action = visualization_msgs::Marker::ADD;
+      rawTargetArray[iLoop].markers[i].color.a = 0.75;
+      rawTargetArray[iLoop].markers[i].color.r = GLASBEY_LUT[tmpId * 3] / 255.0;
+      rawTargetArray[iLoop].markers[i].color.g = GLASBEY_LUT[tmpId * 3 + 1] / 255.0;
+      rawTargetArray[iLoop].markers[i].color.b = GLASBEY_LUT[tmpId * 3 + 2] / 255.0;
+      rawTargetArray[iLoop].markers[i].lifetime = ros::Duration(0.5);
+
+      rawTargetArray[iLoop].markers[i].points.resize(2);
+      rawTargetArray[iLoop].markers[i].points[0].x = pts3d[0];
+      rawTargetArray[iLoop].markers[i].points[0].y = pts3d[1];
+      rawTargetArray[iLoop].markers[i].points[0].z = pts3d[2];
+      float lineOfSight = atan2(pts3d[1], pts3d[0]);
+      rawTargetArray[iLoop].markers[i].points[1].x = pts3d[0] + cos(lineOfSight) * vrad * 0.1;
+      rawTargetArray[iLoop].markers[i].points[1].y = pts3d[1] + sin(lineOfSight) * vrad * 0.1;
+      rawTargetArray[iLoop].markers[i].points[1].z = pts3d[2];
+
+    }
   }
 
-
-  pub.publish(rawTargets);
+  for (int iLoop = 0; iLoop < TARGET_MARKER_NUM; iLoop++)
+  {
+    pub.publish(rawTargetArray[iLoop]);
+  }
 #if 1
   visualization_msgs::MarkerArray object_boxes;
   object_boxes.markers.resize(2 * oa->objects.size());
@@ -226,7 +248,8 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
     {
     ros::init(argc, argv, "sick_scan_radar_object_marker");
     ros::NodeHandle nh;
-
+    ros::NodeHandle nhPriv("~");
+    bool paramRes = nhPriv.getParam("rawtarget_sphere_radius", ballRadius);
     ros::Subscriber sub = nh.subscribe("radar", 1, callback);
     pub = nh.advertise<visualization_msgs::MarkerArray>("radar_markers", 1);
 
