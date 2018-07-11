@@ -538,7 +538,7 @@ namespace sick_scan
 			float dist = sqrt(x*x + y*y);
 			float vrad = speed * sin(azimuth);  // speed in y direction 
 			float mode = 0;
-			float ampl = 50.0;
+			float ampl = 50.0 + y;  // between 30 and 70
 			rawTarget.Ampl(ampl);
 			rawTarget.Mode(mode);
 			rawTarget.Dist(dist);

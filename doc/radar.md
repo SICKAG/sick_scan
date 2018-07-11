@@ -142,7 +142,23 @@ As you can see there are default values for object height and object width of 1.
 
 For the visualization a ROS node was developed, which receives 
 the radar messages and exports them as boxes for the objects and as arrows for the raw data. 
-The ROS node radar_object_marker receives the radar data and exports marker arrays that can be visualized in rviz.
+The ROS node **radar_object_marker** receives the radar data and exports marker arrays that can be visualized in rviz.
+
+Die Visualisierung kann durch folgende Parameter gesteuert werden:
+
+|Parameters | Description |
+|-----------| ------- |
+| rawtarget_sphere_radius | radius of the sphere for the raw data display |
+| rawtarget_arrow_scale | Scaling factor for the arrow at the raw targets |
+| rawtarget_palette_name | name of the color palette |
+| rawtarget_palette_min_ampl | Minimum amplitude value mapped to color idx 0. |
+| rawtarget_palette_max_ampl | Maximum amplitude value mapped to color index 255. |
+| object_arrow_scale | Scaling factor for the arrow at the raw targets |
+
+The scaling values can be interpreted as the time an object or a raw target moves during this period. Using the distance/time equation, the distance corresponding to the arrow length is calculated from the product of this time period and the object speed or Doppler speed.
+
+Example: Doppler speed: 20[m/s], rawtarget_arrow_scale: 0.4
+An arrow of length 0.4 * 20[m] = 8[m] is displayed in rviz.
 
 ## Launch Files
 
@@ -152,6 +168,22 @@ The following launch files serve as examples for use:
 * radar_object_marker.launch : Conversion of radar messages to visualization messages
 * sick_rms_3xx_emul.launch: Additionally an emulation was created, which allows testing the interface chain without a physical radar.
 
+## Parameter or Radar Usage
+The following parameters are support by the node **sick_generic_caller** in
+combination with the RADAR RMS3xx:
 
+* ~scanner_type (string, default: "")<br>
+    Must be set to **sick_rms_3xx**
+* ~range_max (double, default: 25.0)<br>
+    Maximum range
+* ~hostname
+* ~port
+* ~timelimit
+* ~tracking_mode<br>
+  0: BASIC-Tracking - use for tracking smaller objects <br>
+  1: TRAFFIC-Tracking - use for tracking larger objects like vehicles <br>
+* transmit_raw_targets (bool, default: true)
+* transmit_objects (bool, default: true)
+* emul_sensor (bool, default: false)
 
 

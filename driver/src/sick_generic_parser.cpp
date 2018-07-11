@@ -309,7 +309,7 @@ namespace sick_scan
 	SickGenericParser::SickGenericParser(std::string _scanType) :
 		AbstractParser(),
 		override_range_min_((float)0.05),
-		override_range_max_((float)10.0),
+		override_range_max_((float)100.0),
 		override_time_increment_((float)-1.0)
 	{
 		setScannerType(_scanType);

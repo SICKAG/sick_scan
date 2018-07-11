@@ -283,7 +283,7 @@ main (int argc, char** argv)
   nh.getParam("heat_map", heatMap);
 
 
-  std::string path = ros::package::getPath("sick_pcl_converter");
+  std::string path = ros::package::getPath("sick_scan");
 
   if (heatMap.length() > 0)
   {

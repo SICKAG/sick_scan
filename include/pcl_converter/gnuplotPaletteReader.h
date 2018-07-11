@@ -1,3 +1,5 @@
+#ifndef SICK_SCAN_GNU_PLOT_PALETTE_H
+#define SICK_SCAN_GNU_PLOT_PALETTE_H
 
 class GnuPlotPalette
 {
@@ -19,3 +21,4 @@ private:
 	unsigned char rgbTable[256][3];  // r g b - table entries
 	int errorStatus;
 };
+#endif

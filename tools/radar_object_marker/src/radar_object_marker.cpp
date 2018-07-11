@@ -36,18 +36,28 @@
 #include <sick_scan/RadarScan.h>
 
 #include <ros/ros.h>
-
+#include <ros/package.h>
+#include <math.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <sick_scan/RadarScan.h>
 #include "radar_object_marker/radar_object_marker.h"
-float ballRadius = 0.1;
+#include "pcl_converter/gnuplotPaletteReader.h"
+#include <boost/serialization/singleton.hpp>
 
+float ballRadius = 0.1;
+float objectArrowScale = 1.0;
+GnuPlotPalette pal;
+bool usingPal = false;
 
 ros::Publisher pub;
 
+
+
 void callback(const sick_scan::RadarScan::ConstPtr &oa)
   {
-  enum TARGET_MARKER_TYPE {TARGET_MARKER_ARROW, TARGET_MARKER_NUM, TARGET_MARKER_BALL};
+  RadarObjectMarkerCfg *cfgPtr = &boost::serialization::singleton<RadarObjectMarkerCfg>::get_mutable_instance();
+
+  enum TARGET_MARKER_TYPE {TARGET_MARKER_BALL, TARGET_MARKER_ARROW, TARGET_MARKER_NUM};
   visualization_msgs::MarkerArray rawTargetArray[TARGET_MARKER_NUM];  // ball and arrow
 
   for (int i = 0; i < TARGET_MARKER_NUM; i++)
@@ -58,6 +68,7 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
   int coordIdx[3] = {0};
   int vradIdx = -1;
   int amplitudeIdx = -1;
+
   for (int i = 0; i < 3; i++)
   {
     coordIdx[i] = -1;
@@ -83,6 +94,10 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
     {
       vradIdx = i;
     }
+    if (fieldName.compare("amplitude") == 0)
+    {
+      amplitudeIdx = i;
+    }
 
     // printf("%s\n", fieldName.c_str());
   }
@@ -91,6 +106,7 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
   for (size_t i = 0; i < oa->targets.width; i++)
   {
     int tmpId = i;
+    float ampl = 0.0;
     float xs, ys;
     float pts3d[3];
     float vrad = 0.0;
@@ -111,6 +127,14 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
                                  oa->targets.fields[tmpIdx].offset);
       vrad = *valPtr;
     }
+    if (amplitudeIdx)
+    {
+      int tmpIdx = amplitudeIdx;
+      float *valPtr = (float *) (&(oa->targets.data[0]) + i * oa->targets.point_step +
+                                 oa->targets.fields[tmpIdx].offset);
+      ampl = *valPtr;
+
+    }
 
     for (int iLoop = 0; iLoop < TARGET_MARKER_NUM; iLoop++)
     {
@@ -121,32 +145,76 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
       switch (iLoop)
       {
         case TARGET_MARKER_ARROW:
+        {
           rawTargetArray[iLoop].markers[i].type = visualization_msgs::Marker::ARROW;
           rawTargetArray[iLoop].markers[i].scale.x = 0.1;
           rawTargetArray[iLoop].markers[i].scale.y = 0.2;
+
+          rawTargetArray[iLoop].markers[i].points.resize(2);
+          rawTargetArray[iLoop].markers[i].points[0].x = pts3d[0];
+          rawTargetArray[iLoop].markers[i].points[0].y = pts3d[1];
+          rawTargetArray[iLoop].markers[i].points[0].z = pts3d[2];
+          float lineOfSight = atan2(pts3d[1], pts3d[0]);
+          rawTargetArray[iLoop].markers[i].points[1].x = pts3d[0] + cos(lineOfSight) * vrad * 0.1;
+          rawTargetArray[iLoop].markers[i].points[1].y = pts3d[1] + sin(lineOfSight) * vrad * 0.1;
+          rawTargetArray[iLoop].markers[i].points[1].z = pts3d[2];
+
+        }
           break;
         case TARGET_MARKER_BALL:
           rawTargetArray[iLoop].markers[i].type = visualization_msgs::Marker::SPHERE;
           rawTargetArray[iLoop].markers[i].scale.x = ballRadius;
           rawTargetArray[iLoop].markers[i].scale.y = ballRadius;
+          rawTargetArray[iLoop].markers[i].scale.z = ballRadius;
+
+
+          rawTargetArray[iLoop].markers[i].pose.position.x = pts3d[0];
+          rawTargetArray[iLoop].markers[i].pose.position.y = pts3d[1];
+          rawTargetArray[iLoop].markers[i].pose.position.z = pts3d[2];
+          rawTargetArray[iLoop].markers[i].pose.orientation.x = 0.0;
+          rawTargetArray[iLoop].markers[i].pose.orientation.y = 0.0;
+          rawTargetArray[iLoop].markers[i].pose.orientation.z = 0.0;
+          rawTargetArray[iLoop].markers[i].pose.orientation.w = 1.0;
           break;
 
       }
       rawTargetArray[iLoop].markers[i].action = visualization_msgs::Marker::ADD;
+      if (cfgPtr->isPaletteUsed())
+      {
+          GnuPlotPalette pal = cfgPtr->getGnuPlotPalette();
+         float idxRange = ampl - cfgPtr->getPaletteMinAmpl();
+         double rangeAmpl = cfgPtr->getPaletteMaxAmpl() - cfgPtr->getPaletteMinAmpl();
+         idxRange /= rangeAmpl;
+         if (idxRange < 0.0)
+         {
+           idxRange = 0.0;
+         }
+         if (idxRange > 1.0)
+         {
+          idxRange = 1.0;
+         }
+         unsigned char greyIdx = (unsigned char)(255.999 * idxRange);
+         unsigned char red = pal.getRbgValue(greyIdx, 0U);
+         unsigned char green = pal.getRbgValue(greyIdx, 1U);
+         unsigned char blue = pal.getRbgValue(greyIdx, 2U);
+
+         float redF, greenF, blueF;
+        redF = red / 255.00;
+        greenF = green / 255.00;
+        blueF = blue / 255.00;
+        rawTargetArray[iLoop].markers[i].color.a = 0.75;
+        rawTargetArray[iLoop].markers[i].color.r = redF;
+        rawTargetArray[iLoop].markers[i].color.g = greenF;
+        rawTargetArray[iLoop].markers[i].color.b = blueF;
+      }
+      else{
       rawTargetArray[iLoop].markers[i].color.a = 0.75;
       rawTargetArray[iLoop].markers[i].color.r = GLASBEY_LUT[tmpId * 3] / 255.0;
       rawTargetArray[iLoop].markers[i].color.g = GLASBEY_LUT[tmpId * 3 + 1] / 255.0;
       rawTargetArray[iLoop].markers[i].color.b = GLASBEY_LUT[tmpId * 3 + 2] / 255.0;
+      }
       rawTargetArray[iLoop].markers[i].lifetime = ros::Duration(0.5);
 
-      rawTargetArray[iLoop].markers[i].points.resize(2);
-      rawTargetArray[iLoop].markers[i].points[0].x = pts3d[0];
-      rawTargetArray[iLoop].markers[i].points[0].y = pts3d[1];
-      rawTargetArray[iLoop].markers[i].points[0].z = pts3d[2];
-      float lineOfSight = atan2(pts3d[1], pts3d[0]);
-      rawTargetArray[iLoop].markers[i].points[1].x = pts3d[0] + cos(lineOfSight) * vrad * 0.1;
-      rawTargetArray[iLoop].markers[i].points[1].y = pts3d[1] + sin(lineOfSight) * vrad * 0.1;
-      rawTargetArray[iLoop].markers[i].points[1].z = pts3d[2];
 
     }
   }
@@ -230,8 +298,26 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
           object_boxes.markers[idx].points[0].x = 0.0;
           object_boxes.markers[idx].points[0].y = 0.0;
 
-          object_boxes.markers[idx].points[1].x = 0.0 + 5.0 * cosVal;
-          object_boxes.markers[idx].points[1].y = 0.0 + 5.0 * sinVal;
+          float absSpeed = 0.0;
+          for (int j = 0; j < 3; j++)
+          {
+            float speedPartial = 0.0;
+            switch(j)
+            {
+              case 0: speedPartial = oa->objects[i].velocity.twist.linear.x; break;
+              case 1: speedPartial = oa->objects[i].velocity.twist.linear.y; break;
+              case 2: speedPartial = oa->objects[i].velocity.twist.linear.z; break;
+            }
+            absSpeed += speedPartial * speedPartial;
+          }
+          absSpeed = sqrt(absSpeed);
+          double lengthOfArrow = objectArrowScale * absSpeed;
+          if (objectArrowScale < 0.0)
+          {
+            lengthOfArrow = -objectArrowScale;  // if scale is negative take its absolute value as length of arrow in [m]
+          }
+          object_boxes.markers[idx].points[1].x = 0.0 + lengthOfArrow * cosVal;
+          object_boxes.markers[idx].points[1].y = 0.0 + lengthOfArrow * sinVal;
         }
           break;
       }
@@ -246,10 +332,43 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
 
   int main(int argc, char **argv)
     {
-    ros::init(argc, argv, "sick_scan_radar_object_marker");
+
+    RadarObjectMarkerCfg *cfgPtr = &boost::serialization::singleton<RadarObjectMarkerCfg>::get_mutable_instance();
+    ros::init(argc, argv, "radar_object_marker");
     ros::NodeHandle nh;
     ros::NodeHandle nhPriv("~");
+
+    std::string heatMap;
+    double minAmpl = 10.0;
+    double maxAmpl = 90.0;
     bool paramRes = nhPriv.getParam("rawtarget_sphere_radius", ballRadius);
+    paramRes = nhPriv.getParam("rawtarget_palette_name", heatMap);
+    paramRes = nhPriv.getParam("rawtarget_palette_min_ampl", minAmpl);
+    paramRes = nhPriv.getParam("rawtarget_palette_max_ampl", maxAmpl);
+
+    paramRes = nhPriv.getParam("object_arrow_scale", objectArrowScale);
+
+    cfgPtr->setPaletteName(heatMap);
+    cfgPtr->setPaletteMinAmpl(minAmpl);
+    cfgPtr->setPaletteMaxAmpl(maxAmpl);
+
+
+
+    std::string path = ros::package::getPath("sick_scan");
+
+    if (cfgPtr->getPaletteName().length() > 0)
+    {
+      std::string heatMapFileName = path + "/config/" + cfgPtr->getPaletteName();
+      pal.load(heatMapFileName);
+      usingPal = true;
+      cfgPtr->setGnuPlotPalette(pal);
+      cfgPtr->setPaletteUsed(true);
+    }
+    else
+    {
+      cfgPtr->setPaletteUsed(false);
+    }
+
     ros::Subscriber sub = nh.subscribe("radar", 1, callback);
     pub = nh.advertise<visualization_msgs::MarkerArray>("radar_markers", 1);
 

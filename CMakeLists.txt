@@ -13,6 +13,11 @@ project(sick_scan)
 # endforeach()
 # --- CUT ---
 
+# For warning <catkin_workspace>/devel/include' should be placed in
+# the devel space instead of the build space
+# see: https://answers.ros.org/question/67244/qtcreator-with-catkin/
+
+
 
 find_package(catkin REQUIRED
     COMPONENTS
@@ -92,7 +97,8 @@ add_executable(sick_generic_caller
 #
 add_executable(radar_object_marker
         tools/radar_object_marker/src/radar_object_marker.cpp
-        )
+		tools/pcl_converter/src/gnuplotPaletteReader.cpp
+        include/radar_object_marker/radar_object_marker.h)
 target_link_libraries(radar_object_marker sick_scan_lib)
 #
 #
