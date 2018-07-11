@@ -2381,7 +2381,7 @@ namespace sick_scan
 					}
 
 
-          parser_->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001);
+				    parser_->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001f);
 
 					success = ExitSuccess;
 					// change Parsing Mode
@@ -2560,7 +2560,8 @@ namespace sick_scan
                     strcpy(szSignName,"POS");
 
                   }
-									sprintf(szTmp, "%s_%s_%03d_DIST%d", cpFrameId, szSignName, abs(msg.header.seq), i + 1);
+				  
+					sprintf(szTmp, "%s_%s_%03d_DIST%d", cpFrameId, szSignName, abs((int)msg.header.seq), i + 1);
 #endif
                 }
                 else

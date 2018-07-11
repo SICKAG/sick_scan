@@ -195,6 +195,7 @@ namespace sick_scan
 		timelimit_(timelimit)
 	{
 
+		setEmulSensor(false);
 		if ((cola_dialect_id == 'a') || (cola_dialect_id == 'A'))
 		{
 			this->setProtocolType(CoLa_A);
