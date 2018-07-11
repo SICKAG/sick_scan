@@ -2648,8 +2648,13 @@ namespace sick_scan
 
 						for (size_t iEcho = 0; iEcho < numValidEchos; iEcho++)
 						{
+              std::vector<float> cosAlphaTable;
+              std::vector<float> sinAlphaTable;
 							float angle = config_.min_ang;
 							int rangeNum = rangeTmp.size() / numEchos;
+
+              cosAlphaTable.resize(rangeNum);
+              sinAlphaTable.resize(rangeNum);
 
 							for (size_t i = 0; i < rangeNum; i++)
 							{
@@ -2674,11 +2679,15 @@ namespace sick_scan
 									}
 								}
 
-
-								// Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
-								point.x = range_meter * cos(alpha) * cos(phi);
-								point.y = range_meter * cos(alpha) * sin(phi);
-								point.z = range_meter * sin(alpha);
+                if (iEcho == 0)
+                {
+                  cosAlphaTable[i] = cos(alpha);
+                  sinAlphaTable[i] = sin(alpha);
+                }
+                // Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
+								point.x = range_meter * cosAlphaTable[i] * cos(phi);
+								point.y = range_meter * cosAlphaTable[i] * sin(phi);
+								point.z = range_meter * sinAlphaTable[i];
 
 								//	cloud_.points[(layer - baseLayer) * msg.ranges.size() + i] = point;
 
@@ -2696,11 +2705,12 @@ namespace sick_scan
 										intensity = intensityTmp[intensityIndex];
 									}
 								}
-								memcpy(ptr + 0, &(point.x), sizeof(float));
-								memcpy(ptr + 4, &(point.y), sizeof(float));
-								memcpy(ptr + 8, &(point.z), sizeof(float));
-								memcpy(ptr + 12, &(intensity), sizeof(float));
-
+                float dataArr[4];
+                dataArr[0] = point.x;
+                dataArr[1] = point.y;
+                dataArr[2] = point.z;
+                dataArr[3] = intensity;
+								memcpy(ptr + 0, dataArr, 4 * sizeof(float));
 
 								angle += msg.angle_increment;
 							}
