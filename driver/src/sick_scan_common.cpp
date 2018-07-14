@@ -694,18 +694,18 @@ namespace sick_scan
 		sopasCmdVec[CMD_RUN] = "\x02sMN Run\x03\0";
 		sopasCmdVec[CMD_STOP_SCANDATA] = "\x02sEN LMDscandata 0\x03";
 		sopasCmdVec[CMD_START_SCANDATA] = "\x02sEN LMDscandata 1\x03";
-		
+
 		sopasCmdVec[CMD_START_RADARDATA] = "\x02sEN LMDradardata 1\x03";
 
-    /*
-     * Radar specific commands
-     */
-    sopasCmdVec[CMD_SET_TRANSMIT_RAWTARGETS_ON] = "\x02sWN TransmitTargets 1\x03";  // transmit raw target for radar
-    sopasCmdVec[CMD_SET_TRANSMIT_RAWTARGETS_OFF] = "\x02sWN TransmitTargets 0\x03";  // do not transmit raw target for radar
+		/*
+		 * Radar specific commands
+		 */
+		sopasCmdVec[CMD_SET_TRANSMIT_RAWTARGETS_ON] = "\x02sWN TransmitTargets 1\x03";  // transmit raw target for radar
+		sopasCmdVec[CMD_SET_TRANSMIT_RAWTARGETS_OFF] = "\x02sWN TransmitTargets 0\x03";  // do not transmit raw target for radar
 		sopasCmdVec[CMD_SET_TRANSMIT_OBJECTS_ON] = "\x02sWN TransmitObjects 1\x03";  // transmit objects from radar tracking
 		sopasCmdVec[CMD_SET_TRANSMIT_OBJECTS_OFF] = "\x02sWN TransmitObjects 0\x03";  // do not transmit objects from radar tracking
 		sopasCmdVec[CMD_SET_TRACKING_MODE_0] = "\x02sWN TCTrackingMode 0\x03";  // set object tracking mode to BASIC
-    sopasCmdVec[CMD_SET_TRACKING_MODE_1] = "\x02sWN TCTrackingMode 1\x03";  // set object tracking mode to TRAFFIC
+		sopasCmdVec[CMD_SET_TRACKING_MODE_1] = "\x02sWN TCTrackingMode 1\x03";  // set object tracking mode to TRAFFIC
 
 
 		sopasCmdVec[CMD_LOAD_APPLICATION_DEFAULT] = "\x02sMN mSCloadappdef\x03";  // load application default
@@ -788,8 +788,8 @@ namespace sick_scan
 		if (tryToStopMeasurement)
 		{
 			sopasCmdChain.push_back(CMD_STOP_MEASUREMENT);
-      int numberOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
-			if ( (numberOfLayers == 4) || (numberOfLayers == 24) )
+			int numberOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
+			if ((numberOfLayers == 4) || (numberOfLayers == 24))
 			{
 				// just measuring - Application setting not supported
 				// "Old" device ident command "SRi 0" not supported
@@ -1009,10 +1009,10 @@ namespace sick_scan
 				else
 				{
 					long dummy0, dummy1, identLen, versionLen;
-          dummy0 = 0;
-          dummy1 = 0;
-          identLen = 0;
-          versionLen = 0;
+					dummy0 = 0;
+					dummy1 = 0;
+					identLen = 0;
+					versionLen = 0;
 
 					const char *scanMask0 = "%04y%04ysRA DeviceIdent %02y";
 					const char *scanMask1 = "%02y";
@@ -1026,7 +1026,7 @@ namespace sick_scan
 
 					std::vector<unsigned char> restOfReplyDummy = std::vector<unsigned char>(replyDummy.begin() + off, replyDummy.end());
 
-          versionLen = 0;
+					versionLen = 0;
 					binScanfVec(&restOfReplyDummy, "%02y", &versionLen);
 					std::string versionStr = binScanfGetStringFromVec(&restOfReplyDummy, scanDataLen1, versionLen);
 					std::string fullIdentVersionInfo = identStr + " V" + versionStr;
@@ -1061,8 +1061,8 @@ namespace sick_scan
 				if (useBinaryCmd)
 				{
 					long dummy0 = 0x00;
-          long dummy1 = 0x00;
-          deviceState = 0x00; // must be set to zero (because only one byte will be copied)
+					long dummy1 = 0x00;
+					deviceState = 0x00; // must be set to zero (because only one byte will be copied)
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_DEVICE_STATE]), "%4y%4ysRA SCdevicestate %1y", &dummy0, &dummy1, &deviceState);
 				}
 				else
@@ -1099,14 +1099,14 @@ namespace sick_scan
 				if (useBinaryCmd)
 				{
 					long dummy0, dummy1;
-          dummy0 = 0;
-          dummy1 = 0;
-          operationHours = 0;
+					dummy0 = 0;
+					dummy1 = 0;
+					operationHours = 0;
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_OPERATION_HOURS]), "%4y%4ysRA ODoprh %4y", &dummy0, &dummy1, &operationHours);
 				}
 				else
 				{
-          operationHours = 0;
+					operationHours = 0;
 					iRetVal = sscanf(sopasReplyStrVec[CMD_OPERATION_HOURS].c_str(), "sRA ODoprh %x", &operationHours);
 				}
 				if (iRetVal > 0)
@@ -1124,7 +1124,7 @@ namespace sick_scan
 				if (useBinaryCmd)
 				{
 					long dummy0, dummy1;
-          powerOnCount = 0;
+					powerOnCount = 0;
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_POWER_ON_COUNT]), "%4y%4ysRA ODpwrc %4y", &dummy0, &dummy1, &powerOnCount);
 				}
 				else
@@ -1151,9 +1151,9 @@ namespace sick_scan
 					long dummy0, dummy1, locationNameLen;
 					const char *binLocationNameMask = "%4y%4ysRA LocationName %2y";
 					int prefixLen = binScanfGuessDataLenFromMask(binLocationNameMask);
-          dummy0 = 0;
-          dummy1 = 0;
-          locationNameLen = 0;
+					dummy0 = 0;
+					dummy1 = 0;
+					locationNameLen = 0;
 
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_LOCATION_NAME]), binLocationNameMask, &dummy0, &dummy1, &locationNameLen);
 					if (iRetVal > 0)
@@ -1231,8 +1231,8 @@ namespace sick_scan
 			if (0 == result)
 			{
 				int askTmpAngleRes10000th = 0;
-        int askTmpAngleStart10000th = 0;
-        int askTmpAngleEnd10000th = 0;
+				int askTmpAngleStart10000th = 0;
+				int askTmpAngleEnd10000th = 0;
 				char dummy0[MAX_STR_LEN] = { 0 };
 				char dummy1[MAX_STR_LEN] = { 0 };
 				int  dummyInt = 0;
@@ -1251,12 +1251,12 @@ namespace sick_scan
 
 				if (useBinaryCmd)
 				{
-          iDummy0 = 0;
-          iDummy1 = 0;
-          dummyInt = 0;
-          askTmpAngleRes10000th = 0;
-          askTmpAngleStart10000th = 0;
-          askTmpAngleEnd10000th = 0;
+					iDummy0 = 0;
+					iDummy1 = 0;
+					dummyInt = 0;
+					askTmpAngleRes10000th = 0;
+					askTmpAngleStart10000th = 0;
+					askTmpAngleEnd10000th = 0;
 
 					const char *askOutputAngularRangeBinMask = "%4y%4ysRA LMPoutputRange %2y%4y%4y%4y";
 					numArgs = binScanfVec(&sopasReplyBinVec[CMD_GET_OUTPUT_RANGES], askOutputAngularRangeBinMask, &iDummy0, &iDummy1,
@@ -1388,8 +1388,8 @@ namespace sick_scan
 				int  askAngleStart10000th = 0;
 				int askAngleEnd10000th = 0;
 				int iDummy0, iDummy1;
-        iDummy0 =0;
-        iDummy1 = 0;
+				iDummy0 = 0;
+				iDummy1 = 0;
 				std::string askOutputAngularRangeStr = replyToString(askOutputAngularRangeReply);
 				// Binary-Reply Tab. 63
 				// 0x20 Space
@@ -1401,24 +1401,24 @@ namespace sick_scan
 
 				int numArgs;
 
-        /*
-         *
-         *  Initialize variables
-         */
+				/*
+				 *
+				 *  Initialize variables
+				 */
 
-        iDummy0 = 0;
-        iDummy1 = 0;
-        dummyInt = 0;
-        askAngleRes10000th = 0;
-        askAngleStart10000th = 0;
-        askAngleEnd10000th = 0;
+				iDummy0 = 0;
+				iDummy1 = 0;
+				dummyInt = 0;
+				askAngleRes10000th = 0;
+				askAngleStart10000th = 0;
+				askAngleEnd10000th = 0;
 
-        /*
-         *   scan values
-         *
-         */
+				/*
+				 *   scan values
+				 *
+				 */
 
-        if (useBinaryCmd)
+				if (useBinaryCmd)
 				{
 					const char *askOutputAngularRangeBinMask = "%4y%4ysRA LMPoutputRange %2y%4y%4y%4y";
 					numArgs = binScanfVec(&sopasReplyBinVec[CMD_GET_OUTPUT_RANGES], askOutputAngularRangeBinMask, &iDummy0, &iDummy1,
@@ -1601,27 +1601,27 @@ namespace sick_scan
 		std::vector<int> startProtocolSequence;
 		bool deviceIsRadar = false;
 		if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
-    {
-      ros::NodeHandle tmpParam("~");
-      bool transmitRawTargets = true;
-      bool transmitObjects = true;
-      int trackingMode = 0;
-      std::string trackingModeDescription[] = {"BASIC","VEHICLE"};
+		{
+			ros::NodeHandle tmpParam("~");
+			bool transmitRawTargets = true;
+			bool transmitObjects = true;
+			int trackingMode = 0;
+			std::string trackingModeDescription[] = { "BASIC","VEHICLE" };
 
-      int numTrackingModes = sizeof(trackingModeDescription)/sizeof(trackingModeDescription[0]);
+			int numTrackingModes = sizeof(trackingModeDescription) / sizeof(trackingModeDescription[0]);
 
-      tmpParam.getParam("transmit_raw_targets", transmitRawTargets);
-      tmpParam.getParam("transmit_objects", transmitObjects);
-      tmpParam.getParam("tracking_mode", trackingMode);
+			tmpParam.getParam("transmit_raw_targets", transmitRawTargets);
+			tmpParam.getParam("transmit_objects", transmitObjects);
+			tmpParam.getParam("tracking_mode", trackingMode);
 
-      if ( (trackingMode < 0) || (trackingMode >= numTrackingModes))
-      {
-        ROS_WARN("tracking mode id invalid. Switch to tracking mode 0");
-        trackingMode = 0;
-      }
-      ROS_INFO("Raw target transmission is switched [%s]", transmitRawTargets ? "ON" : "OFF");
-      ROS_INFO("Object transmission is switched [%s]", transmitObjects ? "ON" : "OFF");
-      ROS_INFO("Tracking mode is set to id [%d] [%s]", trackingMode, trackingModeDescription[trackingMode].c_str());
+			if ((trackingMode < 0) || (trackingMode >= numTrackingModes))
+			{
+				ROS_WARN("tracking mode id invalid. Switch to tracking mode 0");
+				trackingMode = 0;
+			}
+			ROS_INFO("Raw target transmission is switched [%s]", transmitRawTargets ? "ON" : "OFF");
+			ROS_INFO("Object transmission is switched [%s]", transmitObjects ? "ON" : "OFF");
+			ROS_INFO("Tracking mode is set to id [%d] [%s]", trackingMode, trackingModeDescription[trackingMode].c_str());
 
 			deviceIsRadar = true;
 
@@ -1630,42 +1630,42 @@ namespace sick_scan
 			startProtocolSequence.push_back(CMD_SERIAL_NUMBER);
 			startProtocolSequence.push_back(CMD_ORDER_NUMBER);
 
-      /*
-       * With "sWN TCTrackingMode 0" BASIC-Tracking activated
-       * With "sWN TCTrackingMode 1" TRAFFIC-Tracking activated
-       *
-       */
-      if (transmitRawTargets)
-      {
-        startProtocolSequence.push_back(CMD_SET_TRANSMIT_RAWTARGETS_ON);  // raw targets will be transmitted
-      }
-      else
-      {
-        startProtocolSequence.push_back(CMD_SET_TRANSMIT_RAWTARGETS_OFF);  // NO raw targets will be transmitted
-      }
+			/*
+			 * With "sWN TCTrackingMode 0" BASIC-Tracking activated
+			 * With "sWN TCTrackingMode 1" TRAFFIC-Tracking activated
+			 *
+			 */
+			if (transmitRawTargets)
+			{
+				startProtocolSequence.push_back(CMD_SET_TRANSMIT_RAWTARGETS_ON);  // raw targets will be transmitted
+			}
+			else
+			{
+				startProtocolSequence.push_back(CMD_SET_TRANSMIT_RAWTARGETS_OFF);  // NO raw targets will be transmitted
+			}
 
-      if (transmitObjects)
-      {
-        startProtocolSequence.push_back(CMD_SET_TRANSMIT_OBJECTS_ON);  // tracking objects will be transmitted
-      }
-      else
-      {
-        startProtocolSequence.push_back(CMD_SET_TRANSMIT_OBJECTS_OFF);  // NO tracking objects will be transmitted
-      }
+			if (transmitObjects)
+			{
+				startProtocolSequence.push_back(CMD_SET_TRANSMIT_OBJECTS_ON);  // tracking objects will be transmitted
+			}
+			else
+			{
+				startProtocolSequence.push_back(CMD_SET_TRANSMIT_OBJECTS_OFF);  // NO tracking objects will be transmitted
+			}
 
-      switch(trackingMode)
-      {
-        case 0: startProtocolSequence.push_back(CMD_SET_TRACKING_MODE_0); break;
-        case 1: startProtocolSequence.push_back(CMD_SET_TRACKING_MODE_1); break;
-        default: ROS_DEBUG("Tracking mode switching sequence unknown\n"); break;
+			switch (trackingMode)
+			{
+			case 0: startProtocolSequence.push_back(CMD_SET_TRACKING_MODE_0); break;
+			case 1: startProtocolSequence.push_back(CMD_SET_TRACKING_MODE_1); break;
+			default: ROS_DEBUG("Tracking mode switching sequence unknown\n"); break;
 
-      }
-       // leave user level
+			}
+			// leave user level
 
-//      sWN TransmitTargets 1
-			// initializing sequence for radar based devices
-      startProtocolSequence.push_back(CMD_RUN);  // leave user level
-      startProtocolSequence.push_back(CMD_START_RADARDATA);
+	 //      sWN TransmitTargets 1
+				 // initializing sequence for radar based devices
+			startProtocolSequence.push_back(CMD_RUN);  // leave user level
+			startProtocolSequence.push_back(CMD_START_RADARDATA);
 		}
 		else
 		{
@@ -1771,9 +1771,9 @@ namespace sick_scan
 						if (useBinaryCmd)
 						{
 							long dummy0, dummy1;
-              dummy0 = 0;
-              dummy1 = 0;
-              deviceState = 0;
+							dummy0 = 0;
+							dummy1 = 0;
+							deviceState = 0;
 							iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_DEVICE_STATE]), "%4y%4ysRA SCdevicestate %1y", &dummy0, &dummy1, &deviceState);
 						}
 						else
@@ -1971,7 +1971,7 @@ namespace sick_scan
 	*/
 	int SickScanCommon::loopOnce()
 	{
-    static int cnt = 0;
+		static int cnt = 0;
 		diagnostics_.update();
 
 		unsigned char receiveBuffer[65536];
@@ -1979,13 +1979,13 @@ namespace sick_scan
 		static unsigned int iteration_count = 0;
 		bool useBinaryProtocol = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
 
-    ros::Time recvTimeStamp = ros::Time::now();  // timestamp incoming package, will be overwritten by get_datagram
-    // tcp packet
-    ros::Time recvTimeStampPush = ros::Time::now();  // timestamp
+		ros::Time recvTimeStamp = ros::Time::now();  // timestamp incoming package, will be overwritten by get_datagram
+		// tcp packet
+		ros::Time recvTimeStampPush = ros::Time::now();  // timestamp
 
 		int result = get_datagram(recvTimeStamp, receiveBuffer, 65536, &actual_length, useBinaryProtocol);
 
-    ros::Duration dur = recvTimeStampPush - recvTimeStamp;
+		ros::Duration dur = recvTimeStampPush - recvTimeStamp;
 
 		if (result != 0)
 		{
@@ -2012,10 +2012,10 @@ namespace sick_scan
 
 
 
-    std::string echoForSlam = "";
-    bool slamBundle = false;
-    tmpParam.getParam("slam_echo", echoForSlam);
-    tmpParam.getParam("slam_bundle", slamBundle);
+		std::string echoForSlam = "";
+		bool slamBundle = false;
+		tmpParam.getParam("slam_echo", echoForSlam);
+		tmpParam.getParam("slam_bundle", slamBundle);
 		bool dumpData = false;
 		int verboseLevel = 0;
 		tmpParam.getParam("verboseLevel", verboseLevel);
@@ -2045,7 +2045,7 @@ namespace sick_scan
 
 			sensor_msgs::LaserScan msg;
 
-      msg.header.stamp = recvTimeStamp;
+			msg.header.stamp = recvTimeStamp;
 			double elevationAngleInRad = 0.0;
 			/*
 			 * datagrams are enclosed in <STX> (0x02), <ETX> (0x03) pairs
@@ -2082,7 +2082,7 @@ namespace sick_scan
 
 						if (idVal == 0x02020202)
 						{
-              // binary message
+							// binary message
 							if (lenVal < actual_length)
 							{
 								short elevAngleX200 = 0;  // signed short (F5 B2  -> Layer 24
@@ -2107,11 +2107,11 @@ namespace sick_scan
 								swap_endian((unsigned char*)&measurementFrequencyDiv100, 4);
 
 
-                msg.scan_time = 		1.0 / (scanFrequencyX100 / 100.0);
-                msg.time_increment = 1.0 / (measurementFrequencyDiv100 * 100.0);
+								msg.scan_time = 1.0 / (scanFrequencyX100 / 100.0);
+								msg.time_increment = 1.0 / (measurementFrequencyDiv100 * 100.0);
 
-                msg.range_min = parser_->get_range_min();
-                msg.range_max = parser_->get_range_max();
+								msg.range_min = parser_->get_range_min();
+								msg.range_max = parser_->get_range_max();
 
 								memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
 								swap_endian((unsigned char*)&numberOf16BitChannels, 2);
@@ -2321,22 +2321,39 @@ namespace sick_scan
 												{
 
 												case process_dist:
+												{
 													startAngle = startAngleDiv10000 / 10000.00;
 													sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
 													sizeOfSingleAngularStep *= (M_PI / 180.0);
 
-                          msg.angle_min = startAngle  / 180.0 * M_PI - M_PI / 2;
-                          msg.angle_increment = sizeOfSingleAngularStep;
-                          msg.angle_max = msg.angle_min + (numberOfItems - 1) * msg.angle_increment;
+													msg.angle_min = startAngle / 180.0 * M_PI - M_PI / 2;
+													msg.angle_increment = sizeOfSingleAngularStep;
+													msg.angle_max = msg.angle_min + (numberOfItems - 1) * msg.angle_increment;
 
+													float *rangePtr = NULL;
+
+													if (numberOfItems > 0)
+													{
+														rangePtr = &msg.ranges[0];
+													}
 													for (int i = 0; i < numberOfItems; i++)
 													{
 														idx = i + numberOfItems * (distChannelCnt - 1);
-														msg.ranges[idx] = (float)data[i] * 0.001 * scaleFactor + scaleFactorOffset;
+														rangePtr[idx] = (float)data[i] * 0.001 * scaleFactor + scaleFactorOffset;
 													}
-													break;
+												}
+												break;
 												case process_rssi:
+												{
 													// Das muss vom Protokoll abgeleitet werden. !!!
+
+													float *intensityPtr = NULL;
+
+													if (numberOfItems > 0)
+													{
+														intensityPtr = &msg.intensities[0];
+
+													}
 													for (int i = 0; i < numberOfItems; i++)
 													{
 														idx = i + numberOfItems * (rssiCnt - 1);
@@ -2351,14 +2368,20 @@ namespace sick_scan
 															unsigned char *data8Ptr = (unsigned char *)data;
 															rssiVal = (float)data8Ptr[i];
 														}
-														msg.intensities[idx] = rssiVal * scaleFactor + scaleFactorOffset;
+														intensityPtr[idx] = rssiVal * scaleFactor + scaleFactorOffset;
 													}
+												}
 													break;
 
 												case process_vang:
+													float *vangPtr = NULL; 
+													if (numberOfItems > 0)
+													{
+														vangPtr = &vang_vec[0]; // much faster, with vang_vec[i] each time the size will be checked
+													}
 													for (int i = 0; i < numberOfItems; i++)
 													{
-														vang_vec[i] = (float)data[i] * scaleFactor + scaleFactorOffset;
+														vangPtr[i] = (float)data[i] * scaleFactor + scaleFactorOffset;
 													}
 													break;
 												}
@@ -2381,7 +2404,7 @@ namespace sick_scan
 					}
 
 
-				    parser_->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001f);
+					parser_->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001f);
 
 					success = ExitSuccess;
 					// change Parsing Mode
@@ -2447,60 +2470,66 @@ namespace sick_scan
 
 				if (success == ExitSuccess)
 				{
-          bool elevationPreCalculated = false;
-          double elevationAngleDegree = 0.0;
+					bool elevationPreCalculated = false;
+					double elevationAngleDegree = 0.0;
 
 
-          std::vector<float> rangeTmp = msg.ranges;  // copy all range value
+					std::vector<float> rangeTmp = msg.ranges;  // copy all range value
 					std::vector<float> intensityTmp = msg.intensities; // copy all intensity value
 
+					int intensityTmpNum = intensityTmp.size();
+					float *intensityTmpPtr = NULL;
+					if (intensityTmpNum > 0)
+					{
+						intensityTmpPtr = &intensityTmp[0];
+					}
 
-          // Helpful: https://answers.ros.org/question/191265/pointcloud2-access-data/
-          // https://gist.github.com/yuma-m/b5dcce1b515335c93ce8
-          // Copy to pointcloud
-          int layer = 0;
-          int baseLayer = 0;
-          bool useGivenElevationAngle = false;
-          switch (numOfLayers)
-          {
-            case 1: // TIM571 etc.
-              baseLayer = 0;
-              break;
-            case 4:
+					// Helpful: https://answers.ros.org/question/191265/pointcloud2-access-data/
+					// https://gist.github.com/yuma-m/b5dcce1b515335c93ce8
+					// Copy to pointcloud
+					int layer = 0;
+					int baseLayer = 0;
+					bool useGivenElevationAngle = false;
+					switch (numOfLayers)
+					{
+					case 1: // TIM571 etc.
+						baseLayer = 0;
+						break;
+					case 4:
 
-              baseLayer = -1;
-              if (msg.header.seq == 250) layer = -1;
-              else if (msg.header.seq == 0) layer = 0;
-              else if (msg.header.seq == -250) layer = 1;
-              else if (msg.header.seq == -500) layer = 2;
-              elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
-              elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
-              // 0.0436332 /*2.5 degrees*/;
-              break;
-            case 24: // Preparation for MRS6000
-              baseLayer = -1;
-              layer = (msg.header.seq - (-2638)) / 125;
-              layer = (23 - layer) - 1;
+						baseLayer = -1;
+						if (msg.header.seq == 250) layer = -1;
+						else if (msg.header.seq == 0) layer = 0;
+						else if (msg.header.seq == -250) layer = 1;
+						else if (msg.header.seq == -500) layer = 2;
+						elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
+						elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
+						// 0.0436332 /*2.5 degrees*/;
+						break;
+					case 24: // Preparation for MRS6000
+						baseLayer = -1;
+						layer = (msg.header.seq - (-2638)) / 125;
+						layer = (23 - layer) - 1;
 #if 0
-            elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
-							elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
+						elevationAngleDegree = this->parser_->getCurrentParamPtr()->getElevationDegreeResolution();
+						elevationAngleDegree = elevationAngleDegree / 180.0 * M_PI;
 #endif
 
-              elevationPreCalculated = true;
-              if (vang_vec.size() > 0)
-              {
-                useGivenElevationAngle = true;
-              }
-              break;
-            default:assert(0); break; // unsupported
+						elevationPreCalculated = true;
+						if (vang_vec.size() > 0)
+						{
+							useGivenElevationAngle = true;
+						}
+						break;
+					default:assert(0); break; // unsupported
 
-          }
-
-
+					}
 
 
 
-          // XXX  - HIER MEHRERE SCANS publish, falls Mehrzielszenario läuft
+
+
+					// XXX  - HIER MEHRERE SCANS publish, falls Mehrzielszenario läuft
 					if (numEchos > 5)
 					{
 						ROS_WARN("Too much echos");
@@ -2548,62 +2577,62 @@ namespace sick_scan
 								{
 									const char* cpFrameId = config_.frame_id.c_str();
 #if 0
-                  sprintf(szTmp, "%s_%+04d_DIST%d", cpFrameId, msg.header.seq, i + 1);
+									sprintf(szTmp, "%s_%+04d_DIST%d", cpFrameId, msg.header.seq, i + 1);
 #else // experimental
-                  char szSignName[10] = {0};
-                  if ((int)msg.header.seq < 0)
-                  {
-                    strcpy(szSignName,"NEG");
-                  }
-                  else
-                  {
-                    strcpy(szSignName,"POS");
+									char szSignName[10] = { 0 };
+									if ((int)msg.header.seq < 0)
+									{
+										strcpy(szSignName, "NEG");
+									}
+									else
+									{
+										strcpy(szSignName, "POS");
 
-                  }
-				  
-					sprintf(szTmp, "%s_%s_%03d_DIST%d", cpFrameId, szSignName, abs((int)msg.header.seq), i + 1);
+									}
+
+									sprintf(szTmp, "%s_%s_%03d_DIST%d", cpFrameId, szSignName, abs((int)msg.header.seq), i + 1);
 #endif
-                }
-                else
-                {
-                  strcpy(szTmp, config_.frame_id.c_str());
-                }
+								}
+								else
+								{
+									strcpy(szTmp, config_.frame_id.c_str());
+								}
 
-                msg.header.frame_id = std::string(szTmp);
-                // Hector slam can only process ONE valid frame id.
-                if (echoForSlam.length() > 0)
-                {
-                  if (slamBundle)
-                  {
-                    // try to map first echos to horizontal layers.
-                    if (i == 0)
-                    {
-                      // first echo
-                      msg.header.frame_id = echoForSlam;
-                      strcpy(szTmp, echoForSlam.c_str());  //
-                      if (elevationAngleInRad != 0.0)
-                      {
-                        float cosVal = cos(elevationAngleInRad);
-                        int rangeNum = msg.ranges.size();
-                        for (int j = 0; j < rangeNum; j++)
-                        {
-                          msg.ranges[j] *= cosVal;
-                        }
-                      }
-                    }
-                  }
+								msg.header.frame_id = std::string(szTmp);
+								// Hector slam can only process ONE valid frame id.
+								if (echoForSlam.length() > 0)
+								{
+									if (slamBundle)
+									{
+										// try to map first echos to horizontal layers.
+										if (i == 0)
+										{
+											// first echo
+											msg.header.frame_id = echoForSlam;
+											strcpy(szTmp, echoForSlam.c_str());  //
+											if (elevationAngleInRad != 0.0)
+											{
+												float cosVal = cos(elevationAngleInRad);
+												int rangeNum = msg.ranges.size();
+												for (int j = 0; j < rangeNum; j++)
+												{
+													msg.ranges[j] *= cosVal;
+												}
+											}
+										}
+									}
 
-                  if (echoForSlam.compare(szTmp) == 0)
-                  {
-                    sendMsg = true;
-                  }
-                  else
-                  {
-                    sendMsg = false;
-                  }
-                }
+									if (echoForSlam.compare(szTmp) == 0)
+									{
+										sendMsg = true;
+									}
+									else
+									{
+										sendMsg = false;
+									}
+								}
 
-              }
+							}
 #ifndef _MSC_VER
 							if (numOfLayers > 4)
 							{
@@ -2612,7 +2641,7 @@ namespace sick_scan
 							if (sendMsg & 	outputChannelFlagId)  // publish only configured channels - workaround for cfg-bug MRS1104
 							{
 
-                pub_.publish(msg);
+								pub_.publish(msg);
 							}
 #else
 							printf("MSG received...");
@@ -2646,27 +2675,34 @@ namespace sick_scan
 
 						cloud_.data.resize(cloud_.row_step * cloud_.height);
 
+						unsigned char *cloudDataPtr = &(cloud_.data[0]);
 
 						for (size_t iEcho = 0; iEcho < numValidEchos; iEcho++)
 						{
-              std::vector<float> cosAlphaTable;
-              std::vector<float> sinAlphaTable;
+							std::vector<float> cosAlphaTable;
+							std::vector<float> sinAlphaTable;
+
 							float angle = config_.min_ang;
 							int rangeNum = rangeTmp.size() / numEchos;
 
-              cosAlphaTable.resize(rangeNum);
-              sinAlphaTable.resize(rangeNum);
+							cosAlphaTable.resize(rangeNum);
+							sinAlphaTable.resize(rangeNum);
 
+							float *cosAlphaTablePtr = &cosAlphaTable[0];
+							float *sinAlphaTablePtr = &sinAlphaTable[0];
+
+							float *vangPtr = &vang_vec[0];
+							float *rangeTmpPtr = &rangeTmp[0];
 							for (size_t i = 0; i < rangeNum; i++)
 							{
 								geometry_msgs::Point32 point;
-								float range_meter = rangeTmp[iEcho * rangeNum + i];
+								float range_meter = rangeTmpPtr[iEcho * rangeNum + i];
 								float phi = angle; // azimuth angle
 								float alpha = 0.0;  // elevation angle
 
 								if (useGivenElevationAngle) // FOR MRS6124
 								{
-									alpha = -vang_vec[i] * deg2rad_const;
+									alpha = -vangPtr[i] * deg2rad_const;
 								}
 								else
 								{
@@ -2680,37 +2716,37 @@ namespace sick_scan
 									}
 								}
 
-                if (iEcho == 0)
-                {
-                  cosAlphaTable[i] = cos(alpha);
-                  sinAlphaTable[i] = sin(alpha);
-                }
-                // Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
-								point.x = range_meter * cosAlphaTable[i] * cos(phi);
-								point.y = range_meter * cosAlphaTable[i] * sin(phi);
-								point.z = range_meter * sinAlphaTable[i];
+								if (iEcho == 0)
+								{
+									cosAlphaTablePtr[i] = cos(alpha);
+									sinAlphaTablePtr[i] = sin(alpha);
+								}
+								// Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
+								point.x = range_meter * cosAlphaTablePtr[i] * cos(phi);
+								point.y = range_meter * cosAlphaTablePtr[i] * sin(phi);
+								point.z = range_meter * sinAlphaTablePtr[i];
 
 								//	cloud_.points[(layer - baseLayer) * msg.ranges.size() + i] = point;
 
 								long adroff = i * (numChannels * (int)sizeof(float)) + (layer - baseLayer) * cloud_.row_step;
 								adroff += iEcho * cloud_.row_step * numOfLayers;
-								unsigned char *ptr = &(cloud_.data[0]) + adroff;
+								unsigned char *ptr = cloudDataPtr + adroff;
 
 								float intensity = 0.0;
 								if (config_.intensity)
 								{
 									int intensityIndex = aiValidEchoIdx[iEcho] * rangeNum + i;
 									// intensity values available??
-									if (intensityIndex < intensityTmp.size())
+									if (intensityIndex < intensityTmpNum)
 									{
-										intensity = intensityTmp[intensityIndex];
+										intensity = intensityTmpPtr[intensityIndex];
 									}
 								}
-                float dataArr[4];
-                dataArr[0] = point.x;
-                dataArr[1] = point.y;
-                dataArr[2] = point.z;
-                dataArr[3] = intensity;
+								float dataArr[4];
+								dataArr[0] = point.x;
+								dataArr[1] = point.y;
+								dataArr[2] = point.z;
+								dataArr[3] = intensity;
 								memcpy(ptr + 0, dataArr, 4 * sizeof(float));
 
 								angle += msg.angle_increment;
