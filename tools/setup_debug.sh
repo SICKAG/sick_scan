@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-#  Setting up a new catkin-workspace, checkout devel version of sick_scan and hector_slam
-#  build the software and start rviz for checking.
+#  Setting up a new catkin-workspace, checkout devel version of sick_scan
+#  and try to build the software.
 #
 RED='\033[0;31m'
 NC='\033[0m' # No Color
