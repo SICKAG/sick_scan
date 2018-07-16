@@ -149,7 +149,11 @@ namespace sick_scan
 	\param echoMask: Mask corresponding to DIST-block-identifier
 	\return set_range_max
 	*/
-	int SickScanRadar::parseAsciiDatagram(char* datagram, size_t datagram_length, std::vector<SickScanRadarObject> &objectList, std::vector<SickScanRadarRawTarget> &rawTargetList)
+	int SickScanRadar::parseAsciiDatagram(char* datagram, size_t datagram_length,
+																				sick_scan::RadarScan *msgPtr,
+																				std::vector<SickScanRadarObject> &objectList,
+																				std::vector<SickScanRadarRawTarget> &rawTargetList)
+
 	{
 		int exitCode = ExitSuccess;
 		ros::NodeHandle tmpParam("~");
@@ -241,6 +245,163 @@ namespace sick_scan
 			cnt++;
 		}
 
+
+		enum PREHEADER_TOKEN_SEQ {PREHEADER_TOKEN_SSN,          // 0: sSN
+				                      PREHEADER_TOKEN_LMDRADARDATA, // 1: LMDradardata
+				                      PREHEADER_TOKEN_UI_VERSION_NO,
+                              PREHEADER_TOKEN_UI_IDENT,
+                              PREHEADER_TOKEN_UDI_SERIAL_NO,
+                              PREHEADER_TOKEN_XB_STATE,
+                              PREHEADER_TOKEN_UNKNOWN_0,
+                              PREHEADER_TOKEN_TELEGRAM_COUNT, // 7
+                              PREHEADER_TOKEN_CYCLE_COUNT,
+                              PREHEADER_TOKEN_SYSTEM_COUNT_SCAN,
+                              PREHEADER_TOKEN_SYSTEM_COUNT_TRANSMIT,
+                              PREHEADER_TOKEN_XB_INPUTS,
+                              PREHEADER_TOKEN_XB_OUTPUTS, // 12
+                              PREHEADER_TOKEN_CYCLE_DURATION,
+                              PREHEADER_TOKEN_NOISE_LEVEL,
+                              PREHEADER_TOKEN_UNKNOWN_1,
+                              PREHEADER_TOKEN_UNKNOWN_2,
+                              PREHEADER_NUM_ENCODER_BLOCKS, // 17
+        PREHADERR_TOKEN_FIX_NUM};
+/*
+
+        StatusBlock
+        ===========
+        7: BCC            uiTelegramCount
+        8: DC0C           uiCycleCount (or uiScanCount???)
+        9: 730E9D16       udiSystemCountScan
+        10: 730EA06D       udiSystemCountTransmit
+        11: 0              xbInputs
+        12: 0              xbOutputs
+
+        MeasurementParam1Block
+        ======================
+        13: 0              MeasurementParam1Block.uiCycleDuration
+        14: 0              MeasurementParam1Block.uiNoiseLevel
+
+        15: 0              ???   not clear yet
+        16: 0              ???
+
+        aEncoderBlock
+        =============
+        17: 1              Number of aEncoderBlocks
+
+
+        18: 0              aEncoderBlock[0].udiEncoderPos
+        19: 0              aEncoderBlock[0].iEncoderSpeed
+
+
+        PREHADERR_TOKEN_FIX_NUM};  // Number of fix token (excluding aEncoderBlock)
+*/
+    /*
+     * To read a single unsigned byte, use the %hhx modifier.
+     * %hx is for an unsigned short,
+     * %x is for an unsigned int,
+     * %lx is for an unsigned long,
+     * and %llx is for an `unsigned long long.
+     *
+     */
+		for (int i = 0; i < PREHADERR_TOKEN_FIX_NUM; i++)
+		{
+      UINT16 uiValue  = 0x00;
+      UINT32 udiValue = 0x00;
+      unsigned long int uliDummy;
+      uliDummy = strtoul(fields[i], NULL, 16);
+			switch(i)
+			{
+				case PREHEADER_TOKEN_UI_VERSION_NO:
+					msgPtr->radarPreHeader.uiVersionNo = (UINT16)(uliDummy & 0xFFFF);
+          break;
+        case PREHEADER_TOKEN_UI_IDENT:
+          msgPtr->radarPreHeader.radarPreHeaderDeviceBlock.uiIdent = (UINT16)(uliDummy & 0xFFFF);
+          break;
+        case PREHEADER_TOKEN_UDI_SERIAL_NO:
+          msgPtr->radarPreHeader.radarPreHeaderDeviceBlock.udiSerialNo = (UINT32)(uliDummy & 0xFFFFFFFF);
+          break;
+        case PREHEADER_TOKEN_XB_STATE:
+          for (int j = 0; j < 3; j++)
+          {
+            bool flag = false;
+            if (0 != (uliDummy & (1 << j)))
+            {
+              flag  = true;
+            }
+            switch (j)
+            {
+              case 0: msgPtr->radarPreHeader.radarPreHeaderDeviceBlock.bDeviceError = flag; break;
+              case 1: msgPtr->radarPreHeader.radarPreHeaderDeviceBlock.bContaminationWarning = flag; break;
+              case 2: msgPtr->radarPreHeader.radarPreHeaderDeviceBlock.bContaminationError = flag; break;
+              default: ROS_WARN("Flag parsing for this PREHEADER-Flag not implemented");
+            }
+          }
+          break;
+        case PREHEADER_TOKEN_UNKNOWN_0: break;
+        case   PREHEADER_TOKEN_TELEGRAM_COUNT: // 7
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiTelegramCount = (UINT16)(uliDummy & 0xFFFF);
+          break;
+        case PREHEADER_TOKEN_CYCLE_COUNT:
+          sscanf(fields[i],"%hu", &uiValue);
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiCycleCount = (UINT16)(uliDummy & 0xFFFF);
+          break;
+        case PREHEADER_TOKEN_SYSTEM_COUNT_SCAN:
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.udiSystemCountScan = (UINT32)(uliDummy & 0xFFFFFFFF);
+          break;
+        case PREHEADER_TOKEN_SYSTEM_COUNT_TRANSMIT:
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.udiSystemCountTransmit = (UINT32)(uliDummy & 0xFFFFFFFF);
+          break;
+        case PREHEADER_TOKEN_XB_INPUTS:
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiInputs = (UINT16)(uliDummy & 0xFFFF);;
+          break;
+        case PREHEADER_TOKEN_XB_OUTPUTS: // 12
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiOutputs = (UINT16)(uliDummy & 0xFFFF);;
+          break;
+        case PREHEADER_TOKEN_CYCLE_DURATION:
+          msgPtr->radarPreHeader.radarPreHeaderMeasurementParam1Block.uiCycleDuration = (UINT16)(uliDummy & 0xFFFF);
+          break;
+        case PREHEADER_TOKEN_NOISE_LEVEL:
+          msgPtr->radarPreHeader.radarPreHeaderMeasurementParam1Block.uiNoiseLevel = (UINT16)(uliDummy & 0xFFFF);
+          break;
+        case PREHEADER_TOKEN_UNKNOWN_1:
+          break;
+
+        case PREHEADER_TOKEN_UNKNOWN_2:
+          break;
+
+        case PREHEADER_NUM_ENCODER_BLOCKS:
+        {
+          UINT16 u16NumberOfBlock = (UINT16)(uliDummy & 0xFFFF);
+
+          printf("Number of Blocks: %d\n", u16NumberOfBlock);
+          if (u16NumberOfBlock > 0)
+          {
+            msgPtr->radarPreHeader.radarPreHeaderArrayEncoderBlock.resize(u16NumberOfBlock);
+
+            for (int j = 0; j < u16NumberOfBlock; j++)
+            {
+              INT16 iEncoderSpeed;
+              int rowIndex = PREHEADER_NUM_ENCODER_BLOCKS + j * 2 + 1;
+              udiValue = strtoul(fields[rowIndex], NULL, 16);
+              msgPtr->radarPreHeader.radarPreHeaderArrayEncoderBlock[j].udiEncoderPos = udiValue;
+              udiValue = strtoul(fields[rowIndex+1], NULL, 16);
+              iEncoderSpeed = (int)udiValue;
+              msgPtr->radarPreHeader.radarPreHeaderArrayEncoderBlock[j].iEncoderSpeed = iEncoderSpeed;
+
+            }
+          }
+        }
+          break;
+			}
+		}
+/*
+				MeasurementData
+				===============
+				2: 1             MeasurementData.uiVersionNo  : Version Information for this while structureValue
+				Value   Range: 0 ... 65535
+				};
+
+*/
 		std::vector<std::string> keyWordList;
 #define DIST1_KEYWORD "DIST1"
 #define AZMT1_KEYWORD "AZMT1"
@@ -480,8 +641,9 @@ namespace sick_scan
     callCnt++;
 
     // end
-		std::string header = "\x2sSN LMDradardata 1 1 112F6E9 0 0 533A 0 0 28C7DDDC 0 0 0 0 CB00 780 1 0 0 ";
-		int channel16BitCnt = 4;
+//    std::string header = "\x2sSN LMDradardata 1 1 112F6E9 0 0 DFB6 B055 6E596002 6E5AE0E5 0 0 0 0 0 0 1 0 0 ";
+    std::string header =   "\x2sSN LMDradardata 10 20 30 5 0 40 50 60 70 90 A0 B0 C0 D0 0 1 A000 FFFFFF00 ";
+    int channel16BitCnt = 4;
 		// Faktoren fuer Rohziele: 40.0 0.16 0.04 1.00 1.00
 		float rawTargetFactorList[] = { 40.0f, 0.16f, 0.04f, 1.00f, 1.00f };
 		float objectFactorList[] = { 64.0f, 64.0f, 0.1f, 0.1f, 0.75f, 1.0f };
@@ -794,7 +956,8 @@ namespace sick_scan
 
 		}
 
-
+		sensor_msgs::PointCloud2 cloud_;
+		sick_scan::RadarScan radarMsg_;
 
 		std::vector<SickScanRadarObject> objectList;
 		std::vector<SickScanRadarRawTarget> rawTargetList;
@@ -821,15 +984,14 @@ namespace sick_scan
 				dlength = dend - dstart;
 				*dend = '\0';
 				dstart++;
-				parseAsciiDatagram(dstart, dlength, objectList, rawTargetList);
+				parseAsciiDatagram(dstart, dlength, &radarMsg_, objectList, rawTargetList);
 			}
 			else
 			{
 				dataToProcess = false;
 			}
 
-			sensor_msgs::PointCloud2 cloud_;
-			sick_scan::RadarScan radarMsg_;
+
 
 
 			enum RADAR_PROC_LIST {RADAR_PROC_RAW_TARGET, RADAR_PROC_TRACK, RADAR_PROC_NUM};
