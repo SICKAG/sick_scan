@@ -569,7 +569,7 @@ namespace sick_scan
 		m_nw.setReadCallbackFunction(readCallbackFunctionS, (void*)this);
     if (this->getEmulSensor())
     {
-      ROS_INFO("Sensor emulation is switched on - network traffic is switch off.");
+      ROS_INFO("Sensor emulation is switched on - network traffic is switched off.");
     } else
     {
 		m_nw.connect();

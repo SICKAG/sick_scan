@@ -2,8 +2,7 @@
 #
 #
 #
-# Version information for this whole structure (MeasurementData)
-uint32 VersionNo
+
 # Logical number of the device"
 uint32 uiIdent
 # Serial number of the device

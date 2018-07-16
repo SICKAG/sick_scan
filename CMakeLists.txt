@@ -46,6 +46,7 @@ add_message_files(
 		RadarPreHeaderDeviceBlock.msg
 		RadarPreHeaderMeasurementParam1Block.msg
 		RadarPreHeaderStatusBlock.msg
+		RadarPreHeaderEncoderBlock.msg
         RadarPreHeader.msg
 		RadarScan.msg
 )
