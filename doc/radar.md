@@ -6,6 +6,8 @@
 - [Raw Targets](#raw-targets)
 - [Tracking Objects](#tracking-objects)
 - [ROS message for Radar](#ros-message-for-radar)
+- [Parameter for Radar Usage](#parameter_for_radar_usage)
+- [Radar Datagram](radar_datagram.md)
 - [Visualization](#visualization)
 - [Launch Files](#launch-files)
 
@@ -168,7 +170,7 @@ The following launch files serve as examples for use:
 * radar_object_marker.launch : Conversion of radar messages to visualization messages
 * sick_rms_3xx_emul.launch: Additionally an emulation was created, which allows testing the interface chain without a physical radar.
 
-## Parameter or Radar Usage
+## Parameter for Radar Usage
 The following parameters are support by the node **sick_generic_caller** in
 combination with the RADAR RMS3xx:
 
