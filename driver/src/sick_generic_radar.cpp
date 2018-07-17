@@ -251,18 +251,18 @@ namespace sick_scan
 				                      PREHEADER_TOKEN_UI_VERSION_NO,
                               PREHEADER_TOKEN_UI_IDENT,
                               PREHEADER_TOKEN_UDI_SERIAL_NO,
-                              PREHEADER_TOKEN_XB_STATE,
-                              PREHEADER_TOKEN_UNKNOWN_0,
+                              PREHEADER_TOKEN_XB_STATE_0,
+                              PREHEADER_TOKEN_XB_STATE_1,
                               PREHEADER_TOKEN_TELEGRAM_COUNT, // 7
                               PREHEADER_TOKEN_CYCLE_COUNT,
                               PREHEADER_TOKEN_SYSTEM_COUNT_SCAN,
                               PREHEADER_TOKEN_SYSTEM_COUNT_TRANSMIT,
-                              PREHEADER_TOKEN_XB_INPUTS,
-                              PREHEADER_TOKEN_XB_OUTPUTS, // 12
-                              PREHEADER_TOKEN_CYCLE_DURATION,
-                              PREHEADER_TOKEN_NOISE_LEVEL,
-                              PREHEADER_TOKEN_UNKNOWN_1,
-                              PREHEADER_TOKEN_UNKNOWN_2,
+                              PREHEADER_TOKEN_XB_INPUTS_0,
+                              PREHEADER_TOKEN_XB_INPUTS_1,
+                              PREHEADER_TOKEN_XB_OUTPUTS_0, // 13
+                              PREHEADER_TOKEN_XB_OUTPUTS_1, // 14
+                              PREHEADER_TOKEN_CYCLE_DURATION, // 15
+                              PREHEADER_TOKEN_NOISE_LEVEL,    // 16
                               PREHEADER_NUM_ENCODER_BLOCKS, // 17
         PREHADERR_TOKEN_FIX_NUM};
 /*
@@ -273,16 +273,15 @@ namespace sick_scan
         8: DC0C           uiCycleCount (or uiScanCount???)
         9: 730E9D16       udiSystemCountScan
         10: 730EA06D       udiSystemCountTransmit
-        11: 0              xbInputs
-        12: 0              xbOutputs
+        11: 0              xbInputs[0]
+        12: 0              xbInputs[1]
+        13: 0              xbOutputs[0]
+        14: 0              xbOutputs[1]
 
         MeasurementParam1Block
         ======================
-        13: 0              MeasurementParam1Block.uiCycleDuration
-        14: 0              MeasurementParam1Block.uiNoiseLevel
-
-        15: 0              ???   not clear yet
-        16: 0              ???
+        15: 0              MeasurementParam1Block.uiCycleDuration
+        16: 0              MeasurementParam1Block.uiNoiseLevel
 
         aEncoderBlock
         =============
@@ -320,7 +319,7 @@ namespace sick_scan
         case PREHEADER_TOKEN_UDI_SERIAL_NO:
           msgPtr->radarPreHeader.radarPreHeaderDeviceBlock.udiSerialNo = (UINT32)(uliDummy & 0xFFFFFFFF);
           break;
-        case PREHEADER_TOKEN_XB_STATE:
+        case PREHEADER_TOKEN_XB_STATE_0:
           for (int j = 0; j < 3; j++)
           {
             bool flag = false;
@@ -337,7 +336,9 @@ namespace sick_scan
             }
           }
           break;
-        case PREHEADER_TOKEN_UNKNOWN_0: break;
+        case PREHEADER_TOKEN_XB_STATE_1:
+          // reserved - do nothing
+          break;
         case   PREHEADER_TOKEN_TELEGRAM_COUNT: // 7
           msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiTelegramCount = (UINT16)(uliDummy & 0xFFFF);
           break;
@@ -351,11 +352,19 @@ namespace sick_scan
         case PREHEADER_TOKEN_SYSTEM_COUNT_TRANSMIT:
           msgPtr->radarPreHeader.radarPreHeaderStatusBlock.udiSystemCountTransmit = (UINT32)(uliDummy & 0xFFFFFFFF);
           break;
-        case PREHEADER_TOKEN_XB_INPUTS:
-          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiInputs = (UINT16)(uliDummy & 0xFFFF);;
+        case PREHEADER_TOKEN_XB_INPUTS_0:
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiInputs = (UINT8)(uliDummy & 0xFF);;
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiInputs <<= 8;
           break;
-        case PREHEADER_TOKEN_XB_OUTPUTS: // 12
-          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiOutputs = (UINT16)(uliDummy & 0xFFFF);;
+        case PREHEADER_TOKEN_XB_INPUTS_1:
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiInputs |= (UINT8)(uliDummy & 0xFF);;
+          break;
+        case PREHEADER_TOKEN_XB_OUTPUTS_0:
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiOutputs = (UINT8)(uliDummy & 0xFF);;
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiOutputs <<= 8;
+          break;
+        case PREHEADER_TOKEN_XB_OUTPUTS_1:
+          msgPtr->radarPreHeader.radarPreHeaderStatusBlock.uiOutputs |= (UINT8)(uliDummy & 0xFF);;
           break;
         case PREHEADER_TOKEN_CYCLE_DURATION:
           msgPtr->radarPreHeader.radarPreHeaderMeasurementParam1Block.uiCycleDuration = (UINT16)(uliDummy & 0xFFFF);
@@ -363,17 +372,10 @@ namespace sick_scan
         case PREHEADER_TOKEN_NOISE_LEVEL:
           msgPtr->radarPreHeader.radarPreHeaderMeasurementParam1Block.uiNoiseLevel = (UINT16)(uliDummy & 0xFFFF);
           break;
-        case PREHEADER_TOKEN_UNKNOWN_1:
-          break;
-
-        case PREHEADER_TOKEN_UNKNOWN_2:
-          break;
-
         case PREHEADER_NUM_ENCODER_BLOCKS:
         {
           UINT16 u16NumberOfBlock = (UINT16)(uliDummy & 0xFFFF);
 
-          printf("Number of Blocks: %d\n", u16NumberOfBlock);
           if (u16NumberOfBlock > 0)
           {
             msgPtr->radarPreHeader.radarPreHeaderArrayEncoderBlock.resize(u16NumberOfBlock);
@@ -641,8 +643,8 @@ namespace sick_scan
     callCnt++;
 
     // end
-//    std::string header = "\x2sSN LMDradardata 1 1 112F6E9 0 0 DFB6 B055 6E596002 6E5AE0E5 0 0 0 0 0 0 1 0 0 ";
-    std::string header =   "\x2sSN LMDradardata 10 20 30 5 0 40 50 60 70 90 A0 B0 C0 D0 0 1 A000 FFFFFF00 ";
+    std::string header = "\x2sSN LMDradardata 1 1 112F6E9 0 0 DFB6 B055 6E596002 6E5AE0E5 0 0 0 0 0 0 1 0 0 ";
+    // std::string header =   "\x2sSN LMDradardata 10 20 30 5 6 40 50 60 70 90 A0 B0 C0 D0 E0 1 A000 FFFFFF00 ";
     int channel16BitCnt = 4;
 		// Faktoren fuer Rohziele: 40.0 0.16 0.04 1.00 1.00
 		float rawTargetFactorList[] = { 40.0f, 0.16f, 0.04f, 1.00f, 1.00f };
@@ -693,6 +695,8 @@ namespace sick_scan
 		float x = 20.0;
 		float speed = 50.0; // [m/s]
 		std::vector<SickScanRadarRawTarget> rawTargetList;
+
+#if 1
 		for (float y = -20; y <= 20.0; y += 2.0)
 		{
 			SickScanRadarRawTarget rawTarget;
@@ -708,6 +712,7 @@ namespace sick_scan
 			rawTarget.Vrad(vrad);
 			rawTargetList.push_back(rawTarget);
 		}
+#endif
 
 		std::vector<SickScanRadarObject> objectList;
 
@@ -718,16 +723,66 @@ namespace sick_scan
 			float y = 0.0;
 			for (int iY = -1; iY <= 1; iY += 2)
 			{
+        float xp[2] = {0};  // for raw target
+        float yp[2] = {0};
+        float vehicleWidth = 1.8;
 				y = iY * 2.0;
         float speed = y * 10.0f;
         vehicle.V3Dx(speed); // +/- 20 m/s
         vehicle.V3Dy(0.1f); // just for testing
 
-				vehicle.P3Dx((x + 0.1 * speed * (callCnt % 20)) * 1000.0);
+        float xOff  = 20.0;
+        if (speed < 0.0)
+        {
+          xOff = 100.0;
+        }
+				vehicle.P3Dx((xOff + 0.1 * speed * (callCnt % 20)) * 1000.0);
 				vehicle.P3Dy(y * 1000.0);
-				vehicle.ObjLength(6.0f + y);
+        float objLen = 6.0f + y;
+				vehicle.ObjLength(objLen);
+
 				vehicle.ObjId(objId++);
 				objectList.push_back(vehicle);
+
+        for (int i = 0; i < 2; i++)
+        {
+          SickScanRadarRawTarget rawTarget;
+
+          xp[i] = vehicle.P3Dx() * 0.001;
+          yp[i] = vehicle.P3Dy() * 0.001;
+
+          if  (i == 0)
+          {
+            xp[i] -= vehicleWidth/2.0;
+          }
+          else
+          {
+            xp[i] += vehicleWidth/2.0;
+          }
+          if (speed < 0.0)  // oncoming
+          {
+            yp[i] -= objLen * 0.5;
+          }
+          else
+          {
+            yp[i] += objLen * 0.5;
+          }
+
+          float azimuth = atan2(yp[i], xp[i]);
+          float dist = sqrt(xp[i]*xp[i] + yp[i]*yp[i]);
+          float vrad = speed * cos(azimuth);  // speed in y direction
+          float mode = 0;
+          float ampl = 50.0;  // between 30 and 70
+
+          rawTarget.Ampl(ampl);
+          rawTarget.Mode(mode);
+          rawTarget.Dist(dist);
+          rawTarget.Azimuth(azimuth);
+          rawTarget.Vrad(vrad);
+          rawTargetList.push_back(rawTarget);
+
+        }
+
 			}
 
 
@@ -1085,6 +1140,7 @@ namespace sick_scan
 							off++;
 						}
 #ifndef _MSC_VER
+#if 0 // just for debugging
 						switch (iLoop)
 						{
 							case RADAR_PROC_RAW_TARGET:
@@ -1094,7 +1150,7 @@ namespace sick_scan
 								this->commonPtr->cloud_radar_track_pub_.publish(cloud_);
 								break;
 						}
-
+#endif
 #else
 						printf("PUBLISH:\n");
 #endif
@@ -1115,6 +1171,9 @@ namespace sick_scan
       radarMsg_.objects.resize(objectList.size());
       for (int i = 0; i < radarMsg_.objects.size(); i++)
       {
+        float vx =  objectList[i].V3Dx();
+        float vy =  objectList[i].V3Dy();
+        float v = sqrt(vx*vx + vy *vy);
         float heading = atan2( objectList[i].V3Dy(), objectList[i].V3Dx());
 
         radarMsg_.objects[i].velocity.twist.linear.x = objectList[i].V3Dx();
@@ -1124,10 +1183,15 @@ namespace sick_scan
         radarMsg_.objects[i].bounding_box_center.position.x = objectList[i].P3Dx();
         radarMsg_.objects[i].bounding_box_center.position.y = objectList[i].P3Dy();
         radarMsg_.objects[i].bounding_box_center.position.z = 0.0;
-        radarMsg_.objects[i].bounding_box_center.orientation.x = cos(heading);
-        radarMsg_.objects[i].bounding_box_center.orientation.y = sin(heading);
-        radarMsg_.objects[i].bounding_box_center.orientation.z = 0.0;
-        radarMsg_.objects[i].bounding_box_center.orientation.w = 1.0; // homogeneous coordinates
+
+				float heading2 = heading/2.0;
+        // (n_x, n_y, n_z) = (0, 0, 1), so (x, y, z, w) = (0, 0, sin(theta/2), cos(theta/2))
+        /// https://answers.ros.org/question/9772/quaternions-orientation-representation/
+        // see also this beautiful website: https://quaternions.online/
+        radarMsg_.objects[i].bounding_box_center.orientation.x = 0.0;
+        radarMsg_.objects[i].bounding_box_center.orientation.y = 0.0;
+        radarMsg_.objects[i].bounding_box_center.orientation.z = sin(heading2);
+        radarMsg_.objects[i].bounding_box_center.orientation.w = cos(heading2);
 
 
         radarMsg_.objects[i].bounding_box_size.x = objectList[i].ObjLength();

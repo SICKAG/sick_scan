@@ -87,10 +87,11 @@
 // 001.002.001: Bug in bin_scanf fixed (number of counted arguments was always 1)
 // 001.002.002: MRS1xxx/LMS1xxx - legacy device ident cmd. changed to new device ident cmd
 // 001.002.003: MRS1xxx/LMS1xxx - support of hector_slam integrated
+// 001.002.004: RMS3xx - profiling and radar support optimized
 //
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "002"  
-#define SICK_GENERIC_PATCH_LEVEL "003"
+#define SICK_GENERIC_PATCH_LEVEL "004"
 
 #include <algorithm> // for std::min
 

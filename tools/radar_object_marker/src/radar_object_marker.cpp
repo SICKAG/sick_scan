@@ -224,6 +224,14 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
     pub.publish(rawTargetArray[iLoop]);
   }
 #if 1
+
+  /***********************************************************************
+   *
+   *
+   * Drawing marker for objects
+   *
+   ***********************************************************************
+   */
   visualization_msgs::MarkerArray object_boxes;
   object_boxes.markers.resize(2 * oa->objects.size());
 
@@ -243,13 +251,18 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
       object_boxes.markers[idx].color.b = GLASBEY_LUT[tmpId * 3 + 2] / 255.0;
       object_boxes.markers[idx].lifetime = ros::Duration(2.5);
 
-      object_boxes.markers[idx].pose = oa->objects[i].object_box_center.pose;
+      /* object box center is the reference ...
+       * */
+      object_boxes.markers[idx].pose = oa->objects[i].object_box_center.pose;  // Position and Orientation
       object_boxes.markers[idx].scale = oa->objects[i].object_box_size;
+
       switch (iLoop)
       {
-        case 0:
+        case 0:  // Drawing object cubes
           object_boxes.markers[idx].type = visualization_msgs::Marker::CUBE;
           object_boxes.markers[idx].pose.position.z  +=  oa->objects[i].object_box_size.z * 0.5;
+
+
           break;
         case 1:
           object_boxes.markers[idx].type = visualization_msgs::Marker::ARROW;
@@ -281,22 +294,47 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
           object_boxes.markers[idx].scale.y = 0.5;
           object_boxes.markers[idx].scale.z = 0.5;
 
-          float cosVal =  oa->objects[i].object_box_center.pose.orientation.x;
-          float sinVal =  oa->objects[i].object_box_center.pose.orientation.y;
 
+
+/*          float cosVal =  oa->objects[i].object_box_center.pose.orientation.x;
+          float sinVal =  oa->objects[i].object_box_center.pose.orientation.y;
+*/
           xTmp = oa->objects[i].object_box_center.pose.position.x;
           yTmp = oa->objects[i].object_box_center.pose.position.y;
 
           double vehLen = oa->objects[i].object_box_size.x;
+
+
+          float quaternion[4] = {0};
+          // rotation around z-axis: [cos(theta/2.0), 0, 0, sin(theta/2.0) ]
+          quaternion[0] = oa->objects[i].object_box_center.pose.orientation.x;
+          quaternion[1] = oa->objects[i].object_box_center.pose.orientation.y;
+          quaternion[2] = oa->objects[i].object_box_center.pose.orientation.z;
+          quaternion[3] = oa->objects[i].object_box_center.pose.orientation.w;
+
+          // (n_x, n_y, n_z) = (0, 0, 1), so (x, y, z, w) = (0, 0, sin(theta/2), cos(theta/2)).
+          // see https://answers.ros.org/question/9772/quaternions-orientation-representation/
+          float theta2 = atan2(quaternion[2], quaternion[3]);
+          float theta = 2.0f * theta2;
+          float cosVal = cos(theta);
+          float sinVal = sin(theta);
           xTmp += cosVal * vehLen * 0.5;
           yTmp += sinVal * vehLen * 0.5;
           object_boxes.markers[idx].pose.position.x = xTmp;
           object_boxes.markers[idx].pose.position.y = yTmp;
           object_boxes.markers[idx].pose.position.z = 0.0;
 
+          // oa->objects[i].object_box_center.pose.orientation;
+          // Arrow orientation is already rotated
+          object_boxes.markers[idx].pose.orientation.x = 0.0;
+          object_boxes.markers[idx].pose.orientation.y = 0.0;
+          object_boxes.markers[idx].pose.orientation.z = 0.0;
+          object_boxes.markers[idx].pose.orientation.w = 0.0;
+
           object_boxes.markers[idx].points.resize(2);
           object_boxes.markers[idx].points[0].x = 0.0;
           object_boxes.markers[idx].points[0].y = 0.0;
+          object_boxes.markers[idx].points[0].z = 0.0;
 
           float absSpeed = 0.0;
           for (int j = 0; j < 3; j++)
@@ -316,8 +354,10 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
           {
             lengthOfArrow = -objectArrowScale;  // if scale is negative take its absolute value as length of arrow in [m]
           }
+          // lengthOfArrow = 5.0;
           object_boxes.markers[idx].points[1].x = 0.0 + lengthOfArrow * cosVal;
           object_boxes.markers[idx].points[1].y = 0.0 + lengthOfArrow * sinVal;
+          object_boxes.markers[idx].points[1].z = 0.0;
         }
           break;
       }
@@ -333,6 +373,7 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
   int main(int argc, char **argv)
     {
 
+    ROS_INFO("radar_object_marker, compiled at [%s] [%s]", __DATE__, __TIME__);
     RadarObjectMarkerCfg *cfgPtr = &boost::serialization::singleton<RadarObjectMarkerCfg>::get_mutable_instance();
     ros::init(argc, argv, "radar_object_marker");
     ros::NodeHandle nh;
@@ -368,6 +409,8 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
     {
       cfgPtr->setPaletteUsed(false);
     }
+
+    ROS_INFO("Subscribing to radar and pulishing to radar_markers");
 
     ros::Subscriber sub = nh.subscribe("radar", 1, callback);
     pub = nh.advertise<visualization_msgs::MarkerArray>("radar_markers", 1);
