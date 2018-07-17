@@ -42,6 +42,7 @@
 
   </node>
 
+<?ignore
 
   <arg name="rviz"    default="true" />
   <arg name="rviz_file" default="$(find sick_scan)/launch/rviz/combi.rviz" />
@@ -51,7 +52,6 @@
        args="record -o ~/rosbag_data/combi -a --lz4"
        if="$(arg record_data)" />
 
-<?ignore
  <node pkg="rosbag" type="record" name="rosbag_record_scanner_radar"
        args="record -a --lz4"/>
 

@@ -5,6 +5,6 @@
      EXPERIMENTAL - brand new driver
   -->
 <launch>
-  <node name="radar_object_marker" pkg="sick_scan" type="sick_scan_radar_object_marker" respawn="false" output="screen">
+  <node name="radar_object_marker" pkg="sick_scan" type="radar_object_marker" respawn="false" output="screen">
   </node>
 </launch>

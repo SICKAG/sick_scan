@@ -696,7 +696,7 @@ namespace sick_scan
 		float speed = 50.0; // [m/s]
 		std::vector<SickScanRadarRawTarget> rawTargetList;
 
-#if 1
+#if 0 // simulate railway crossing
 		for (float y = -20; y <= 20.0; y += 2.0)
 		{
 			SickScanRadarRawTarget rawTarget;
@@ -753,19 +753,19 @@ namespace sick_scan
 
           if  (i == 0)
           {
-            xp[i] -= vehicleWidth/2.0;
+            yp[i] -= vehicleWidth/2.0;
           }
           else
           {
-            xp[i] += vehicleWidth/2.0;
+            yp[i] += vehicleWidth/2.0;
           }
           if (speed < 0.0)  // oncoming
           {
-            yp[i] -= objLen * 0.5;
+            xp[i] -= objLen * 0.5;
           }
           else
           {
-            yp[i] += objLen * 0.5;
+            xp[i] += objLen * 0.5;
           }
 
           float azimuth = atan2(yp[i], xp[i]);
