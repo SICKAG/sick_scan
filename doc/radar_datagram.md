@@ -5,8 +5,10 @@
 - [Structure of Radar Datagram](#structure_of_radar_datagram)
 ## Introduction
 
-For a comprehensive explanation of the radar datagrams, 
-please refer to the literature of SICK. This documentation gives an overview of the structure of the radar datagrams. With regard to the PreHeader, final consultations will be carried out with SICK, so that slight changes may still occur here in Q3/2018.
+This documentation gives an 
+overview of the structure of the radar datagrams. 
+With regard to the PreHeader, final consultations will be carried out with SICK, so that slight changes may 
+still occur here in Q3/2018.
 
 ## Structure of Radar Datagram
 
@@ -28,6 +30,9 @@ rosmsg show sick_scan/RadarScan'
 
 The following is a short datagram showing the structure of the radar datagram. 
 The position of the individual elements for the data of the PreHeader is explained below.
+For further information you can look up in the attached [PDF](telegram_listing_RMS320_20171101.pdf), 
+which has been provided by SICK in a preliminary form and 
+may be updated again in the near future.
 
 ###### Example of very short radar datagram:
 
@@ -69,10 +74,9 @@ In the following, the individual tokens are numbered one after another and their
                    Initialisation: False
                    Meaning       : bContaminationError
                                       
-                   0.3 ... 1.7 Bool      : Value Range False, True
+                   0.3 ...  0.7
+  6: 0             1.0 ...  1.7 Bool      : Value Range False, True
                                            Reserved
-                   Value Range 0..8191
-  6: 0             ????
 
 StatusBlock
 ===========                   
@@ -80,23 +84,22 @@ StatusBlock
   8: DC0C           uiCycleCount (or uiScanCount???)
   9: 730E9D16       udiSystemCountScan
  10: 730EA06D       udiSystemCountTransmit
- 11: 0              xbInputs
- 12: 0              xbOutputs
+ 11: 0              xbInputs (Bit 0.0 .. 0.7)
+ 12: 0              xbInputs (Bit 1.0 .. 1.7)
+ 13: 0              xbOutputs (Bit 0.0 .. 0.7)
+ 14: 0              xbOutputs (Bit 1.0 .. 1.7)
  
 MeasurementParam1Block
 ======================
- 13: 0              MeasurementParam1Block.uiCycleDuration
- 14: 0              MeasurementParam1Block.uiNoiseLevel
- 
- 15: 0              ???
- 16: 0              ???
+ 15: 0              MeasurementParam1Block.uiCycleDuration
+ 16: 0              MeasurementParam1Block.uiNoiseLevel
 
 aEncoderBlock
 ============= 
  17: 1              Number of aEncoderBlocks
  
  
- 18: 0              aEncoderBlock[0].udiEncoderPos                    
+ 18: 0              aEncoderBlock[0].udiEncoderPos                     
  19: 0              aEncoderBlock[0].iEncoderSpeed
  
  20: 4              Number of following data channels
