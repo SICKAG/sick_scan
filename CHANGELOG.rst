@@ -2,6 +2,43 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.0.xx (2018-07-19)
+* ipconfig.md documentation added
+* Radar Simulation optimized
+* RMS3xx documentation
+* Radar preheader parsing
+* Radar datagram explanation
+* Typo in MRS6124 configuration fixed
+* Profiling software
+* radar visualization optimized
+* Added description for slam example
+* setup script for slam test
+* CMakeLists.txt opimized
+* Change ip address in launch files to default ip address
+* SLAM-Support documentation
+* hector slam support tested
+* radar documentation added
+* timestamp of radar msg. improved
+* launch file for rosbag testing added
+* Launch file for combination of laser scanner and radar added
+* PCL converter ignores missing intensity values
+* point cloud2image filter added, timestamping optimized
+* Device Identiier handling opimized for MRS1xxx and LMS1xxx
+* omitting of laserscan frameid fixed
+* debug messages removed from test script
+* generation of test launch file without starting the test can be controlled by using setting flag entry launch_only to true.
+* Switching of radar properties improved
+* Bugfixing of binary scanf to avoid wrong memory access
+* Tracking method and output selection for radar
+* Test application for using min/max-interval checking and added more test parameter
+* readme.md updated
+* Copyright added
+* licensed under apache 2.0
+* patches for ubuntu
+* support of radar simulation
+* radar support RMS3xx in sick_scan
+* Merge remote-tracking branch 'SICKAG/master' into devel
+
 0.0.13 (2018-05-02)
 -------------------
 * moved some cpp files to ensure Debian compatibility
