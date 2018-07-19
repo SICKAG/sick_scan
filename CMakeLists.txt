@@ -111,7 +111,7 @@ add_executable(pcl_converter tools/pcl_converter/src/pcl_converter.cpp tools/pcl
 target_link_libraries(pcl_converter
         ${catkin_LIBRARIES}
         ${roslib_LIBRARIES}
-        ${PCL_LIBRARIES})   
+        ${PCL_LIBRARIES})
 
 
 # add_executable( pcl_find_plane tools/pcl_converter/src/pcl_find_plane.cpp)
