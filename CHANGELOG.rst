@@ -2,6 +2,9 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.0.xx (2018-07-19)
+-------------------
+
 0.0.13 (2018-05-02)
 -------------------
 * moved some cpp files to ensure Debian compatibility
