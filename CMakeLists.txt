@@ -28,6 +28,7 @@ find_package(catkin REQUIRED
       geometry_msgs
       std_msgs
       sensor_msgs
+      visualization_msgs
       message_generation
       pcl_conversions
       pcl_ros
