@@ -13,14 +13,15 @@ To ensure that the settings are retained even after a Powercycle, they must be s
 ![SOPAS save eeprom](./save_permanent.PNG "SOPAS save eeprom")
 To test the settings under Windows use the comandos ```ipconfig``` and ```ping``` in the ```cmd.exe```. Make sure that the scanner and host pc have different ip addresses e.g. 192.168.0.110 for the pc and 192.168.0.71 for the scanner. 
 ![Windows ping](./ipconfig_windows.PNG "windows ip config")
-##test connection under Linux
+## test connection under Linux
 to test the settings under the Linux target system you can use netcat to check if a TCP connection to the scanner can be established
 ```nc -z -v -w5 $SCANNERIPADDRESS 2112```
-
 the connection can be successfully established
+
 ![Linux netcat scanner](./nc_scanner.PNG "linux netcat scanner")
 
-unlike a ping, the connection attempt to the hostpc is not successful 
+unlike a ping, the connection attempt to the hostpc is not successful
+
 ![Linux netcat host](./nc_win_host.PNG "linux netcat host")
 ------------------------------------------------------------------------
 
