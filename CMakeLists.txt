@@ -108,7 +108,11 @@ target_link_libraries(radar_object_marker sick_scan_lib)
 
 add_executable(pcl_converter tools/pcl_converter/src/pcl_converter.cpp tools/pcl_converter/src/gnuplotPaletteReader.cpp)
 
-target_link_libraries(pcl_converter ${catkin_LIBRARIES})
+target_link_libraries(pcl_converter
+        ${catkin_LIBRARIES}
+        ${roslib_LIBRARIES}
+        ${PCL_LIBRARIES})
+
 
 # add_executable( pcl_find_plane tools/pcl_converter/src/pcl_find_plane.cpp)
 # target_link_libraries(pcl_find_plane ${catkin_LIBRARIES})
