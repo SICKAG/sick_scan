@@ -1,6 +1,6 @@
-#IP addresses configuration
+# IP addresses configuration
 
-##Starting with a new scanner
+## Starting with a new scanner
 The scanner is delivered with a standard IP address, to read or change it the [SICK SOPAS ET](https://www.sick.com/de/de/sopas-engineering-tool-2018/p/p367244) for windows can be used.
 When the tool is started, a search is performed which lists all scanners available in the network. 
 ![SOPAS start](./scanner_found.PNG "SOPAS start")
