@@ -97,6 +97,21 @@ namespace sick_scan
 			CMD_SET_PARTIAL_SCANDATA_CFG,
 			CMD_STOP_SCANDATA,
 			CMD_START_SCANDATA,
+			CMD_START_RADARDATA,
+			// start of radar specific commands
+			CMD_SET_TRANSMIT_RAWTARGETS_ON,  // transmit raw target for radar
+  		CMD_SET_TRANSMIT_RAWTARGETS_OFF, // do not transmit raw target for radar
+
+      CMD_SET_TRANSMIT_OBJECTS_ON,  // transmit raw target for radar
+      CMD_SET_TRANSMIT_OBJECTS_OFF, // do not transmit raw target for radar
+
+			CMD_SET_TRACKING_MODE_0,  // set radar tracking mode to "BASIC"
+			CMD_SET_TRACKING_MODE_1,  // set radar tracking mode to "TRAFFIC"
+
+      CMD_LOAD_APPLICATION_DEFAULT, // load application default
+      CMD_DEVICE_TYPE,
+      CMD_ORDER_NUMBER,
+      // end of radar specific commands
 			CMD_START_MEASUREMENT,
 			CMD_STOP_MEASUREMENT,
 			CMD_SET_ECHO_FILTER,
@@ -186,7 +201,25 @@ namespace sick_scan
 		 */
 
 		SickScanCommonNw m_nw;
-	protected:
+
+		SickScanConfig* getConfigPtr()
+		{
+			return(&config_);
+		}
+
+		// move back to private
+				/* FÜR MRS10000 brauchen wir einen Publish und eine NAchricht */
+				// Should we publish laser or point cloud?
+				// ros::Publisher cloud_pub_;
+				ros::Publisher cloud_pub_;
+				ros::Publisher cloud_radar_rawtarget_pub_;
+				ros::Publisher cloud_radar_track_pub_;
+				ros::Publisher radarScan_pub_;
+				// sensor_msgs::PointCloud cloud_;
+				sensor_msgs::PointCloud2 cloud_;
+		//////
+
+		protected:
 		virtual int init_device() = 0;
 		virtual int init_scanner();
 		virtual int stop_scanner();
@@ -201,12 +234,13 @@ namespace sick_scan
 		virtual int sendSOPASCommand(const char* request, std::vector<unsigned char> * reply, int cmdLen = -1) = 0;
 		/// Read a datagram from the device.
 		/**
+		 * \param [out] recvTimeStamp timestamp of received packet
 		 * \param [in] receiveBuffer data buffer to fill
 		 * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
 		 * \param [out] actual_length the actual amount of data written
 		 * \param [in] isBinaryProtocol used Communication protocol True=Binary false=ASCII
 		 */
-		virtual int get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol) = 0;
+		virtual int get_datagram( ros::Time& recvTimeStamp, unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol) = 0;
 
 		/// Converts reply from sendSOPASCommand to string
 		/**
@@ -240,6 +274,9 @@ namespace sick_scan
 		diagnostic_updater::Updater diagnostics_;
 
 
+		// Dynamic Reconfigure
+		SickScanConfig config_;
+
 	private:
 		SopasProtocol m_protocolId;
 		// ROS
@@ -248,19 +285,12 @@ namespace sick_scan
 		ros::Publisher datagram_pub_;
 		bool publish_datagram_;
 
-		/* FÜR MRS10000 brauchen wir einen Publish und eine NAchricht */
-		  // Should we publish laser or point cloud?
-		  // ros::Publisher cloud_pub_;
-		ros::Publisher cloud_pub_;
-		// sensor_msgs::PointCloud cloud_;
-		sensor_msgs::PointCloud2 cloud_;
 
 		// Diagnostics
 		diagnostic_updater::DiagnosedPublisher<sensor_msgs::LaserScan>* diagnosticPub_;
 		double expectedFrequency_;
 
-		// Dynamic Reconfigure
-		SickScanConfig config_;
+
 #ifndef _MSC_VER
 		dynamic_reconfigure::Server<sick_scan::SickScanConfig> dynamic_reconfigure_server_;
 #endif
@@ -276,7 +306,11 @@ namespace sick_scan
 
 		int  outputChannelFlagId;
 		bool checkForProtocolChangeAndMaybeReconnect(bool& useBinaryCmdNow);
+		void setSensorIsRadar(bool _isRadar);
+		bool getSensorIsRadar(void);
 		int readTimeOutInMs;
+private:
+	bool sensorIsRadar;
 	};
 
 } /* namespace sick_scan */

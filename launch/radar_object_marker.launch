@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!--
+     LAUNCH-FILE for
+     RADAR OBJECT MARKER
+     EXPERIMENTAL - brand new driver
+  -->
+<launch>
+  <node name="radar_object_marker" pkg="sick_scan" type="radar_object_marker" respawn="false" output="screen">
+  </node>
+</launch>

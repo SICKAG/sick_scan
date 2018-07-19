@@ -65,6 +65,8 @@
 #include <iterator>
 #include <boost/lexical_cast.hpp>
 #include <vector>
+#include <sick_scan/sick_generic_radar.h>
+
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
@@ -83,6 +85,105 @@ static int getDiagnosticErrorCode()
 }
 namespace sick_scan
 {
+   bool emulateReply(UINT8*requestData, int requestLen, std::vector<unsigned char>* replyVector)
+   {
+     std::string request;
+     std::string reply;
+     std::vector<std::string> keyWordList;
+     std::vector<std::string> answerList;
+
+     keyWordList.push_back("sMN SetAccessMode");
+     answerList.push_back("sAN SetAccessMode 1");
+
+     keyWordList.push_back("sWN EIHstCola");
+     answerList.push_back("sWA EIHstCola");
+
+     keyWordList.push_back("sRN FirmwareVersion");
+     answerList.push_back("sRA FirmwareVersion 8 1.0.0.0R");
+
+		 keyWordList.push_back("sRN OrdNum");
+		 answerList.push_back("sRA OrdNum 7 1234567");
+
+		 keyWordList.push_back("sWN TransmitTargets 1");
+		 answerList.push_back("sWA TransmitTargets");
+
+		 keyWordList.push_back("sWN TransmitObjects 1");
+		 answerList.push_back("sWA TransmitObjects");
+
+		 keyWordList.push_back("sWN TCTrackingMode 0");
+		 answerList.push_back("sWA TCTrackingMode");
+
+		 keyWordList.push_back("sRN SCdevicestate");
+     answerList.push_back("sRA SCdevicestate 1");
+
+		 keyWordList.push_back("sRN DItype");
+		 answerList.push_back("sRA DItype D RMS3xx-xxxxxx");
+
+		 keyWordList.push_back("sRN ODoprh");
+		 answerList.push_back("sRA ODoprh 451");
+
+		 keyWordList.push_back("sMN mSCloadappdef");
+		 answerList.push_back("sAN mSCloadappdef");
+
+
+		 keyWordList.push_back("sRN SerialNumber");
+		 answerList.push_back("sRA SerialNumber 8 18020073");
+
+		 keyWordList.push_back("sMN Run");
+     answerList.push_back("sAN Run 1s");
+
+     keyWordList.push_back("sRN ODpwrc");
+     answerList.push_back("sRA ODpwrc 20");
+
+     keyWordList.push_back("sRN LocationName");
+     answerList.push_back("sRA LocationName B not defined");
+
+     keyWordList.push_back("sEN LMDradardata 1");
+     answerList.push_back("sEA LMDradardata 1");
+
+     for (int i = 0; i < requestLen; i++)
+     {
+       request += (char)requestData[i];
+     }
+     for (int i = 0; i < keyWordList.size(); i++)
+     {
+       if (request.find(keyWordList[i]) != std::string::npos)
+       {
+         reply = (char)0x02;
+         reply += answerList[i];
+         reply += (char)0x03;
+       }
+     }
+
+     replyVector->clear();
+     for (int i = 0; i < reply.length(); i++)
+     {
+       replyVector->push_back((unsigned char)reply[i]);
+     }
+
+/*
+ * [ INFO] [1528529344.549395616]: Sending  : sMN SetAccessMode 3 F4724744
+[ INFO] [1528529344.561586132]: Receiving: <STX>sAN SetAccessMode 1<ETX>
+[ INFO] [1528529344.762744671]: Sending  : sWN EIHstCola 0
+[ INFO] [1528529344.773724438]: Receiving: <STX>sWA EIHstCola<ETX>
+[ INFO] [1528529344.974179025]: Sending  : sRN FirmwareVersion
+[ INFO] [1528529344.984661053]: Receiving: <STX>sRA FirmwareVersion 8 1.0.0.0R<ETX>
+[ INFO] [1528529345.185611387]: Sending  : sRN SCdevicestate
+[ INFO] [1528529345.196674196]: Receiving: <STX>sRA SCdevicestate 0<ETX>
+[ INFO] [1528529345.397188260]: Sending  : sRN ODoprh
+[ INFO] [1528529345.408031755]: Receiving: <STX>sRA ODoprh 451<ETX>
+[ INFO] [1528529345.614470312]: Sending  : sRN ODpwrc
+[ INFO] [1528529345.625206208]: Receiving: <STX>sRA ODpwrc 20<ETX>
+[ INFO] [1528529345.833883454]: Sending  : sRN LocationName
+[ INFO] [1528529345.844817147]: Receiving: <STX>sRA LocationName B not defined<ETX>
+[ INFO] [1528529345.847471777]: Sending  : sEN LMDradardata 1
+[ INFO] [1528529345.858786921]: Receiving: <STX>sEA LMDradardata 1<ETX>
+ */
+
+     return(true);
+   }
+
+
 
 	SickScanCommonTcp::SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser* parser, char cola_dialect_id)
 		:
@@ -94,6 +195,7 @@ namespace sick_scan
 		timelimit_(timelimit)
 	{
 
+		setEmulSensor(false);
 		if ((cola_dialect_id == 'a') || (cola_dialect_id == 'A'))
 		{
 			this->setProtocolType(CoLa_A);
@@ -171,7 +273,25 @@ namespace sick_scan
 		}
 	}
 #endif
+/*!
+		\brief Set emulation flag (using emulation instead of "real" scanner - currently implemented for radar
+		\param _emulFlag: Flag to switch emulation on or off
+		\return
+*/
+	void SickScanCommonTcp::setEmulSensor(bool _emulFlag)
+	{
+		m_emulSensor = _emulFlag;
+	}
 
+/*!
+		\brief get emulation flag (using emulation instead of "real" scanner - currently implemented for radar
+		\param
+		\return bool: Flag to switch emulation on or off
+*/
+	bool SickScanCommonTcp::getEmulSensor()
+	{
+		return(m_emulSensor);
+	}
 
 	//
 	// Look for 23-frame (STX/ETX) in receive buffer.
@@ -354,7 +474,7 @@ namespace sick_scan
  * hereingekommen sind.
  */
 
-	void SickScanCommonTcp::processFrame(SopasEventMessage& frame)
+	void SickScanCommonTcp::processFrame(ros::Time timeStamp, SopasEventMessage& frame)
 	{
 
 		if (getProtocolType() == CoLa_A)
@@ -369,11 +489,15 @@ namespace sick_scan
 		}
 
 		// Push frame to recvQueue
-		recvQueue.push(std::vector<unsigned char>(frame.getRawData(), frame.getRawData() + frame.size()));
 
-	}
+    DatagramWithTimeStamp dataGramWidthTimeStamp(timeStamp, std::vector<unsigned char>(frame.getRawData(), frame.getRawData() + frame.size()));
+		// recvQueue.push(std::vector<unsigned char>(frame.getRawData(), frame.getRawData() + frame.size()));
+    recvQueue.push(dataGramWidthTimeStamp);
+    	}
+
 	void SickScanCommonTcp::readCallbackFunction(UINT8* buffer, UINT32& numOfBytes)
 	{
+    ros::Time rcvTimeStamp = ros::Time::now(); // stamp received datagram
 		bool beVerboseHere = false;
 		printInfoMessage("SickScanCommonNw::readCallbackFunction(): Called with " + toString(numOfBytes) + " available bytes.", beVerboseHere);
 
@@ -419,7 +543,7 @@ namespace sick_scan
 				{
 					// A frame was found in the buffer, so process it now.
 					printInfoMessage("SickScanCommonNw::readCallbackFunction(): Processing a frame of length " + ::toString(frame.size()) + " bytes.", beVerboseHere);
-					processFrame(frame);
+					processFrame(rcvTimeStamp, frame);
 					UINT32 bytesToMove = m_numberOfBytesInReceiveBuffer - size;
 					memmove(&(m_receiveBuffer[0]), &(m_receiveBuffer[size]), bytesToMove); // payload+magic+length+s+checksum
 					m_numberOfBytesInReceiveBuffer = bytesToMove;
@@ -436,113 +560,6 @@ namespace sick_scan
 		}
 	}
 
-	void SickScanCommonTcp::readCallbackFunctionOld(UINT8* buffer, UINT32& numOfBytes)
-	{
-		// should be member variable in the future
-
-
-#if 0
-
-		this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-
-		if (this->getReplyMode() == 0)
-		{
-			this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-			return;
-		}
-#endif
-
-		// starting with 0x02 - but no magic word -> ASCII-Command-Reply
-		if ((numOfBytes < 2) && (m_alreadyReceivedBytes == 0))
-		{
-			return;  // ultra short message (only 1 byte) must be nonsense 
-		}
-		if ((buffer[0] == 0x02) && (buffer[1] != 0x02)) // no magic word, but received initial 0x02 -> guess Ascii reply
-		{
-			if (numOfBytes > 0)
-			{
-				// check last character of message - must be 0x03 
-				char lastChar = buffer[numOfBytes - 1];  // check last for 0x03
-				if (lastChar == 0x03)  
-				{
-					memcpy(m_packetBuffer, buffer, numOfBytes);
-					m_alreadyReceivedBytes = numOfBytes;
-					recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + numOfBytes));
-					m_alreadyReceivedBytes = 0;
-				}
-				else
-				{
-
-					ROS_WARN("Dropping packages???\n");
-					FILE *fout = fopen("/tmp/package.bin", "wb");
-					if (fout != NULL)
-					{
-						fwrite(m_packetBuffer, 1, numOfBytes, fout);
-						fclose(fout);
-					}
-				}
-			}
-		}
-
-		if ((numOfBytes < 9) && (m_alreadyReceivedBytes == 0))
-		{
-			return;
-		}
-
-
-		// check magic word for cola B
-		if ((m_alreadyReceivedBytes > 0) || (buffer[0] == 0x02 && buffer[1] == 0x02 && buffer[2] == 0x02 && buffer[3] == 0x02))
-		{
-			std::string command;
-			UINT16 nextData = 4;
-			UINT32 numberBytes = numOfBytes;
-			if (m_alreadyReceivedBytes == 0)
-			{
-				const char *packetKeyWord = "sSN LMDscandata";
-				m_lastPacketSize = colab::getIntegerFromBuffer<UINT32>(buffer, nextData);
-				//
-				m_lastPacketSize += 9; // Magic number + CRC
-
-				// Check for "normal" command reply
-				if (strncmp((char *)(buffer + 8), packetKeyWord, strlen(packetKeyWord)) != 0)
-				{
-					// normal command reply
-					this->recvQueue.push(std::vector<unsigned char>(buffer, buffer + numOfBytes));
-					return;
-				}
-
-				// probably a scan
-				if (m_lastPacketSize > 4000)
-				{
-					INT16 topmostLayerAngle = 1350 * 2 - 62; // for identification of first layer of a scan
-					UINT16 layerPos = 24 + 26;
-					INT16 layerAngle = colab::getIntegerFromBuffer<INT16>(buffer, layerPos);
-
-					if (layerAngle == topmostLayerAngle)
-					{
-						// wait for all 24 layers
-						// m_lastPacketSize = m_lastPacketSize * 24;
-
-						// traceDebug(MRS6xxxB_VERSION) << "Received new scan" << std::endl;
-					}
-				}
-			}
-
-			// copy
-			memcpy(m_packetBuffer + m_alreadyReceivedBytes, buffer, numOfBytes);
-			m_alreadyReceivedBytes += numberBytes;
-
-			if (m_alreadyReceivedBytes < m_lastPacketSize)
-			{
-				// wait for completeness of packet
-				return;
-			}
-
-			m_alreadyReceivedBytes = 0;
-			recvQueue.push(std::vector<unsigned char>(m_packetBuffer, m_packetBuffer + m_lastPacketSize));
-		}
-	}
-
 
 	int SickScanCommonTcp::init_device()
 	{
@@ -550,7 +567,13 @@ namespace sick_scan
 		sscanf(port_.c_str(), "%d", &portInt);
 		m_nw.init(hostname_, portInt, disconnectFunctionS, (void*)this);
 		m_nw.setReadCallbackFunction(readCallbackFunctionS, (void*)this);
+    if (this->getEmulSensor())
+    {
+      ROS_INFO("Sensor emulation is switched on - network traffic is switched off.");
+    } else
+    {
 		m_nw.connect();
+    }
 		return ExitSuccess;
 	}
 
@@ -612,9 +635,10 @@ namespace sick_scan
 			return(ExitError);
 		}
 		boost::condition_variable cond_;
-		std::vector<unsigned char> recvData = this->recvQueue.pop();
-		*bytes_read = recvData.size();
-		memcpy(buffer, &(recvData[0]), recvData.size());
+    DatagramWithTimeStamp datagramWithTimeStamp = this->recvQueue.pop();
+
+    *bytes_read = datagramWithTimeStamp.datagram.size();
+		memcpy(buffer, &(datagramWithTimeStamp.datagram[0]), datagramWithTimeStamp.datagram.size());
 		return(ExitSuccess);
 	}
 
@@ -670,7 +694,14 @@ namespace sick_scan
 				msgLen = 8 + dataLen + 1; // 8 Msg. Header + Packet +
 			}
 #if 1
-			m_nw.sendCommandBuffer((UINT8*)request, msgLen);
+      if (getEmulSensor())
+      {
+        emulateReply((UINT8*)request, msgLen, reply);
+      }
+      else
+      {
+        m_nw.sendCommandBuffer((UINT8*)request, msgLen);
+      }
 #else
 
 			/*
@@ -694,44 +725,75 @@ namespace sick_scan
 		char buffer[BUF_SIZE];
 		int bytes_read;
 		// !!!
-		if (readWithTimeout(getReadTimeOutInMs(), buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
-		{
-			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after %d ms",getReadTimeOutInMs());
-			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after timeout.");
-			return ExitError;
-		}
+    if (getEmulSensor())
+    {
 
-		if (reply)
-		{
-			reply->resize(bytes_read);
-			std::copy(buffer, buffer + bytes_read, &(*reply)[0]);
-		}
+    }
+    else
+    {
+		  if (readWithTimeout(getReadTimeOutInMs(), buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
+		  {
+  			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after %d ms",getReadTimeOutInMs());
+  			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after timeout.");
+  			return ExitError;
+	  	}
 
+
+		  if (reply)
+		  {
+  			reply->resize(bytes_read);
+  			std::copy(buffer, buffer + bytes_read, &(*reply)[0]);
+  		}
+    }
 		return ExitSuccess;
 	}
 
-	int SickScanCommonTcp::get_datagram(unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
+
+	int SickScanCommonTcp::get_datagram(ros::Time& recvTimeStamp, unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
 	{
 		this->setReplyMode(1);
-		const int maxWaitInMs = getReadTimeOutInMs();
-		std::vector<unsigned char> dataBuffer;
+
+    if (this->getEmulSensor())
+    {
+      // boost::this_thread::sleep(boost::posix_time::milliseconds(waitingTimeInMs));
+      ros::Time timeStamp = ros::Time::now();
+      uint32_t nanoSec = timeStamp.nsec;
+      double waitTime10Hz = 10.0 * (double)nanoSec / 1E9;  // 10th of sec. [0..10[
+
+      uint32_t waitTime = (int)waitTime10Hz ; // round down
+
+      double waitTimeUntilNextTime10Hz = 1/10.0 * (1.0 - (waitTime10Hz - waitTime));
+
+      ros::Duration(waitTimeUntilNextTime10Hz).sleep();
+      SickScanRadar radar(this);
+			radar.setEmulation(true);
+      radar.simulateAsciiDatagram(receiveBuffer, actual_length);
+      recvTimeStamp = ros::Time::now();
+    }
+    else
+    {
+		  const int maxWaitInMs = getReadTimeOutInMs();
+		  std::vector<unsigned char> dataBuffer;
 #if 1 // prepared for reconnect
-		bool retVal = this->recvQueue.waitForIncomingObject(maxWaitInMs);
-		if (retVal == false)
-		{
-			ROS_WARN("Timeout during waiting of new datagram");
-			return ExitError;
-		}
-		else
-		{
-			dataBuffer = this->recvQueue.pop();
-		}
+  		bool retVal = this->recvQueue.waitForIncomingObject(maxWaitInMs);
+	  	if (retVal == false)
+		  {
+			  ROS_WARN("Timeout during waiting for new datagram");
+			  return ExitError;
+		  }
+		  else
+		  {
+        DatagramWithTimeStamp datagramWithTimeStamp = this->recvQueue.pop();
+        recvTimeStamp = datagramWithTimeStamp.timeStamp;
+			  dataBuffer = datagramWithTimeStamp.datagram;
+
+		  }
 #endif
 		// dataBuffer = this->recvQueue.pop();
-
-		long size = dataBuffer.size();
-		memcpy(receiveBuffer, &(dataBuffer[0]), size);
-		*actual_length = size;
+      long size = dataBuffer.size();
+	  	memcpy(receiveBuffer, &(dataBuffer[0]), size);
+		  *actual_length = size;
+    }
 
 #if 0
 		static int cnt = 0;

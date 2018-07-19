@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!-- LAUNCH FILE                                     -->
+<!-- Call:  roslaunch sick_pcl_converter sick_pcl_converter.launch -->
+<launch>
+  <node name="sick_pcl_converter" pkg="sick_pcl_converter" type="sick_pcl_converter" args="/cloud /image" respawn="false" output="screen">
+      <param name="heat_map" type="str" value="moreland.pal" />
+  </node>
+</launch>

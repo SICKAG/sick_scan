@@ -40,21 +40,21 @@
 *
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-
+#define WIN32_LEAN_AND_MEAN
 #include "boost/filesystem.hpp"
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
+#include <algorithm> // for std::min
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <iostream>
+#ifndef _MSC_VER
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 #include <cstdio>
 #include <cstdlib>
@@ -70,7 +70,6 @@
 
 #include "tinystr.h"
 #include "tinyxml.h"
-#include <boost/algorithm/string.hpp>
 
 #define MAX_NAME_LEN (1024)
 
@@ -79,7 +78,6 @@
 #define SICK_SCAN_TEST_MINOR_VER "000"  
 #define SICK_SCAN_TEST_PATCH_LEVEL "000"
 
-#include <algorithm> // for std::min
 
 
 class paramEntryAscii
@@ -91,6 +89,7 @@ public:
 		typeVal = _typeVal;
 		valueVal = _valueVal;
     setCheckStatus(999,"untested");
+    minMaxGiven = false;
 	};
 
   void setPointerToXmlNode(TiXmlElement *paramEntryPtr)
@@ -109,6 +108,21 @@ public:
 		valueVal = _valueVal;
 	};
 
+
+  bool isMinMaxGiven()
+  {
+    return(minMaxGiven);
+  }
+
+  void setMinMaxValues(std::string _valueMinVal, std::string _valueMaxVal)
+    {
+
+    valueMinVal = _valueMinVal;
+    valueMaxVal = _valueMaxVal;
+    minMaxGiven = true;
+
+    };
+
 	std::string getName()
 	{
 		return(nameVal);
@@ -124,7 +138,17 @@ public:
 		return(valueVal);
 	}
 
-  void setCheckStatus(int errCode, std::string errMsg)
+  std::string getMinValue()
+  {
+    return(valueMinVal);
+  }
+
+  std::string getMaxValue()
+  {
+    return(valueMaxVal);
+  }
+
+    void setCheckStatus(int errCode, std::string errMsg)
   {
     errorCode = errCode;
     errorMsg = errMsg;
@@ -144,6 +168,9 @@ private:
 	std::string nameVal;
 	std::string typeVal;
 	std::string valueVal;
+  std::string valueMinVal;
+  std::string valueMaxVal;
+  bool minMaxGiven;
   int errorCode;
   std::string errorMsg;
     TiXmlElement *nodePtr;
@@ -155,29 +182,8 @@ private:
 
 void sudokill(pid_t tokill)
 {
-
+#ifndef _MSC_VER
   kill(tokill, SIGTERM);
-#if 0
-  char *killstr;
-  int status;
-  pid_t pid;
-
-  if (asprintf(&killstr, "%d", tokill) < 0)
-    printf("asprintf() failed");
-
-  pid = fork();
-  switch (pid)
-  {
-    case -1:
-      printf( "fork() failed");
-    case 0:
-      execlp("sudo", "sudo", "kill", killstr, (char *) NULL);
-      printf( "execlp() failed");
-    default:
-      while (wait(&status) != pid);
-  }
-
-  free(killstr);
 #endif
   sleep(5);
 }
@@ -193,7 +199,11 @@ std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 		std::string nameVal = "";
 		std::string typeVal = "";
 		std::string valueVal = "";
+    std::string minValueVal = "";
+    std::string maxValueVal = "";
 
+    bool minValFnd = false;
+    bool maxValFnd = false;
 		// is this a param-node?
 		// if this is valid than process attributes
 		const char *val = paramEntry->Value();
@@ -233,6 +243,17 @@ std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 			{
 				valueVal = val;
 			}
+      if (strcmp(tag, "valueMin") == 0)
+      {
+        minValFnd = true;
+        minValueVal = val;
+
+      }
+      if (strcmp(tag, "valueMax") == 0)
+      {
+        maxValFnd = true;
+        maxValueVal = val;
+      }
 			if (node == paramEntry->LastAttribute())
 			{
 
@@ -241,6 +262,11 @@ std::vector<paramEntryAscii> getParamList(TiXmlNode *paramList)
 		}
 
 		paramEntryAscii tmpEntry(nameVal, typeVal, valueVal);
+    if (maxValFnd && minValFnd)
+    {
+      tmpEntry.setMinMaxValues(minValueVal, maxValueVal);
+    }
+
     tmpEntry.setPointerToXmlNode(paramEntry);
 		tmpList.push_back(tmpEntry);
 		}
@@ -376,6 +402,12 @@ int cloud_height = 0;
 int callbackCnt = 0;
 double intensityStdDev = 0.0;
 double rangeStdDev = 0.0;
+
+
+//
+int callbackScanCnt = 0;
+
+
 void cloud_callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 {
 	static int cnt = 0;
@@ -388,6 +420,8 @@ void cloud_callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 	{
 		cartesianIdxArr[i] = -1;
 	}
+
+
 	for (int i = 0; i < cloud_msg->fields.size(); i++)
 	{
 		std::string fieldName = 	cloud_msg->fields[i].name;
@@ -471,15 +505,42 @@ void cloud_callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
 
 }
 
+float ERR_CONST = -1E3;
+float scan_angle_min = -1E3;
+float scan_angle_max = -1E3;
+float scan_time_increment = -1E3;
+float scan_angle_increment = -1E3;
+float range_min = -1E3;
+float range_max = -1E3;
+
+
+void processLaserScan(const sensor_msgs::LaserScan::ConstPtr& scan)
+{
+  if (callbackScanCnt == 0)
+  {
+    scan_angle_min = scan->angle_min;
+    scan_angle_max = scan->angle_max;
+    scan_time_increment = scan->time_increment;
+    scan_angle_increment = scan->angle_increment;
+    range_min = scan->range_min;
+    range_max = scan->range_max;
+  }
+  callbackScanCnt++;
+}
+
+
 int startCallbackTest(int argc, char** argv)
 {
 
 	ros::NodeHandle nh;
 	ros::Rate loop_rate(10);
 	ros::Subscriber sub;
+  ros::Subscriber scanSub;
   ROS_INFO("Cloudtester started."
                   );
 	sub = nh.subscribe("cloud", 1, cloud_callback);
+  scanSub=nh.subscribe<sensor_msgs::LaserScan>("/scan",10,processLaserScan);
+
   while (callbackCnt < 10)
   {
   ros::spinOnce();
@@ -516,7 +577,7 @@ void createPrefixFromExeName(std::string exeName, std::string& prefix)
 }
 
 
-void extractPackagePath(std::string pathList, std::string& packagePath)
+void searchForXmlFileInPathList(std::string pathList, std::string& packagePath, std::string xmlFileName)
 {
 	typedef std::vector<std::string > split_vector_type;
 	packagePath = "???";
@@ -525,6 +586,18 @@ void extractPackagePath(std::string pathList, std::string& packagePath)
 	if (splitVec.size() > 0)
 	{
 		packagePath = splitVec[0];
+	}
+
+	for (int i = 0; i < splitVec.size(); i++)
+	{
+		FILE *fin;
+		std::string tmpFileName = splitVec[i] + "/" + xmlFileName;
+		fin = fopen(tmpFileName.c_str(),"r");
+		if (fin != NULL)
+		{
+			packagePath = splitVec[i];
+			fclose(fin);
+		}
 	}
 }
 
@@ -602,10 +675,7 @@ int main(int argc, char **argv)
 
 	std::string nodeName = ros::this_node::getName();
 
-	std::string nodeNameSpace =ros::this_node::getNamespace();
-
 	printf("Nodename:  %s\n", nodeName.c_str());
-	printf("Namespace: %s\n", nodeNameSpace.c_str());
 	bool bFnd = getPackageRootFolder(argv[0], packageRootFolder);
 
 	printf("Package Path: %s\n", packageRootFolder.c_str());
@@ -625,24 +695,27 @@ int main(int argc, char **argv)
 	}
 
 	std::string packagePath;
-	extractPackagePath(pPath, packagePath);
+  // try to find xml-file in path list ... and give the result back in the variable packagePath
+  std::string testCtrlXmlFileName = argv[1];
+  searchForXmlFileInPathList(pPath, packagePath, testCtrlXmlFileName);
 
 //	std::string testCtrlXmlFileName = packagePath + std::string(1, sep) + "sick_scan" + std::string(1, sep) + "test" + std::string(1, sep) + "sick_scan_test.xml";
 //  $ROS_PACKAGE_PATH/sick_scan/test/sick_scan_test.xml
-  std::string testCtrlXmlFileName = argv[1];
   boost::replace_all(testCtrlXmlFileName, "$ROS_PACKAGE_PATH", packagePath);
 
 
-	testCtrlXmlFileName = packageRootFolder + std::string(1,'/') + testCtrlXmlFileName;
+	testCtrlXmlFileName = packagePath + std::string(1,'/') + testCtrlXmlFileName;
   TiXmlDocument doc;
 	doc.LoadFile(testCtrlXmlFileName.c_str());
 	if (doc.Error())
 	{
+		ROS_ERROR("Package root folder %s", packageRootFolder.c_str());
 		ROS_ERROR("Cannot load/parse %s", testCtrlXmlFileName.c_str());
 		ROS_ERROR("Details: %s\n", doc.ErrorDesc());
 		exit(-1);
 	}
 
+  bool launch_only = false;
 	boost::filesystem::path p(testCtrlXmlFileName);
 	boost::filesystem::path parentPath = p.parent_path();
 	std::string pathName = parentPath.string();
@@ -673,7 +746,21 @@ int main(int argc, char **argv)
 			if (paramListNode != NULL)
 			{
 				std::vector<paramEntryAscii> paramList = getParamList(paramListNode);
-				std::string testLaunchFile;
+        for (int i = 0; i < paramList.size(); i++)
+        {
+          if (paramList[i].getName().compare("launch_only") == 0)
+          {
+            if (paramList[i].getValue().compare("true") == 0)
+            {
+              printf("launch_only set to true. Just modifying launch file and launch (without testing).");
+              launch_only = true;
+            }
+          }
+
+
+        }
+
+        std::string testLaunchFile;
 				createTestLaunchFile(launchFileFullName, paramList, testLaunchFile);
 				std::string commandLine;
 				boost::filesystem::path p(testLaunchFile);
@@ -684,6 +771,13 @@ int main(int argc, char **argv)
         // int result = std::system(commandLine.c_str());
 
         pid_t pidId = launchRosFile(commandLine.c_str());
+
+        if (launch_only)
+        {
+          printf("Launch file [ %s ] started ...\n", commandLine.c_str());
+          printf("No further testing...\n");
+          exit(0);
+        }
 				startCallbackTest(argc, argv); // get 10 pointcloud messages 
 
         ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
@@ -695,9 +789,100 @@ int main(int argc, char **argv)
 				if (resultListNode != NULL)
 				{
 					std::vector<paramEntryAscii> resultList = getParamList(resultListNode);
+
+          enum KeyWord_Idx {MIN_ANG_KEYWORD_IDX, MAX_ANG_KEYWORD_IDX,
+              SCAN_TIME_INCREMENT_KEYWORD_IDX,
+              SCAN_ANGLE_INCREMENT_KEYWORD_IDX,
+              MIN_RANGE_KEYWORD_IDX,
+              MAX_RANGE_KEYWORD_IDX,
+              KEYWORD_IDX_NUM};
+
+          std::vector<std::string> keyWordList;
+          keyWordList.resize(KEYWORD_IDX_NUM);
+
+          keyWordList[MIN_ANG_KEYWORD_IDX] = "min_ang";
+          keyWordList[MAX_ANG_KEYWORD_IDX] = "max_ang";
+          keyWordList[MIN_RANGE_KEYWORD_IDX] = "range_min";
+          keyWordList[MAX_RANGE_KEYWORD_IDX] = "range_max";
+          keyWordList[SCAN_ANGLE_INCREMENT_KEYWORD_IDX] = "angle_increment";
+          keyWordList[SCAN_TIME_INCREMENT_KEYWORD_IDX] = "time_increment";
+
 					for (int i = 0; i < resultList.size(); i++)
 					{
-						if (resultList[i].getName().compare("shotsPerLayer") == 0)
+
+            for (int ki = 0; ki < keyWordList.size(); ki++)
+            {
+
+            float measurementVal = .0F;
+            std::string keyWordTag = keyWordList[ki];
+
+            switch(ki)
+            {
+              case MIN_ANG_KEYWORD_IDX:  measurementVal = scan_angle_min; break;
+              case MAX_ANG_KEYWORD_IDX:  measurementVal = scan_angle_max; break;
+              case SCAN_ANGLE_INCREMENT_KEYWORD_IDX:  measurementVal = scan_angle_increment; break;
+              case SCAN_TIME_INCREMENT_KEYWORD_IDX: measurementVal = scan_time_increment; break;
+              case   MIN_RANGE_KEYWORD_IDX: measurementVal = range_min; break;
+              case   MAX_RANGE_KEYWORD_IDX: measurementVal = range_max; break;
+              default: printf("Did not find a correspondence for index %d\n", ki); break;
+            }
+            char errMsg[255] = {0};
+            if (keyWordTag.compare("min_ang") == 0)
+            {
+              measurementVal = scan_angle_min;
+            }
+            if (resultList[i].getName().compare(keyWordTag) == 0)
+            {
+
+              enum Expected_Idx {MIN_EXP_IDX, DEF_EXP_IDX, MAX_EXP_IDX, EXP_IDX_NUM};
+              float expectedValues[EXP_IDX_NUM];
+              std::string valString;
+
+              for (int j = 0; j < EXP_IDX_NUM; j++)
+              {
+                switch(j)
+                {
+                  case MIN_EXP_IDX:  valString = resultList[i].getMinValue(); break;
+                  case DEF_EXP_IDX:  valString = resultList[i].getValue(); break;
+                  case MAX_EXP_IDX:  valString = resultList[i].getMaxValue(); break;
+                  default: ROS_ERROR("Check index"); break;
+
+                }
+
+                const char *valPtr = valString.c_str();
+                if (valPtr != NULL)
+                {
+                  float tmpVal = .0F;
+                  sscanf(valPtr, "%f", &tmpVal);
+                  expectedValues[j] = tmpVal;
+                }
+              }
+              valString = resultList[i].getMinValue();
+
+              int errorCode = 0;
+              std::string resultStr = "FAILED";
+              std::string appendResultStr = " <-----";
+              if ( (measurementVal >=  expectedValues[MIN_EXP_IDX]) && (measurementVal <=  expectedValues[MAX_EXP_IDX]))
+              {
+                appendResultStr = "";
+                resultStr = "PASSED";
+                errorCode = 0;
+              }
+              else
+              {
+                errorCode = 1;
+              }
+              sprintf(errMsg, "CHECK %s! Key: %-20s %14.9f in [%14.9f,%14.9f] %s", resultStr.c_str(), keyWordTag.c_str(), measurementVal,
+                      expectedValues[MIN_EXP_IDX], expectedValues[MAX_EXP_IDX], appendResultStr.c_str());
+
+              printf("%s\n", errMsg);
+              resultList[i].setCheckStatus(errorCode, (errorCode == 0) ? "OK" : errMsg);
+
+            }
+            }
+
+
+            if (resultList[i].getName().compare("shotsPerLayer") == 0)
 						{
 							int expectedWidth = -1;
 							std::string valString = resultList[i].getValue();
@@ -859,7 +1044,7 @@ int main(int argc, char **argv)
           std::string resultFileName=xmlDir.string();
           resultFileName.append("/");
           resultFileName.append(tmpFilNamewoExtension);
-          resultFileName.append("_res.xml");
+          resultFileName.append(".res");
           printf("Save to %s\n", resultFileName.c_str());
           doc.SaveFile(resultFileName.c_str());
         }

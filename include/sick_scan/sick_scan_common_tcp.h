@@ -47,6 +47,21 @@
 #include "template_queue.h"
 namespace sick_scan
 {
+/* class prepared for optimized time stamping */
+
+class DatagramWithTimeStamp
+{
+public:
+		DatagramWithTimeStamp(ros::Time timeStamp_, std::vector<unsigned char> datagram_)
+		{
+       timeStamp = timeStamp_;
+			 datagram = datagram_;
+ 		}
+// private:
+	  ros::Time timeStamp;
+		std::vector<unsigned char> datagram;
+};
+
 
 class SickScanCommonTcp : public SickScanCommon
     {
@@ -65,10 +80,14 @@ public:
 
     int getReplyMode();
 
+		void setEmulSensor(bool _emulFlag);
+
+		bool getEmulSensor();
 
 	SopasEventMessage findFrameInReceiveBuffer();
-	void processFrame(SopasEventMessage& frame);
-	Queue<std::vector<unsigned char> > recvQueue;
+	void processFrame(ros::Time timeStamp, SopasEventMessage& frame);
+	// Queue<std::vector<unsigned char> > recvQueue;
+    Queue<DatagramWithTimeStamp> recvQueue;
     UINT32 m_alreadyReceivedBytes;
     UINT32 m_lastPacketSize;
     UINT8  m_packetBuffer[480000];
@@ -90,13 +109,14 @@ public:
 
         /// Read a datagram from the device.
         /**
+         * \param [out] recvTimeStamp timestamp of received datagram
          * \param [in] receiveBuffer data buffer to fill
          * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
          * \param [out] actual_length the actual amount of data written
          * \param [in] isBinaryProtocol true=binary False=ASCII
          */
         virtual int
-        get_datagram(unsigned char *receiveBuffer, int bufferSize, int *actual_length, bool isBinaryProtocol);
+        get_datagram(ros::Time& recvTimeStamp, unsigned char *receiveBuffer, int bufferSize, int *actual_length, bool isBinaryProtocol);
 
         // Helpers for boost asio
         int readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read = 0,
@@ -120,6 +140,7 @@ public:
 		UINT8 m_receiveBuffer[480000]; ///< Low-Level receive buffer for all data 
 
 		bool m_beVerbose;
+				bool m_emulSensor;
 
         boost::asio::io_service io_service_;
         boost::asio::ip::tcp::socket socket_;

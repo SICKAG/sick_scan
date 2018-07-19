@@ -38,7 +38,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 2nd Feb 2018
+*  Last modified: 28th May 2018
 *
 *      Authors:
 *         Michael Lehning <michael.lehning@lehning.de>
@@ -57,13 +57,16 @@
 #endif
 #include <sick_scan/sick_scan_common_nw.h>
 #include <sick_scan/sick_scan_common.h>
-
+#include <sick_scan/sick_generic_radar.h>
 
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
 
 #include "sick_scan/binScanf.hpp"
+// if there is a missing RadarScan.h, try to run catkin_make in der workspace-root
+#include <sick_scan/RadarScan.h>
+
 
 
 
@@ -194,6 +197,7 @@ namespace sick_scan
 	{
 		expectedFrequency_ = this->parser_->getCurrentParamPtr()->getExpectedFrequency();
 
+		setSensorIsRadar(false);
 		init_cmdTables();
 #ifndef _MSC_VER
 		dynamic_reconfigure::Server<sick_scan::SickScanConfig>::CallbackType f;
@@ -225,6 +229,11 @@ namespace sick_scan
 		//
 		cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 100);
 
+		// just for debugging, but very helpful for the start
+		cloud_radar_rawtarget_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_radar_rawtarget", 100);
+		cloud_radar_track_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_radar_track", 100);
+
+		radarScan_pub_ = nh_.advertise<sick_scan::RadarScan>("radar", 100);
 		// scan publisher
 		pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 1000);
 
@@ -639,10 +648,10 @@ namespace sick_scan
 		if (result != 0)
 		{
 			ROS_ERROR("Failed to init scanner Error Code: %d\nWaiting for timeout...\n"
-							  "If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed.\n"
-							  "This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. There are two ways to prevent this:\n"
-							  "1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.\n"
-							  "2. Use the parameter \"sopas_protocol_type\" to overwrite the default settings of the driver.", result);
+				"If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed.\n"
+				"This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. There are two ways to prevent this:\n"
+				"1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.\n"
+				"2. Use the parameter \"use_binary_protocol\" to overwrite the default settings of the driver.", result);
 		}
 		return result;
 	}
@@ -685,6 +694,26 @@ namespace sick_scan
 		sopasCmdVec[CMD_RUN] = "\x02sMN Run\x03\0";
 		sopasCmdVec[CMD_STOP_SCANDATA] = "\x02sEN LMDscandata 0\x03";
 		sopasCmdVec[CMD_START_SCANDATA] = "\x02sEN LMDscandata 1\x03";
+
+		sopasCmdVec[CMD_START_RADARDATA] = "\x02sEN LMDradardata 1\x03";
+
+		/*
+		 * Radar specific commands
+		 */
+		sopasCmdVec[CMD_SET_TRANSMIT_RAWTARGETS_ON] = "\x02sWN TransmitTargets 1\x03";  // transmit raw target for radar
+		sopasCmdVec[CMD_SET_TRANSMIT_RAWTARGETS_OFF] = "\x02sWN TransmitTargets 0\x03";  // do not transmit raw target for radar
+		sopasCmdVec[CMD_SET_TRANSMIT_OBJECTS_ON] = "\x02sWN TransmitObjects 1\x03";  // transmit objects from radar tracking
+		sopasCmdVec[CMD_SET_TRANSMIT_OBJECTS_OFF] = "\x02sWN TransmitObjects 0\x03";  // do not transmit objects from radar tracking
+		sopasCmdVec[CMD_SET_TRACKING_MODE_0] = "\x02sWN TCTrackingMode 0\x03";  // set object tracking mode to BASIC
+		sopasCmdVec[CMD_SET_TRACKING_MODE_1] = "\x02sWN TCTrackingMode 1\x03";  // set object tracking mode to TRAFFIC
+
+
+		sopasCmdVec[CMD_LOAD_APPLICATION_DEFAULT] = "\x02sMN mSCloadappdef\x03";  // load application default
+		sopasCmdVec[CMD_DEVICE_TYPE] = "\x02sRN DItype\x03";  // ask for radar device type
+		sopasCmdVec[CMD_ORDER_NUMBER] = "\x02sRN OrdNum\x03";  // ask for radar order number
+
+
+
 		sopasCmdVec[CMD_START_MEASUREMENT] = "\x02sMN LMCstartmeas\x03";
 		sopasCmdVec[CMD_STOP_MEASUREMENT] = "\x02sMN LMCstopmeas\x03";
 		sopasCmdVec[CMD_APPLICATION_MODE_FIELD_OFF] = "\x02sWN SetActiveApplications 1 FEVL 0\x03"; // <STX>sWN{SPC}SetActiveApplications{SPC}1{SPC}FEVL{SPC}1<ETX>
@@ -741,16 +770,26 @@ namespace sick_scan
 			sopasCmdChain.push_back(CMD_SET_TO_COLA_A_PROTOCOL);
 		}
 
-
+		bool tryToStopMeasurement = true;
 		if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
 		{
+			tryToStopMeasurement = false;
 			// do not stop measurement for TiM571 otherwise the scanner would not start after start measurement
-		// do not change the application - not supported for TiM5xx
+			// do not change the application - not supported for TiM5xx
 		}
-		else
+		if (parser_->getCurrentParamPtr()->getDeviceIsRadar() == true)
+		{
+			sopasCmdChain.push_back(CMD_LOAD_APPLICATION_DEFAULT); // load application default for radar
+
+			tryToStopMeasurement = false;
+			// do not stop measurement for RMS320 - the RMS320 does not support the stop command 
+		}
+
+		if (tryToStopMeasurement)
 		{
 			sopasCmdChain.push_back(CMD_STOP_MEASUREMENT);
-			if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 24)
+			int numberOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
+			if ((numberOfLayers == 4) || (numberOfLayers == 24))
 			{
 				// just measuring - Application setting not supported
 				// "Old" device ident command "SRi 0" not supported
@@ -764,14 +803,12 @@ namespace sick_scan
 				sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
 			}
 		}
-		sopasCmdChain.push_back(CMD_FIRMWARE_VERSION);
-		sopasCmdChain.push_back(CMD_DEVICE_STATE);
-		sopasCmdChain.push_back(CMD_OPERATION_HOURS);
-		sopasCmdChain.push_back(CMD_POWER_ON_COUNT);
-		sopasCmdChain.push_back(CMD_LOCATION_NAME);
+		sopasCmdChain.push_back(CMD_FIRMWARE_VERSION);  // read firmware
+		sopasCmdChain.push_back(CMD_DEVICE_STATE); // read device state
+		sopasCmdChain.push_back(CMD_OPERATION_HOURS); // read operation hours
+		sopasCmdChain.push_back(CMD_POWER_ON_COUNT); // read power on count
+		sopasCmdChain.push_back(CMD_LOCATION_NAME); // read location name
 
-
-		// ML: define here the command sequence
 
 		return(0);
 
@@ -799,7 +836,7 @@ namespace sick_scan
 		ros::NodeHandle pn("~");
 		pn.getParam("intensity", rssiFlag);
 		pn.getParam("intensity_resolution_16bit", rssiResolutionIs16Bit);
-    this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
+		this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
 
 		// parse active_echos entry and set flag array
 		pn.getParam("active_echos", activeEchos);
@@ -868,7 +905,8 @@ namespace sick_scan
 
 		setReadTimeOutInMs(shortTimeOutInMs);
 
-    bool restartDueToProcolChange = false;
+		bool restartDueToProcolChange = false;
+
 
 		for (int i = 0; i < this->sopasCmdChain.size(); i++)
 		{
@@ -935,31 +973,31 @@ namespace sick_scan
 			switch (cmdId)
 			{
 			case CMD_SET_TO_COLA_A_PROTOCOL:
-      {
+			{
 				bool protocolCheck = checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
-        if (false == protocolCheck)
-        {
-          restartDueToProcolChange = true;
-        }
+				if (false == protocolCheck)
+				{
+					restartDueToProcolChange = true;
+				}
 				useBinaryCmd = useBinaryCmdNow;
 				setReadTimeOutInMs(defaultTimeOutInMs);
-      }
+			}
 			break;
 			case CMD_SET_TO_COLA_B_PROTOCOL:
-      {
-        bool protocolCheck = checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
-        if (false == protocolCheck)
-        {
-          restartDueToProcolChange = true;
-        }
+			{
+				bool protocolCheck = checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
+				if (false == protocolCheck)
+				{
+					restartDueToProcolChange = true;
+				}
 				useBinaryCmd = useBinaryCmdNow;
 				setReadTimeOutInMs(defaultTimeOutInMs);
-      }
-      break;
+			}
+			break;
 
-				/*
-				SERIAL_NUMBER: Device ident must be read before!
-				*/
+			/*
+			SERIAL_NUMBER: Device ident must be read before!
+			*/
 
 			case CMD_DEVICE_IDENT: // FOR MRS6xxx the Device Ident holds all specific information (used instead of CMD_SERIAL_NUMBER)
 			{
@@ -971,6 +1009,10 @@ namespace sick_scan
 				else
 				{
 					long dummy0, dummy1, identLen, versionLen;
+					dummy0 = 0;
+					dummy1 = 0;
+					identLen = 0;
+					versionLen = 0;
 
 					const char *scanMask0 = "%04y%04ysRA DeviceIdent %02y";
 					const char *scanMask1 = "%02y";
@@ -978,11 +1020,13 @@ namespace sick_scan
 					int scanDataLen0 = binScanfGuessDataLenFromMask(scanMask0);
 					int scanDataLen1 = binScanfGuessDataLenFromMask(scanMask1); // should be: 2
 					binScanfVec(&replyDummy, scanMask0, &dummy0, &dummy1, &identLen);
-					printf("IdentLen: %ld\n", identLen);
+
 					std::string identStr = binScanfGetStringFromVec(&replyDummy, scanDataLen0, identLen);
 					int off = scanDataLen0 + identLen; // consuming header + fixed part + ident
 
 					std::vector<unsigned char> restOfReplyDummy = std::vector<unsigned char>(replyDummy.begin() + off, replyDummy.end());
+
+					versionLen = 0;
 					binScanfVec(&restOfReplyDummy, "%02y", &versionLen);
 					std::string versionStr = binScanfGetStringFromVec(&restOfReplyDummy, scanDataLen1, versionLen);
 					std::string fullIdentVersionInfo = identStr + " V" + versionStr;
@@ -1016,7 +1060,9 @@ namespace sick_scan
 				int iRetVal = 0;
 				if (useBinaryCmd)
 				{
-					long dummy0, dummy1;
+					long dummy0 = 0x00;
+					long dummy1 = 0x00;
+					deviceState = 0x00; // must be set to zero (because only one byte will be copied)
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_DEVICE_STATE]), "%4y%4ysRA SCdevicestate %1y", &dummy0, &dummy1, &deviceState);
 				}
 				else
@@ -1053,10 +1099,14 @@ namespace sick_scan
 				if (useBinaryCmd)
 				{
 					long dummy0, dummy1;
+					dummy0 = 0;
+					dummy1 = 0;
+					operationHours = 0;
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_OPERATION_HOURS]), "%4y%4ysRA ODoprh %4y", &dummy0, &dummy1, &operationHours);
 				}
 				else
 				{
+					operationHours = 0;
 					iRetVal = sscanf(sopasReplyStrVec[CMD_OPERATION_HOURS].c_str(), "sRA ODoprh %x", &operationHours);
 				}
 				if (iRetVal > 0)
@@ -1074,6 +1124,7 @@ namespace sick_scan
 				if (useBinaryCmd)
 				{
 					long dummy0, dummy1;
+					powerOnCount = 0;
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_POWER_ON_COUNT]), "%4y%4ysRA ODpwrc %4y", &dummy0, &dummy1, &powerOnCount);
 				}
 				else
@@ -1100,6 +1151,10 @@ namespace sick_scan
 					long dummy0, dummy1, locationNameLen;
 					const char *binLocationNameMask = "%4y%4ysRA LocationName %2y";
 					int prefixLen = binScanfGuessDataLenFromMask(binLocationNameMask);
+					dummy0 = 0;
+					dummy1 = 0;
+					locationNameLen = 0;
+
 					iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_LOCATION_NAME]), binLocationNameMask, &dummy0, &dummy1, &locationNameLen);
 					if (iRetVal > 0)
 					{
@@ -1133,369 +1188,409 @@ namespace sick_scan
 			// ML: add here reply handling
 			}
 
-      if (restartDueToProcolChange)
-      {
-        return ExitError;
+			if (restartDueToProcolChange)
+			{
+				return ExitError;
 
-      }
+			}
 		}
 
 
-		//-----------------------------------------------------------------
-		//
-		// This is recommended to decide between TiM551 and TiM561/TiM571 capabilities
-		// The TiM551 has an angular resolution of 1.000 [deg]
-		// The TiM561 and TiM571 have an angular resolution of 0.333 [deg]
-		//-----------------------------------------------------------------
 
-		angleRes10000th = (int)(boost::math::round(10000.0   * this->parser_->getCurrentParamPtr()->getAngularDegreeResolution()));
-		std::vector<unsigned char> askOutputAngularRangeReply;
-
-		if (useBinaryCmd)
+		if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
 		{
-			std::vector<unsigned char> reqBinary;
-			this->convertAscii2BinaryCmd(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &reqBinary);
-			result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_OUTPUT_RANGES]);
+			//=====================================================
+			// Radar specific commands
+			//=====================================================
 		}
 		else
 		{
-			result = sendSopasAndCheckAnswer(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &askOutputAngularRangeReply);
-		}
+			//-----------------------------------------------------------------
+			//
+			// This is recommended to decide between TiM551 and TiM561/TiM571 capabilities
+			// The TiM551 has an angular resolution of 1.000 [deg]
+			// The TiM561 and TiM571 have an angular resolution of 0.333 [deg]
+			//-----------------------------------------------------------------
 
+			angleRes10000th = (int)(boost::math::round(10000.0   * this->parser_->getCurrentParamPtr()->getAngularDegreeResolution()));
+			std::vector<unsigned char> askOutputAngularRangeReply;
 
-
-		if (0 == result)
-		{
-			int askTmpAngleRes10000th, askTmpAngleStart10000th, askTmpAngleEnd10000th;
-			char dummy0[MAX_STR_LEN] = { 0 };
-			char dummy1[MAX_STR_LEN] = { 0 };
-			int  dummyInt = 0;
-
-			int iDummy0, iDummy1;
-			std::string askOutputAngularRangeStr = replyToString(askOutputAngularRangeReply);
-			// Binary-Reply Tab. 63
-			// 0x20 Space
-			// 0x00 0x01 - 
-			// 0x00 0x00 0x05 0x14  // Resolution in 1/10000th degree  --> 0.13° 
-			// 0x00 0x04 0x93 0xE0  // Start Angle 300000    -> 30° 
-			// 0x00 0x16 0xE3 0x60  // End Angle   1.500.000 -> 150°    // in ROS +/-60°  
-			// 0x83                 // Checksum
-
-			int numArgs;
-
-			if (useBinaryCmd)
-			{
-				const char *askOutputAngularRangeBinMask = "%4y%4ysRA LMPoutputRange %2y%4y%4y%4y";
-				numArgs = binScanfVec(&sopasReplyBinVec[CMD_GET_OUTPUT_RANGES], askOutputAngularRangeBinMask, &iDummy0, &iDummy1,
-					&dummyInt,
-					&askTmpAngleRes10000th,
-					&askTmpAngleStart10000th,
-					&askTmpAngleEnd10000th);
-				//
-			}
-			else
-			{
-				numArgs = sscanf(askOutputAngularRangeStr.c_str(), "%s %s %d %X %X %X", dummy0, dummy1,
-					&dummyInt,
-					&askTmpAngleRes10000th,
-					&askTmpAngleStart10000th,
-					&askTmpAngleEnd10000th);
-			}
-			if (numArgs >= 6)
-			{
-				double askTmpAngleRes = askTmpAngleRes10000th / 10000.0;
-				double askTmpAngleStart = askTmpAngleStart10000th / 10000.0;
-				double askTmpAngleEnd = askTmpAngleEnd10000th / 10000.0;
-
-				angleRes10000th = askTmpAngleRes10000th;
-				ROS_INFO("Angle resolution of scanner is %0.5lf [deg]  (in 1/10000th deg: 0x%X)", askTmpAngleRes, askTmpAngleRes10000th);
-
-			}
-		}
-		//-----------------------------------------------------------------
-		//
-		// Set Min- und Max scanning angle given by config
-		//
-		//-----------------------------------------------------------------
-
-		ROS_INFO("MIN_ANG: %8.3f [rad] %8.3f [deg]", config_.min_ang, rad2deg(this->config_.min_ang));
-		ROS_INFO("MAX_ANG: %8.3f [rad] %8.3f [deg]", config_.max_ang, rad2deg(this->config_.max_ang));
-
-		// convert to 10000th degree
-		double minAngSopas = rad2deg(this->config_.min_ang) + 90;
-		double maxAngSopas = rad2deg(this->config_.max_ang) + 90;
-		angleStart10000th = (int)(boost::math::round(10000.0 * minAngSopas));
-		angleEnd10000th = (int)(boost::math::round(10000.0   * maxAngSopas));
-
-		char requestOutputAngularRange[MAX_STR_LEN];
-		// special for LMS1000
-		if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)
-		{
-			ROS_WARN("Angular settings for LMS 1000 not reliable.\n");
-			double askAngleStart = -137.0;
-			double askAngleEnd = +137.0;
-
-			this->config_.min_ang = askAngleStart / 180.0 * M_PI;
-			this->config_.max_ang = askAngleEnd / 180.0 * M_PI;
-		}
-		else
-		{
-			std::vector<unsigned char> outputAngularRangeReply;
-			const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES].c_str();
-			sprintf(requestOutputAngularRange, pcCmdMask, angleRes10000th, angleStart10000th, angleEnd10000th);
-
-			if (useBinaryCmd)
-			{
-				unsigned char tmpBuffer[255] = { 0 };
-				unsigned char sendBuffer[255] = { 0 };
-				UINT16 sendLen;
-				std::vector<unsigned char> reqBinary;
-				int iStatus = 1;
-				//				const char *askOutputAngularRangeBinMask = "%4y%4ysWN LMPoutputRange %2y%4y%4y%4y";
-								// int askOutputAngularRangeBinLen = binScanfGuessDataLenFromMask(askOutputAngularRangeBinMask);
-								// askOutputAngularRangeBinLen -= 8;  // due to header and length identifier
-
-				strcpy((char*)tmpBuffer, "WN LMPoutputRange ");
-				unsigned short orgLen = strlen((char *)tmpBuffer);
-				colab::addIntegerToBuffer<UINT16>(tmpBuffer, orgLen, iStatus);
-				colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
-				colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
-				colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
-				sendLen = orgLen;
-				colab::addFrameToBuffer(sendBuffer, tmpBuffer, &sendLen);
-
-				// binSprintfVec(&reqBinary, askOutputAngularRangeBinMask, 0x02020202, askOutputAngularRangeBinLen, iStatus, angleRes10000th, angleStart10000th, angleEnd10000th);
-
-				// unsigned char sickCrc = sick_crc8((unsigned char *)(&(reqBinary)[8]), reqBinary.size() - 8);
-				// reqBinary.push_back(sickCrc);
-				reqBinary = std::vector<unsigned char>(sendBuffer, sendBuffer + sendLen);
-				// Here we must build a more complex binaryRequest
-
-				// this->convertAscii2BinaryCmd(requestOutputAngularRange, &reqBinary);
-				result = sendSopasAndCheckAnswer(reqBinary, &outputAngularRangeReply);
-			}
-			else
-			{
-				result = sendSopasAndCheckAnswer(requestOutputAngularRange, &outputAngularRangeReply);
-			}
-		}
-
-		//-----------------------------------------------------------------
-		//
-		// Get Min- und Max scanning angle from the scanner to verify angle setting and correct the config, if something went wrong.
-		//
-		// IMPORTANT:
-		// Axis Orientation in ROS differs from SICK AXIS ORIENTATION!!!
-		// In relation to a body the standard is:
-		// x forward
-		// y left
-		// z up
-		// see http://www.ros.org/reps/rep-0103.html#coordinate-frame-conventions for more details
-		//-----------------------------------------------------------------
-
-		askOutputAngularRangeReply.clear();
-
-		if (useBinaryCmd)
-		{
-			std::vector<unsigned char> reqBinary;
-			this->convertAscii2BinaryCmd(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &reqBinary);
-			result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_OUTPUT_RANGES]);
-		}
-		else
-		{
-			result = sendSopasAndCheckAnswer(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &askOutputAngularRangeReply);
-		}
-
-		if (result == 0)
-		{
-			char dummy0[MAX_STR_LEN] = { 0 };
-			char dummy1[MAX_STR_LEN] = { 0 };
-			int  dummyInt = 0;
-			int  askAngleRes10000th = 0;
-			int  askAngleStart10000th = 0;
-			int askAngleEnd10000th = 0;
-			int iDummy0, iDummy1;
-			std::string askOutputAngularRangeStr = replyToString(askOutputAngularRangeReply);
-			// Binary-Reply Tab. 63
-			// 0x20 Space
-			// 0x00 0x01 - 
-			// 0x00 0x00 0x05 0x14  // Resolution in 1/10000th degree  --> 0.13° 
-			// 0x00 0x04 0x93 0xE0  // Start Angle 300000    -> 30° 
-			// 0x00 0x16 0xE3 0x60  // End Angle   1.500.000 -> 150°    // in ROS +/-60°  
-			// 0x83                 // Checksum
-
-			int numArgs;
-
-			if (useBinaryCmd)
-			{
-				const char *askOutputAngularRangeBinMask = "%4y%4ysRA LMPoutputRange %2y%4y%4y%4y";
-				numArgs = binScanfVec(&sopasReplyBinVec[CMD_GET_OUTPUT_RANGES], askOutputAngularRangeBinMask, &iDummy0, &iDummy1,
-					&dummyInt,
-					&askAngleRes10000th,
-					&askAngleStart10000th,
-					&askAngleEnd10000th);
-				//
-			}
-			else
-			{
-				numArgs = sscanf(askOutputAngularRangeStr.c_str(), "%s %s %d %X %X %X", dummy0, dummy1,
-					&dummyInt,
-					&askAngleRes10000th,
-					&askAngleStart10000th,
-					&askAngleEnd10000th);
-			}
-			if (numArgs >= 6)
-			{
-				double askTmpAngleRes = askAngleRes10000th / 10000.0;
-				double askTmpAngleStart = askAngleStart10000th / 10000.0;
-				double askTmpAngleEnd = askAngleEnd10000th / 10000.0;
-
-				angleRes10000th = askAngleRes10000th;
-				ROS_INFO("Angle resolution of scanner is %0.5lf [deg]  (in 1/10000th deg: 0x%X)", askTmpAngleRes, askAngleRes10000th);
-
-			}
-			double askAngleRes = askAngleRes10000th / 10000.0;
-			double askAngleStart = askAngleStart10000th / 10000.0;
-			double askAngleEnd = askAngleEnd10000th / 10000.0;
-
-			askAngleStart -= 90; // angle in ROS relative to y-axis
-			askAngleEnd -= 90; // angle in ROS relative to y-axis
-			this->config_.min_ang = askAngleStart / 180.0 * M_PI;
-			this->config_.max_ang = askAngleEnd / 180.0 * M_PI;
-			ros::NodeHandle nhPriv("~");
-			nhPriv.setParam("min_ang", this->config_.min_ang); // update parameter setting with "true" values read from scanner
-			nhPriv.setParam("max_ang", this->config_.max_ang); // update parameter setting with "true" values read from scanner
-			ROS_INFO("MIN_ANG (after command verification): %8.3f [rad] %8.3f [deg]", config_.min_ang, rad2deg(this->config_.min_ang));
-			ROS_INFO("MAX_ANG (after command verification): %8.3f [rad] %8.3f [deg]", config_.max_ang, rad2deg(this->config_.max_ang));
-		}
-
-
-
-		//-----------------------------------------------------------------
-		//
-		// Configure the data content of scan messing regarding to config.
-		//
-		//-----------------------------------------------------------------
-		/*
-		see 4.3.1 Configure the data content for the scan in the
-		*/
-		//                              1    2     3
-		// Prepare flag array for echos
-        // Except for the LMS5xx scanner here the mask is hard 00 see SICK Telegram listing "Telegram structure: sWN LMDscandatacfg" for details
-
-		outputChannelFlagId = 0x00;
-		for (int i = 0; i < outputChannelFlag.size(); i++)
-		{
-			outputChannelFlagId |= ((outputChannelFlag[i] == true) << i);
-		}
-		if (outputChannelFlagId < 1)
-		{
-			outputChannelFlagId = 1;  // at least one channel must be set
-		}
-		if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0)
-    {
-      outputChannelFlagId = 1;
-      ROS_INFO("LMS 5xx detected overwriting output channel flag ID");
-
-			ROS_INFO("LMS 5xx detected overwriting resolution flag (only 8 bit supported)");
-  		this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(false);
- 			rssiResolutionIs16Bit = this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit();
-		}
-		if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_MRS_1XXX_NAME) == 0)
-		{
-			ROS_INFO("MRS 1xxx detected overwriting resolution flag (only 8 bit supported)");
-			this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(false);
-			rssiResolutionIs16Bit = this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit();
-
-		}
-
-
-
-
-
-
-		// set scanning angle for tim5xx and for mrs1104
-		if ((this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
-			|| (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)
-			|| (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 24)
-			)
-		{
-			char requestLMDscandatacfg[MAX_STR_LEN];
-			// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
-            // CMD_SET_PARTIAL_SCANDATA_CFG = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
-			const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
-			sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0,rssiResolutionIs16Bit ? 1 : 0);
 			if (useBinaryCmd)
 			{
 				std::vector<unsigned char> reqBinary;
-				this->convertAscii2BinaryCmd(requestLMDscandatacfg, &reqBinary);
-				// FOR MRS6124 this should be
-				// like this:
-				// 0000  02 02 02 02 00 00 00 20 73 57 4e 20 4c 4d 44 73   .......sWN LMDs
-				// 0010  63 61 6e 64 61 74 61 63 66 67 20 1f 00 01 01 00   candatacfg .....
-				// 0020  00 00 00 00 00 00 00 01 5c                        
-				result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_PARTIAL_SCANDATA_CFG]);
+				this->convertAscii2BinaryCmd(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &reqBinary);
+				result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_OUTPUT_RANGES]);
 			}
 			else
 			{
-				std::vector<unsigned char> lmdScanDataCfgReply;
-				result = sendSopasAndCheckAnswer(requestLMDscandatacfg, &lmdScanDataCfgReply);
+				result = sendSopasAndCheckAnswer(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &askOutputAngularRangeReply);
 			}
 
 
-			// check setting
-			char requestLMDscandatacfgRead[MAX_STR_LEN];
-			// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
 
-			strcpy(requestLMDscandatacfgRead, sopasCmdVec[CMD_GET_PARTIAL_SCANDATA_CFG].c_str());
+			if (0 == result)
+			{
+				int askTmpAngleRes10000th = 0;
+				int askTmpAngleStart10000th = 0;
+				int askTmpAngleEnd10000th = 0;
+				char dummy0[MAX_STR_LEN] = { 0 };
+				char dummy1[MAX_STR_LEN] = { 0 };
+				int  dummyInt = 0;
+
+				int iDummy0, iDummy1;
+				std::string askOutputAngularRangeStr = replyToString(askOutputAngularRangeReply);
+				// Binary-Reply Tab. 63
+				// 0x20 Space
+				// 0x00 0x01 - 
+				// 0x00 0x00 0x05 0x14  // Resolution in 1/10000th degree  --> 0.13° 
+				// 0x00 0x04 0x93 0xE0  // Start Angle 300000    -> 30° 
+				// 0x00 0x16 0xE3 0x60  // End Angle   1.500.000 -> 150°    // in ROS +/-60°  
+				// 0x83                 // Checksum
+
+				int numArgs;
+
+				if (useBinaryCmd)
+				{
+					iDummy0 = 0;
+					iDummy1 = 0;
+					dummyInt = 0;
+					askTmpAngleRes10000th = 0;
+					askTmpAngleStart10000th = 0;
+					askTmpAngleEnd10000th = 0;
+
+					const char *askOutputAngularRangeBinMask = "%4y%4ysRA LMPoutputRange %2y%4y%4y%4y";
+					numArgs = binScanfVec(&sopasReplyBinVec[CMD_GET_OUTPUT_RANGES], askOutputAngularRangeBinMask, &iDummy0, &iDummy1,
+						&dummyInt,
+						&askTmpAngleRes10000th,
+						&askTmpAngleStart10000th,
+						&askTmpAngleEnd10000th);
+					//
+				}
+				else
+				{
+					numArgs = sscanf(askOutputAngularRangeStr.c_str(), "%s %s %d %X %X %X", dummy0, dummy1,
+						&dummyInt,
+						&askTmpAngleRes10000th,
+						&askTmpAngleStart10000th,
+						&askTmpAngleEnd10000th);
+				}
+				if (numArgs >= 6)
+				{
+					double askTmpAngleRes = askTmpAngleRes10000th / 10000.0;
+					double askTmpAngleStart = askTmpAngleStart10000th / 10000.0;
+					double askTmpAngleEnd = askTmpAngleEnd10000th / 10000.0;
+
+					angleRes10000th = askTmpAngleRes10000th;
+					ROS_INFO("Angle resolution of scanner is %0.5lf [deg]  (in 1/10000th deg: 0x%X)", askTmpAngleRes, askTmpAngleRes10000th);
+
+				}
+			}
+			//-----------------------------------------------------------------
+			//
+			// Set Min- und Max scanning angle given by config
+			//
+			//-----------------------------------------------------------------
+
+			ROS_INFO("MIN_ANG: %8.3f [rad] %8.3f [deg]", config_.min_ang, rad2deg(this->config_.min_ang));
+			ROS_INFO("MAX_ANG: %8.3f [rad] %8.3f [deg]", config_.max_ang, rad2deg(this->config_.max_ang));
+
+			// convert to 10000th degree
+			double minAngSopas = rad2deg(this->config_.min_ang) + 90;
+			double maxAngSopas = rad2deg(this->config_.max_ang) + 90;
+			angleStart10000th = (int)(boost::math::round(10000.0 * minAngSopas));
+			angleEnd10000th = (int)(boost::math::round(10000.0   * maxAngSopas));
+
+			char requestOutputAngularRange[MAX_STR_LEN];
+			// special for LMS1000
+			if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)
+			{
+				ROS_WARN("Angular settings for LMS 1000 not reliable.\n");
+				double askAngleStart = -137.0;
+				double askAngleEnd = +137.0;
+
+				this->config_.min_ang = askAngleStart / 180.0 * M_PI;
+				this->config_.max_ang = askAngleEnd / 180.0 * M_PI;
+			}
+			else
+			{
+				std::vector<unsigned char> outputAngularRangeReply;
+				const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES].c_str();
+				sprintf(requestOutputAngularRange, pcCmdMask, angleRes10000th, angleStart10000th, angleEnd10000th);
+
+				if (useBinaryCmd)
+				{
+					unsigned char tmpBuffer[255] = { 0 };
+					unsigned char sendBuffer[255] = { 0 };
+					UINT16 sendLen;
+					std::vector<unsigned char> reqBinary;
+					int iStatus = 1;
+					//				const char *askOutputAngularRangeBinMask = "%4y%4ysWN LMPoutputRange %2y%4y%4y%4y";
+									// int askOutputAngularRangeBinLen = binScanfGuessDataLenFromMask(askOutputAngularRangeBinMask);
+									// askOutputAngularRangeBinLen -= 8;  // due to header and length identifier
+
+					strcpy((char*)tmpBuffer, "WN LMPoutputRange ");
+					unsigned short orgLen = strlen((char *)tmpBuffer);
+					colab::addIntegerToBuffer<UINT16>(tmpBuffer, orgLen, iStatus);
+					colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
+					colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
+					colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
+					sendLen = orgLen;
+					colab::addFrameToBuffer(sendBuffer, tmpBuffer, &sendLen);
+
+					// binSprintfVec(&reqBinary, askOutputAngularRangeBinMask, 0x02020202, askOutputAngularRangeBinLen, iStatus, angleRes10000th, angleStart10000th, angleEnd10000th);
+
+					// unsigned char sickCrc = sick_crc8((unsigned char *)(&(reqBinary)[8]), reqBinary.size() - 8);
+					// reqBinary.push_back(sickCrc);
+					reqBinary = std::vector<unsigned char>(sendBuffer, sendBuffer + sendLen);
+					// Here we must build a more complex binaryRequest
+
+					// this->convertAscii2BinaryCmd(requestOutputAngularRange, &reqBinary);
+					result = sendSopasAndCheckAnswer(reqBinary, &outputAngularRangeReply);
+				}
+				else
+				{
+					result = sendSopasAndCheckAnswer(requestOutputAngularRange, &outputAngularRangeReply);
+				}
+			}
+
+			//-----------------------------------------------------------------
+			//
+			// Get Min- und Max scanning angle from the scanner to verify angle setting and correct the config, if something went wrong.
+			//
+			// IMPORTANT:
+			// Axis Orientation in ROS differs from SICK AXIS ORIENTATION!!!
+			// In relation to a body the standard is:
+			// x forward
+			// y left
+			// z up
+			// see http://www.ros.org/reps/rep-0103.html#coordinate-frame-conventions for more details
+			//-----------------------------------------------------------------
+
+			askOutputAngularRangeReply.clear();
+
 			if (useBinaryCmd)
 			{
 				std::vector<unsigned char> reqBinary;
-				this->convertAscii2BinaryCmd(requestLMDscandatacfgRead, &reqBinary);
-				result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_PARTIAL_SCANDATA_CFG]);
+				this->convertAscii2BinaryCmd(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &reqBinary);
+				result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_OUTPUT_RANGES]);
 			}
 			else
 			{
-				std::vector<unsigned char> lmdScanDataCfgReadReply;
-				result = sendSopasAndCheckAnswer(requestLMDscandatacfgRead, &lmdScanDataCfgReadReply);
+				result = sendSopasAndCheckAnswer(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &askOutputAngularRangeReply);
+			}
+
+			if (result == 0)
+			{
+				char dummy0[MAX_STR_LEN] = { 0 };
+				char dummy1[MAX_STR_LEN] = { 0 };
+				int  dummyInt = 0;
+				int  askAngleRes10000th = 0;
+				int  askAngleStart10000th = 0;
+				int askAngleEnd10000th = 0;
+				int iDummy0, iDummy1;
+				iDummy0 = 0;
+				iDummy1 = 0;
+				std::string askOutputAngularRangeStr = replyToString(askOutputAngularRangeReply);
+				// Binary-Reply Tab. 63
+				// 0x20 Space
+				// 0x00 0x01 - 
+				// 0x00 0x00 0x05 0x14  // Resolution in 1/10000th degree  --> 0.13° 
+				// 0x00 0x04 0x93 0xE0  // Start Angle 300000    -> 30° 
+				// 0x00 0x16 0xE3 0x60  // End Angle   1.500.000 -> 150°    // in ROS +/-60°  
+				// 0x83                 // Checksum
+
+				int numArgs;
+
+				/*
+				 *
+				 *  Initialize variables
+				 */
+
+				iDummy0 = 0;
+				iDummy1 = 0;
+				dummyInt = 0;
+				askAngleRes10000th = 0;
+				askAngleStart10000th = 0;
+				askAngleEnd10000th = 0;
+
+				/*
+				 *   scan values
+				 *
+				 */
+
+				if (useBinaryCmd)
+				{
+					const char *askOutputAngularRangeBinMask = "%4y%4ysRA LMPoutputRange %2y%4y%4y%4y";
+					numArgs = binScanfVec(&sopasReplyBinVec[CMD_GET_OUTPUT_RANGES], askOutputAngularRangeBinMask, &iDummy0, &iDummy1,
+						&dummyInt,
+						&askAngleRes10000th,
+						&askAngleStart10000th,
+						&askAngleEnd10000th);
+					//
+				}
+				else
+				{
+					numArgs = sscanf(askOutputAngularRangeStr.c_str(), "%s %s %d %X %X %X", dummy0, dummy1,
+						&dummyInt,
+						&askAngleRes10000th,
+						&askAngleStart10000th,
+						&askAngleEnd10000th);
+				}
+				if (numArgs >= 6)
+				{
+					double askTmpAngleRes = askAngleRes10000th / 10000.0;
+					double askTmpAngleStart = askAngleStart10000th / 10000.0;
+					double askTmpAngleEnd = askAngleEnd10000th / 10000.0;
+
+					angleRes10000th = askAngleRes10000th;
+					ROS_INFO("Angle resolution of scanner is %0.5lf [deg]  (in 1/10000th deg: 0x%X)", askTmpAngleRes, askAngleRes10000th);
+
+				}
+				double askAngleRes = askAngleRes10000th / 10000.0;
+				double askAngleStart = askAngleStart10000th / 10000.0;
+				double askAngleEnd = askAngleEnd10000th / 10000.0;
+
+				askAngleStart -= 90; // angle in ROS relative to y-axis
+				askAngleEnd -= 90; // angle in ROS relative to y-axis
+				this->config_.min_ang = askAngleStart / 180.0 * M_PI;
+				this->config_.max_ang = askAngleEnd / 180.0 * M_PI;
+				ros::NodeHandle nhPriv("~");
+				nhPriv.setParam("min_ang", this->config_.min_ang); // update parameter setting with "true" values read from scanner
+				nhPriv.setParam("max_ang", this->config_.max_ang); // update parameter setting with "true" values read from scanner
+				ROS_INFO("MIN_ANG (after command verification): %8.3f [rad] %8.3f [deg]", config_.min_ang, rad2deg(this->config_.min_ang));
+				ROS_INFO("MAX_ANG (after command verification): %8.3f [rad] %8.3f [deg]", config_.max_ang, rad2deg(this->config_.max_ang));
 			}
 
 
-		}
 
-		// CONFIG ECHO-Filter (only for MRS1000 not available for TiM5xx
-		if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() >= 4)
-		{
-			char requestEchoSetting[MAX_STR_LEN];
-			int filterEchoSetting = 0;
-			pn.getParam("filter_echos", filterEchoSetting); // filter_echos
-			if (filterEchoSetting < 0) filterEchoSetting = 0;
-			if (filterEchoSetting > 2) filterEchoSetting = 2;
-			// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
-			const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_ECHO_FILTER].c_str();
+			//-----------------------------------------------------------------
+			//
+			// Configure the data content of scan messing regarding to config.
+			//
+			//-----------------------------------------------------------------
 			/*
-			First echo : 0
-			All echos : 1
-			Last echo : 2
+			see 4.3.1 Configure the data content for the scan in the
 			*/
-			sprintf(requestEchoSetting, pcCmdMask, filterEchoSetting);
-			std::vector<unsigned char> outputFilterEchoRangeReply;
+			//                              1    2     3
+			// Prepare flag array for echos
+			// Except for the LMS5xx scanner here the mask is hard 00 see SICK Telegram listing "Telegram structure: sWN LMDscandatacfg" for details
 
-
-
-			if (useBinaryCmd)
+			outputChannelFlagId = 0x00;
+			for (int i = 0; i < outputChannelFlag.size(); i++)
 			{
-				std::vector<unsigned char> reqBinary;
-				this->convertAscii2BinaryCmd(requestEchoSetting, &reqBinary);
-				result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_ECHO_FILTER]);
+				outputChannelFlagId |= ((outputChannelFlag[i] == true) << i);
 			}
-			else
+			if (outputChannelFlagId < 1)
 			{
-				result = sendSopasAndCheckAnswer(requestEchoSetting, &outputFilterEchoRangeReply);
+				outputChannelFlagId = 1;  // at least one channel must be set
 			}
+			if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0)
+			{
+				outputChannelFlagId = 1;
+				ROS_INFO("LMS 5xx detected overwriting output channel flag ID");
+
+				ROS_INFO("LMS 5xx detected overwriting resolution flag (only 8 bit supported)");
+				this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(false);
+				rssiResolutionIs16Bit = this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit();
+			}
+			if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_MRS_1XXX_NAME) == 0)
+			{
+				ROS_INFO("MRS 1xxx detected overwriting resolution flag (only 8 bit supported)");
+				this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(false);
+				rssiResolutionIs16Bit = this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit();
+
+			}
+
+
+
+
+
+
+			// set scanning angle for tim5xx and for mrs1104
+			if ((this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
+				|| (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)
+				|| (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 24)
+				)
+			{
+				char requestLMDscandatacfg[MAX_STR_LEN];
+				// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+				// CMD_SET_PARTIAL_SCANDATA_CFG = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
+				const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
+				sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0, rssiResolutionIs16Bit ? 1 : 0);
+				if (useBinaryCmd)
+				{
+					std::vector<unsigned char> reqBinary;
+					this->convertAscii2BinaryCmd(requestLMDscandatacfg, &reqBinary);
+					// FOR MRS6124 this should be
+					// like this:
+					// 0000  02 02 02 02 00 00 00 20 73 57 4e 20 4c 4d 44 73   .......sWN LMDs
+					// 0010  63 61 6e 64 61 74 61 63 66 67 20 1f 00 01 01 00   candatacfg .....
+					// 0020  00 00 00 00 00 00 00 01 5c                        
+					result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_PARTIAL_SCANDATA_CFG]);
+				}
+				else
+				{
+					std::vector<unsigned char> lmdScanDataCfgReply;
+					result = sendSopasAndCheckAnswer(requestLMDscandatacfg, &lmdScanDataCfgReply);
+				}
+
+
+				// check setting
+				char requestLMDscandatacfgRead[MAX_STR_LEN];
+				// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+
+				strcpy(requestLMDscandatacfgRead, sopasCmdVec[CMD_GET_PARTIAL_SCANDATA_CFG].c_str());
+				if (useBinaryCmd)
+				{
+					std::vector<unsigned char> reqBinary;
+					this->convertAscii2BinaryCmd(requestLMDscandatacfgRead, &reqBinary);
+					result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_PARTIAL_SCANDATA_CFG]);
+				}
+				else
+				{
+					std::vector<unsigned char> lmdScanDataCfgReadReply;
+					result = sendSopasAndCheckAnswer(requestLMDscandatacfgRead, &lmdScanDataCfgReadReply);
+				}
+
+
+			}
+
+			// CONFIG ECHO-Filter (only for MRS1000 not available for TiM5xx
+			if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() >= 4)
+			{
+				char requestEchoSetting[MAX_STR_LEN];
+				int filterEchoSetting = 0;
+				pn.getParam("filter_echos", filterEchoSetting); // filter_echos
+				if (filterEchoSetting < 0) filterEchoSetting = 0;
+				if (filterEchoSetting > 2) filterEchoSetting = 2;
+				// Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+				const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_ECHO_FILTER].c_str();
+				/*
+				First echo : 0
+				All echos : 1
+				Last echo : 2
+				*/
+				sprintf(requestEchoSetting, pcCmdMask, filterEchoSetting);
+				std::vector<unsigned char> outputFilterEchoRangeReply;
+
+
+
+				if (useBinaryCmd)
+				{
+					std::vector<unsigned char> reqBinary;
+					this->convertAscii2BinaryCmd(requestEchoSetting, &reqBinary);
+					result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_ECHO_FILTER]);
+				}
+				else
+				{
+					result = sendSopasAndCheckAnswer(requestEchoSetting, &outputFilterEchoRangeReply);
+				}
+
+			}
+
 
 		}
-
+		//////////////////////////////////////////////////////////////////////////////
 
 
 		//-----------------------------------------------------------------
@@ -1504,12 +1599,81 @@ namespace sick_scan
 			//
 			//-----------------------------------------------------------------
 		std::vector<int> startProtocolSequence;
+		bool deviceIsRadar = false;
+		if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
+		{
+			ros::NodeHandle tmpParam("~");
+			bool transmitRawTargets = true;
+			bool transmitObjects = true;
+			int trackingMode = 0;
+			std::string trackingModeDescription[] = { "BASIC","VEHICLE" };
 
-		startProtocolSequence.push_back(CMD_START_MEASUREMENT);
-		startProtocolSequence.push_back(CMD_RUN);  // leave user level
+			int numTrackingModes = sizeof(trackingModeDescription) / sizeof(trackingModeDescription[0]);
 
-		startProtocolSequence.push_back(CMD_START_SCANDATA);
+			tmpParam.getParam("transmit_raw_targets", transmitRawTargets);
+			tmpParam.getParam("transmit_objects", transmitObjects);
+			tmpParam.getParam("tracking_mode", trackingMode);
 
+			if ((trackingMode < 0) || (trackingMode >= numTrackingModes))
+			{
+				ROS_WARN("tracking mode id invalid. Switch to tracking mode 0");
+				trackingMode = 0;
+			}
+			ROS_INFO("Raw target transmission is switched [%s]", transmitRawTargets ? "ON" : "OFF");
+			ROS_INFO("Object transmission is switched [%s]", transmitObjects ? "ON" : "OFF");
+			ROS_INFO("Tracking mode is set to id [%d] [%s]", trackingMode, trackingModeDescription[trackingMode].c_str());
+
+			deviceIsRadar = true;
+
+			// Asking some informational from the radar
+			startProtocolSequence.push_back(CMD_DEVICE_TYPE);
+			startProtocolSequence.push_back(CMD_SERIAL_NUMBER);
+			startProtocolSequence.push_back(CMD_ORDER_NUMBER);
+
+			/*
+			 * With "sWN TCTrackingMode 0" BASIC-Tracking activated
+			 * With "sWN TCTrackingMode 1" TRAFFIC-Tracking activated
+			 *
+			 */
+			if (transmitRawTargets)
+			{
+				startProtocolSequence.push_back(CMD_SET_TRANSMIT_RAWTARGETS_ON);  // raw targets will be transmitted
+			}
+			else
+			{
+				startProtocolSequence.push_back(CMD_SET_TRANSMIT_RAWTARGETS_OFF);  // NO raw targets will be transmitted
+			}
+
+			if (transmitObjects)
+			{
+				startProtocolSequence.push_back(CMD_SET_TRANSMIT_OBJECTS_ON);  // tracking objects will be transmitted
+			}
+			else
+			{
+				startProtocolSequence.push_back(CMD_SET_TRANSMIT_OBJECTS_OFF);  // NO tracking objects will be transmitted
+			}
+
+			switch (trackingMode)
+			{
+			case 0: startProtocolSequence.push_back(CMD_SET_TRACKING_MODE_0); break;
+			case 1: startProtocolSequence.push_back(CMD_SET_TRACKING_MODE_1); break;
+			default: ROS_DEBUG("Tracking mode switching sequence unknown\n"); break;
+
+			}
+			// leave user level
+
+	 //      sWN TransmitTargets 1
+				 // initializing sequence for radar based devices
+			startProtocolSequence.push_back(CMD_RUN);  // leave user level
+			startProtocolSequence.push_back(CMD_START_RADARDATA);
+		}
+		else
+		{
+			// initializing sequence for laserscanner	
+			startProtocolSequence.push_back(CMD_START_MEASUREMENT);
+			startProtocolSequence.push_back(CMD_RUN);  // leave user level
+			startProtocolSequence.push_back(CMD_START_SCANDATA);
+		}
 
 		std::vector<int>::iterator it;
 		for (it = startProtocolSequence.begin(); it != startProtocolSequence.end(); it++)
@@ -1551,6 +1715,11 @@ namespace sick_scan
 				sopasReplyStrVec[cmdId] = replyToString(replyDummy);
 			}
 
+
+			if (cmdId == CMD_START_RADARDATA)
+			{
+				ROS_DEBUG("Starting radar data ....\n");
+			}
 
 
 			if (cmdId == CMD_START_SCANDATA)
@@ -1602,6 +1771,9 @@ namespace sick_scan
 						if (useBinaryCmd)
 						{
 							long dummy0, dummy1;
+							dummy0 = 0;
+							dummy1 = 0;
+							deviceState = 0;
 							iRetVal = binScanfVec(&(sopasReplyBinVec[CMD_DEVICE_STATE]), "%4y%4ysRA SCdevicestate %1y", &dummy0, &dummy1, &deviceState);
 						}
 						else
@@ -1685,33 +1857,34 @@ namespace sick_scan
 
 	bool sick_scan::SickScanCommon::dumpDatagramForDebugging(unsigned char *buffer, int bufLen)
 	{
-
-			static int cnt = 0;
-			char szDumpFileName[255] = {0};
-			char szDir[255] = {0};
-		  if (cnt == 0)
-			{
-				ROS_INFO("Attention: verboseLevel is set to 1. Datagrams are stored in the /tmp folder.");
-			}
+		bool ret = true;
+		static int cnt = 0;
+		char szDumpFileName[255] = { 0 };
+		char szDir[255] = { 0 };
+		if (cnt == 0)
+		{
+			ROS_INFO("Attention: verboseLevel is set to 1. Datagrams are stored in the /tmp folder.");
+		}
 #ifdef _MSC_VER
-			strcpy(szDir,"C:\\temp\\");
+		strcpy(szDir, "C:\\temp\\");
 #else
-			strcpy(szDir,"/tmp/");
+		strcpy(szDir, "/tmp/");
 #endif
-			sprintf(szDumpFileName,"%ssick_datagram_%06d.bin", szDir, cnt);
-			bool isBinary = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
-			if (isBinary)
+		sprintf(szDumpFileName, "%ssick_datagram_%06d.bin", szDir, cnt);
+		bool isBinary = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
+		if (isBinary)
+		{
+			FILE *ftmp;
+			ftmp = fopen(szDumpFileName, "wb");
+			if (ftmp != NULL)
 			{
-				FILE *ftmp;
-				ftmp = fopen(szDumpFileName,"wb");
-				if (ftmp != NULL)
-				{
-					fwrite(buffer, bufLen, 1, ftmp);
-					fclose(ftmp);
-				}
+				fwrite(buffer, bufLen, 1, ftmp);
+				fclose(ftmp);
 			}
-			cnt++;
+		}
+		cnt++;
 
+		return(true);
 
 	}
 
@@ -1769,11 +1942,20 @@ namespace sick_scan
 			supported = true;
 		}
 
+
 		if (identStr.find("MRS6") != std::string::npos)  // received pattern contains 4 'x' but we check only for 3 'x' (MRS1104 should be MRS1xxx)
 		{
 			ROS_INFO("Deviceinfo %s found and supported by this driver.", identStr.c_str());
 			supported = true;
 		}
+
+		if (identStr.find("RMS3xx") != std::string::npos)   // received pattern contains 4 'x' but we check only for 3 'x' (MRS1104 should be MRS1xxx)
+		{
+			ROS_INFO("Deviceinfo %s found and supported by this driver.", identStr.c_str());
+			supported = true;
+		}
+
+
 		if (supported == false)
 		{
 			ROS_WARN("Device %s V%d.%d found and maybe unsupported by this driver.", device_string, version_major, version_minor);
@@ -1789,6 +1971,7 @@ namespace sick_scan
 	*/
 	int SickScanCommon::loopOnce()
 	{
+		static int cnt = 0;
 		diagnostics_.update();
 
 		unsigned char receiveBuffer[65536];
@@ -1796,8 +1979,14 @@ namespace sick_scan
 		static unsigned int iteration_count = 0;
 		bool useBinaryProtocol = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
 
+		ros::Time recvTimeStamp = ros::Time::now();  // timestamp incoming package, will be overwritten by get_datagram
+		// tcp packet
+		ros::Time recvTimeStampPush = ros::Time::now();  // timestamp
 
-		int result = get_datagram(receiveBuffer, 65536, &actual_length, useBinaryProtocol);
+		int result = get_datagram(recvTimeStamp, receiveBuffer, 65536, &actual_length, useBinaryProtocol);
+
+		ros::Duration dur = recvTimeStampPush - recvTimeStamp;
+
 		if (result != 0)
 		{
 			ROS_ERROR("Read Error when getting datagram: %i.", result);
@@ -1820,6 +2009,13 @@ namespace sick_scan
 
 		/* Dump Binary Protocol */
 		ros::NodeHandle tmpParam("~");
+
+
+
+		std::string echoForSlam = "";
+		bool slamBundle = false;
+		tmpParam.getParam("slam_echo", echoForSlam);
+		tmpParam.getParam("slam_bundle", slamBundle);
 		bool dumpData = false;
 		int verboseLevel = 0;
 		tmpParam.getParam("verboseLevel", verboseLevel);
@@ -1828,498 +2024,465 @@ namespace sick_scan
 			dumpDatagramForDebugging(receiveBuffer, actual_length);
 		}
 
-		sensor_msgs::LaserScan msg;
 
+		bool deviceIsRadar = false;
 
-		double elevationAngleInRad = 0.0;
-		/*
-		 * datagrams are enclosed in <STX> (0x02), <ETX> (0x03) pairs
-		 */
-		char* buffer_pos = (char*)receiveBuffer;
-		char *dstart, *dend;
-		bool dumpDbg = false;
-		bool dataToProcess = true;
-		std::vector<float> vang_vec;
-		vang_vec.clear();
-		while (dataToProcess)
+		if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar() == true)
 		{
-			const int maxAllowedEchos = 5;
+			deviceIsRadar = true;
+		}
 
-			int numValidEchos = 0;
-			int aiValidEchoIdx[maxAllowedEchos] = { 0 };
-			size_t dlength;
-			int success = -1;
-			int numEchos = 0;
-			int echoMask = 0;
-			bool publishPointCloud = true;
-			if (useBinaryProtocol)
+		if (true == deviceIsRadar)
+		{
+			SickScanRadar radar(this);
+			int errorCode = ExitSuccess;
+			// parse radar telegram and send pointcloud2-debug messages
+			errorCode = radar.parseDatagram(recvTimeStamp, (unsigned char *)receiveBuffer, actual_length, useBinaryProtocol);
+			return errorCode; // return success to continue looping
+		}
+		else
+		{
+
+			sensor_msgs::LaserScan msg;
+
+			msg.header.stamp = recvTimeStamp;
+			double elevationAngleInRad = 0.0;
+			/*
+			 * datagrams are enclosed in <STX> (0x02), <ETX> (0x03) pairs
+			 */
+			char* buffer_pos = (char*)receiveBuffer;
+			char *dstart, *dend;
+			bool dumpDbg = false;
+			bool dataToProcess = true;
+			std::vector<float> vang_vec;
+			vang_vec.clear();
+			while (dataToProcess)
 			{
-				// if binary protocol used then parse binary message
-				std::vector<unsigned char> receiveBufferVec = std::vector<unsigned char>(receiveBuffer, receiveBuffer + actual_length);
+				const int maxAllowedEchos = 5;
 
-				if (receiveBufferVec.size() > 8)
+				int numValidEchos = 0;
+				int aiValidEchoIdx[maxAllowedEchos] = { 0 };
+				size_t dlength;
+				int success = -1;
+				int numEchos = 0;
+				int echoMask = 0;
+				bool publishPointCloud = true;
+				if (useBinaryProtocol)
 				{
-					long idVal = 0;
-					long lenVal = 0;
-					memcpy(&idVal, receiveBuffer + 0, 4);
-					memcpy(&lenVal, receiveBuffer + 4, 4);
-					swap_endian((unsigned char*)&lenVal, 4);
+					// if binary protocol used then parse binary message
+					std::vector<unsigned char> receiveBufferVec = std::vector<unsigned char>(receiveBuffer, receiveBuffer + actual_length);
 
-					if (idVal == 0x02020202)
+					if (receiveBufferVec.size() > 8)
 					{
-						if (lenVal < actual_length)
+						long idVal = 0;
+						long lenVal = 0;
+						memcpy(&idVal, receiveBuffer + 0, 4);
+						memcpy(&lenVal, receiveBuffer + 4, 4);
+						swap_endian((unsigned char*)&lenVal, 4);
+
+						if (idVal == 0x02020202)
 						{
-							short elevAngleX200 = 0;  // signed short (F5 B2  -> Layer 24
-												  // F5B2h -> -2638/200= -13.19° 
-							int scanFrequencyX100 = 0;
-							double elevAngle = 0.00;
-							double scanFrequency = 0.0;
-							long measurementFrequencyDiv100 = 0; // multiply with 100
-							int numberOf16BitChannels = 0;
-							int numberOf8BitChannels = 0;
-
-							memcpy(&elevAngleX200, receiveBuffer + 50, 2);
-							swap_endian((unsigned char*)&elevAngleX200, 2);
-
-							elevationAngleInRad = -elevAngleX200 / 200.0 * deg2rad_const;
-							msg.header.seq = elevAngleX200; // should be multiple of 0.625° starting with -2638 (corresponding to 13.19°)
-
-							memcpy(&scanFrequencyX100, receiveBuffer + 52, 4);
-							swap_endian((unsigned char*)&scanFrequencyX100, 4);
-
-							memcpy(&measurementFrequencyDiv100, receiveBuffer + 56, 4);
-							swap_endian((unsigned char*)&measurementFrequencyDiv100, 4);
-
-							memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
-							swap_endian((unsigned char*)&numberOf16BitChannels, 2);
-
-							int  parseOff = 64;
-
-
-							char szChannel[255] = { 0 };
-							float scaleFactor = 1.0;
-							float scaleFactorOffset = 0.0;
-							int32_t  startAngleDiv10000 = 1;
-							int32_t sizeOfSingleAngularStepDiv10000 = 1;
-							double startAngle = 0.0;
-							double sizeOfSingleAngularStep = 0.0;
-							short numberOfItems = 0;
-
-							static int cnt = 0;
-							cnt++;
-							// get number of 8 bit channels
-							// we must jump of the 16 bit data blocks including header ...
-							for (int i = 0; i < numberOf16BitChannels; i++)
+							// binary message
+							if (lenVal < actual_length)
 							{
-								int numberOfItems = 0x00;
-								memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
-								swap_endian((unsigned char*)&numberOfItems, 2);
-								parseOff += 21; // 21 Byte header followed by data entries
-								parseOff += numberOfItems * 2;
-							}
+								short elevAngleX200 = 0;  // signed short (F5 B2  -> Layer 24
+													  // F5B2h -> -2638/200= -13.19° 
+								int scanFrequencyX100 = 0;
+								double elevAngle = 0.00;
+								double scanFrequency = 0.0;
+								long measurementFrequencyDiv100 = 0; // multiply with 100
+								int numberOf16BitChannels = 0;
+								int numberOf8BitChannels = 0;
 
-							if (parseOff < 0)
-							{
-								printf("STOP!");
-							}
-							// now we can read the number of 8-Bit-Channels
-							memcpy(&numberOf8BitChannels, receiveBuffer + parseOff, 2);
-							swap_endian((unsigned char*)&numberOf8BitChannels, 2);
+								memcpy(&elevAngleX200, receiveBuffer + 50, 2);
+								swap_endian((unsigned char*)&elevAngleX200, 2);
 
-							parseOff = 64;
-							enum datagram_parse_task
-							{
-								process_dist,
-								process_vang,
-								process_rssi,
-								process_idle
-							};
-							for (int processLoop = 0; processLoop < 2; processLoop++)
-							{
-								int totalChannelCnt = 0;
-								int distChannelCnt;
-								int rssiCnt;
-								bool bCont = true;
-								int vangleCnt;
-								datagram_parse_task task = process_idle;
-								bool parsePacket = true;
+								elevationAngleInRad = -elevAngleX200 / 200.0 * deg2rad_const;
+								msg.header.seq = elevAngleX200; // should be multiple of 0.625° starting with -2638 (corresponding to 13.19°)
+
+								memcpy(&scanFrequencyX100, receiveBuffer + 52, 4);
+								swap_endian((unsigned char*)&scanFrequencyX100, 4);
+
+								memcpy(&measurementFrequencyDiv100, receiveBuffer + 56, 4);
+								swap_endian((unsigned char*)&measurementFrequencyDiv100, 4);
+
+
+								msg.scan_time = 1.0 / (scanFrequencyX100 / 100.0);
+								msg.time_increment = 1.0 / (measurementFrequencyDiv100 * 100.0);
+
+								msg.range_min = parser_->get_range_min();
+								msg.range_max = parser_->get_range_max();
+
+								memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
+								swap_endian((unsigned char*)&numberOf16BitChannels, 2);
+
+								int  parseOff = 64;
+
+
+								char szChannel[255] = { 0 };
+								float scaleFactor = 1.0;
+								float scaleFactorOffset = 0.0;
+								int32_t  startAngleDiv10000 = 1;
+								int32_t sizeOfSingleAngularStepDiv10000 = 1;
+								double startAngle = 0.0;
+								double sizeOfSingleAngularStep = 0.0;
+								short numberOfItems = 0;
+
+								static int cnt = 0;
+								cnt++;
+								// get number of 8 bit channels
+								// we must jump of the 16 bit data blocks including header ...
+								for (int i = 0; i < numberOf16BitChannels; i++)
+								{
+									int numberOfItems = 0x00;
+									memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+									swap_endian((unsigned char*)&numberOfItems, 2);
+									parseOff += 21; // 21 Byte header followed by data entries
+									parseOff += numberOfItems * 2;
+								}
+
+								// now we can read the number of 8-Bit-Channels
+								memcpy(&numberOf8BitChannels, receiveBuffer + parseOff, 2);
+								swap_endian((unsigned char*)&numberOf8BitChannels, 2);
+
 								parseOff = 64;
-								bool processData = false;
-
-								if (processLoop == 0)
+								enum datagram_parse_task
 								{
-									distChannelCnt = 0;
-									rssiCnt = 0;
-									vangleCnt = 0;
-								}
-
-								if (processLoop == 1)
+									process_dist,
+									process_vang,
+									process_rssi,
+									process_idle
+								};
+								for (int processLoop = 0; processLoop < 2; processLoop++)
 								{
-									processData = true;
-									numEchos = distChannelCnt;
-									msg.ranges.resize(numberOfItems * numEchos);
-									if (rssiCnt > 0)
-									{
-										msg.intensities.resize(numberOfItems * rssiCnt);
-									}
-									else
-									{
-									}
-									if (vangleCnt > 0) // should be 0 or 1
-									{
-										vang_vec.resize(numberOfItems * vangleCnt);
-									}
-									else
-									{
-										vang_vec.clear();
-									}
-									echoMask = (1 << numEchos) - 1;
+									int totalChannelCnt = 0;
+									int distChannelCnt;
+									int rssiCnt;
+									bool bCont = true;
+									int vangleCnt;
+									datagram_parse_task task = process_idle;
+									bool parsePacket = true;
+									parseOff = 64;
+									bool processData = false;
 
-									// reset count. We will use the counter for index calculation now.
-									distChannelCnt = 0;
-									rssiCnt = 0;
-									vangleCnt = 0;
+									if (processLoop == 0)
+									{
+										distChannelCnt = 0;
+										rssiCnt = 0;
+										vangleCnt = 0;
+									}
 
-								}
+									if (processLoop == 1)
+									{
+										processData = true;
+										numEchos = distChannelCnt;
+										msg.ranges.resize(numberOfItems * numEchos);
+										if (rssiCnt > 0)
+										{
+											msg.intensities.resize(numberOfItems * rssiCnt);
+										}
+										else
+										{
+										}
+										if (vangleCnt > 0) // should be 0 or 1
+										{
+											vang_vec.resize(numberOfItems * vangleCnt);
+										}
+										else
+										{
+											vang_vec.clear();
+										}
+										echoMask = (1 << numEchos) - 1;
 
-								szChannel[6] = '\0';
-								scaleFactor = 1.0;
-								scaleFactorOffset = 0.0;
-								startAngleDiv10000 = 1;
-								sizeOfSingleAngularStepDiv10000 = 1;
-								startAngle = 0.0;
-								sizeOfSingleAngularStep = 0.0;
-								numberOfItems = 0;
+										// reset count. We will use the counter for index calculation now.
+										distChannelCnt = 0;
+										rssiCnt = 0;
+										vangleCnt = 0;
+
+									}
+
+									szChannel[6] = '\0';
+									scaleFactor = 1.0;
+									scaleFactorOffset = 0.0;
+									startAngleDiv10000 = 1;
+									sizeOfSingleAngularStepDiv10000 = 1;
+									startAngle = 0.0;
+									sizeOfSingleAngularStep = 0.0;
+									numberOfItems = 0;
 
 
 #if 1 // prepared for multiecho parsing
 
-								bCont = true;
-								bool doVangVecProc = false;
-								// try to get number of DIST and RSSI from binary data
-								task = process_idle;
-								do
-								{
+									bCont = true;
+									bool doVangVecProc = false;
+									// try to get number of DIST and RSSI from binary data
 									task = process_idle;
-									doVangVecProc = false;
-									int processDataLenValuesInBytes = 2;
-
-									if (totalChannelCnt == numberOf16BitChannels)
+									do
 									{
-											parseOff += 2; // jump of number of 8 bit channels- already parsed above
-									}
+										task = process_idle;
+										doVangVecProc = false;
+										int processDataLenValuesInBytes = 2;
 
-									if (totalChannelCnt >= numberOf16BitChannels)
-									{
-										processDataLenValuesInBytes = 1; // then process 8 bit values ...
-									}
-									bCont = false;
-									strcpy(szChannel,"");
-
-									if (totalChannelCnt < (numberOf16BitChannels + numberOf8BitChannels))
-									{
-										szChannel[5] = '\0';
-										strncpy(szChannel, (const char *) receiveBuffer + parseOff, 5);
-									}
-									else
-									{
-									   // all channels processed (16 bit and 8 bit channels)
-									}
-
-									if (strstr(szChannel, "DIST") == szChannel) {
-										task = process_dist;
-										distChannelCnt++;
-										bCont = true;
-										numberOfItems = 0;
-										memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
-										swap_endian((unsigned char*)&numberOfItems, 2);
-
-									}
-									if (strstr(szChannel, "VANG") == szChannel) {
-										vangleCnt++;
-										task = process_vang;
-										bCont = true;
-										numberOfItems = 0;
-										memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
-										swap_endian((unsigned char*)&numberOfItems, 2);
-
-										vang_vec.resize(numberOfItems);
-
-									}
-									if (strstr(szChannel, "RSSI") == szChannel) {
-										task = process_rssi;
-										rssiCnt++;
-										bCont = true;
-										numberOfItems = 0;
-                                        // copy two byte value (unsigned short to  numberOfItems
-										memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
-										swap_endian((unsigned char*)&numberOfItems, 2); // swap
-
-									}
-									if (bCont)
-									{
-										scaleFactor = 0.0;
-										scaleFactorOffset = 0.0;
-										startAngleDiv10000 = 0;
-										sizeOfSingleAngularStepDiv10000 = 0;
-										numberOfItems = 0;
-
-										memcpy(&scaleFactor, receiveBuffer + parseOff + 5, 4);
-										memcpy(&scaleFactorOffset, receiveBuffer + parseOff + 9, 4);
-										memcpy(&startAngleDiv10000, receiveBuffer + parseOff + 13, 4);
-										memcpy(&sizeOfSingleAngularStepDiv10000, receiveBuffer + parseOff + 17, 2);
-										memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
-
-										swap_endian((unsigned char*)&scaleFactor, 4);
-										swap_endian((unsigned char*)&scaleFactorOffset, 4);
-										swap_endian((unsigned char*)&startAngleDiv10000, 4);
-										swap_endian((unsigned char*)&sizeOfSingleAngularStepDiv10000, 2);
-										swap_endian((unsigned char*)&numberOfItems, 2);
-
-										if (processData)
+										if (totalChannelCnt == numberOf16BitChannels)
 										{
-											unsigned short *data = (unsigned short *)(receiveBuffer + parseOff + 21);
-
-											unsigned char *swapPtr = (unsigned char *)data;
-                                            // copy RSSI-Values +2 for 16-bit values +1 for 8-bit value
-											for (int i = 0; i < numberOfItems * processDataLenValuesInBytes; i += processDataLenValuesInBytes)
-											{
-												if (processDataLenValuesInBytes == 1)
-                        {
-                        }
-                        else
-                        {
-                        	unsigned char tmp;
-												  tmp = swapPtr[i + 1];
-												  swapPtr[i + 1] = swapPtr[i];
-												  swapPtr[i] = tmp;
-												}
-											}
-											int idx = 0;
-
-											switch (task)
-											{
-
-											case process_dist:
-												startAngle = startAngleDiv10000 / 10000.00;
-												sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
-												sizeOfSingleAngularStep *= (M_PI / 180.0);
-
-												msg.angle_min = startAngle;
-												msg.angle_increment = sizeOfSingleAngularStep;
-												msg.angle_max = startAngle + (numberOfItems - 1) * sizeOfSingleAngularStep;
-												for (int i = 0; i < numberOfItems; i++)
-												{
-													idx = i + numberOfItems * (distChannelCnt - 1);
-													msg.ranges[idx] = (float)data[i] * 0.001 * scaleFactor + scaleFactorOffset;
-												}
-												break;
-											case process_rssi:
-												// Das muss vom Protokoll abgeleitet werden. !!!
-												    for (int i = 0; i < numberOfItems; i++)
-												    {
-													    idx = i + numberOfItems * (rssiCnt - 1);
-                              // we must select between 16 bit and 8 bit values
-                              float rssiVal = 0.0;
-                              if (processDataLenValuesInBytes == 2)
-															{
-                                rssiVal = (float)data[i];
-                              }
-                              else
-                              {
-                                unsigned char *data8Ptr = (unsigned char *)data;
-                                rssiVal = (float)data8Ptr[i];
-                              }
-                              msg.intensities[idx] = rssiVal * scaleFactor + scaleFactorOffset;
-												    }
-												break;
-
-											case process_vang:
-												for (int i = 0; i < numberOfItems; i++)
-												{
-													vang_vec[i] = (float)data[i] * scaleFactor + scaleFactorOffset;
-												}
-												break;
-											}
+											parseOff += 2; // jump of number of 8 bit channels- already parsed above
 										}
-										parseOff += 21 + processDataLenValuesInBytes * numberOfItems;
+
+										if (totalChannelCnt >= numberOf16BitChannels)
+										{
+											processDataLenValuesInBytes = 1; // then process 8 bit values ...
+										}
+										bCont = false;
+										strcpy(szChannel, "");
+
+										if (totalChannelCnt < (numberOf16BitChannels + numberOf8BitChannels))
+										{
+											szChannel[5] = '\0';
+											strncpy(szChannel, (const char *)receiveBuffer + parseOff, 5);
+										}
+										else
+										{
+											// all channels processed (16 bit and 8 bit channels)
+										}
+
+										if (strstr(szChannel, "DIST") == szChannel) {
+											task = process_dist;
+											distChannelCnt++;
+											bCont = true;
+											numberOfItems = 0;
+											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+											swap_endian((unsigned char*)&numberOfItems, 2);
+
+										}
+										if (strstr(szChannel, "VANG") == szChannel) {
+											vangleCnt++;
+											task = process_vang;
+											bCont = true;
+											numberOfItems = 0;
+											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+											swap_endian((unsigned char*)&numberOfItems, 2);
+
+											vang_vec.resize(numberOfItems);
+
+										}
+										if (strstr(szChannel, "RSSI") == szChannel) {
+											task = process_rssi;
+											rssiCnt++;
+											bCont = true;
+											numberOfItems = 0;
+											// copy two byte value (unsigned short to  numberOfItems
+											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
+											swap_endian((unsigned char*)&numberOfItems, 2); // swap
+
+										}
+										if (bCont)
+										{
+											scaleFactor = 0.0;
+											scaleFactorOffset = 0.0;
+											startAngleDiv10000 = 0;
+											sizeOfSingleAngularStepDiv10000 = 0;
+											numberOfItems = 0;
+
+											memcpy(&scaleFactor, receiveBuffer + parseOff + 5, 4);
+											memcpy(&scaleFactorOffset, receiveBuffer + parseOff + 9, 4);
+											memcpy(&startAngleDiv10000, receiveBuffer + parseOff + 13, 4);
+											memcpy(&sizeOfSingleAngularStepDiv10000, receiveBuffer + parseOff + 17, 2);
+											memcpy(&numberOfItems, receiveBuffer + parseOff + 19, 2);
 
 
-									}
-									totalChannelCnt++;
-								} while (bCont);
-							}
+											swap_endian((unsigned char*)&scaleFactor, 4);
+											swap_endian((unsigned char*)&scaleFactorOffset, 4);
+											swap_endian((unsigned char*)&startAngleDiv10000, 4);
+											swap_endian((unsigned char*)&sizeOfSingleAngularStepDiv10000, 2);
+											swap_endian((unsigned char*)&numberOfItems, 2);
+
+											if (processData)
+											{
+												unsigned short *data = (unsigned short *)(receiveBuffer + parseOff + 21);
+
+												unsigned char *swapPtr = (unsigned char *)data;
+												// copy RSSI-Values +2 for 16-bit values +1 for 8-bit value
+												for (int i = 0; i < numberOfItems * processDataLenValuesInBytes; i += processDataLenValuesInBytes)
+												{
+													if (processDataLenValuesInBytes == 1)
+													{
+													}
+													else
+													{
+														unsigned char tmp;
+														tmp = swapPtr[i + 1];
+														swapPtr[i + 1] = swapPtr[i];
+														swapPtr[i] = tmp;
+													}
+												}
+												int idx = 0;
+
+												switch (task)
+												{
+
+												case process_dist:
+												{
+													startAngle = startAngleDiv10000 / 10000.00;
+													sizeOfSingleAngularStep = sizeOfSingleAngularStepDiv10000 / 10000.0;
+													sizeOfSingleAngularStep *= (M_PI / 180.0);
+
+													msg.angle_min = startAngle / 180.0 * M_PI - M_PI / 2;
+													msg.angle_increment = sizeOfSingleAngularStep;
+													msg.angle_max = msg.angle_min + (numberOfItems - 1) * msg.angle_increment;
+
+													float *rangePtr = NULL;
+
+													if (numberOfItems > 0)
+													{
+														rangePtr = &msg.ranges[0];
+													}
+													for (int i = 0; i < numberOfItems; i++)
+													{
+														idx = i + numberOfItems * (distChannelCnt - 1);
+														rangePtr[idx] = (float)data[i] * 0.001 * scaleFactor + scaleFactorOffset;
+													}
+												}
+												break;
+												case process_rssi:
+												{
+													// Das muss vom Protokoll abgeleitet werden. !!!
+
+													float *intensityPtr = NULL;
+
+													if (numberOfItems > 0)
+													{
+														intensityPtr = &msg.intensities[0];
+
+													}
+													for (int i = 0; i < numberOfItems; i++)
+													{
+														idx = i + numberOfItems * (rssiCnt - 1);
+														// we must select between 16 bit and 8 bit values
+														float rssiVal = 0.0;
+														if (processDataLenValuesInBytes == 2)
+														{
+															rssiVal = (float)data[i];
+														}
+														else
+														{
+															unsigned char *data8Ptr = (unsigned char *)data;
+															rssiVal = (float)data8Ptr[i];
+														}
+														intensityPtr[idx] = rssiVal * scaleFactor + scaleFactorOffset;
+													}
+												}
+													break;
+
+												case process_vang:
+													float *vangPtr = NULL; 
+													if (numberOfItems > 0)
+													{
+														vangPtr = &vang_vec[0]; // much faster, with vang_vec[i] each time the size will be checked
+													}
+													for (int i = 0; i < numberOfItems; i++)
+													{
+														vangPtr[i] = (float)data[i] * scaleFactor + scaleFactorOffset;
+													}
+													break;
+												}
+											}
+											parseOff += 21 + processDataLenValuesInBytes * numberOfItems;
+
+
+										}
+										totalChannelCnt++;
+									} while (bCont);
+								}
 #endif
 
-							elevAngle = elevAngleX200 / 200.0;
-							scanFrequency = scanFrequencyX100 / 100.0;
+								elevAngle = elevAngleX200 / 200.0;
+								scanFrequency = scanFrequencyX100 / 100.0;
 
 
+							}
 						}
 					}
-				}
 
-				success = ExitSuccess;
-				// change Parsing Mode
-				dataToProcess = false; // only one package allowed - no chaining
-			}
-			else // Parsing of Ascii-Ending of datagram
-			{
-				dstart = strchr(buffer_pos, 0x02);
-				if (dstart != NULL)
-				{
-					dend = strchr(dstart + 1, 0x03);
-				}
-				if ((dstart != NULL) && (dend != NULL))
-				{
-					dataToProcess = true; // continue parasing
-					dlength = dend - dstart;
-					*dend = '\0';
-					dstart++;
-				}
-				else
-				{
-					dataToProcess = false;
-					break; // 
-				}
 
-				if (dumpDbg)
+					parser_->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001f);
+
+					success = ExitSuccess;
+					// change Parsing Mode
+					dataToProcess = false; // only one package allowed - no chaining
+				}
+				else // Parsing of Ascii-Ending of datagram
 				{
+					dstart = strchr(buffer_pos, 0x02);
+					if (dstart != NULL)
 					{
-						static int cnt = 0;
-						char szFileName[255];
+						dend = strchr(dstart + 1, 0x03);
+					}
+					if ((dstart != NULL) && (dend != NULL))
+					{
+						dataToProcess = true; // continue parasing
+						dlength = dend - dstart;
+						*dend = '\0';
+						dstart++;
+					}
+					else
+					{
+						dataToProcess = false;
+						break; // 
+					}
+
+					if (dumpDbg)
+					{
+						{
+							static int cnt = 0;
+							char szFileName[255];
 
 #ifdef _MSC_VER
-						sprintf(szFileName, "c:\\temp\\dump%05d.txt", cnt);
+							sprintf(szFileName, "c:\\temp\\dump%05d.txt", cnt);
 #else
-						sprintf(szFileName, "/tmp/dump%05d.txt", cnt);
+							sprintf(szFileName, "/tmp/dump%05d.txt", cnt);
 #endif
-						FILE *fout;
-						fout = fopen(szFileName, "wb");
-						fwrite(dstart, dlength, 1, fout);
-						fclose(fout);
-						cnt++;
+							FILE *fout;
+							fout = fopen(szFileName, "wb");
+							fwrite(dstart, dlength, 1, fout);
+							fclose(fout);
+							cnt++;
+						}
 					}
-				}
 
-				// HEADER of data followed by DIST1 ... DIST2 ... DIST3 .... RSSI1 ... RSSI2.... RSSI3...
+					// HEADER of data followed by DIST1 ... DIST2 ... DIST3 .... RSSI1 ... RSSI2.... RSSI3...
 
-				// <frameid>_<sign>00500_DIST[1|2|3]
-				numEchos = 1;
-				// numEchos contains number of echos (1..5)
-				// _msg holds ALL data of all echos
-				success = parser_->parse_datagram(dstart, dlength, config_, msg, numEchos, echoMask);
-				publishPointCloud = true; // for MRS1000
+					// <frameid>_<sign>00500_DIST[1|2|3]
+					numEchos = 1;
+					// numEchos contains number of echos (1..5)
+					// _msg holds ALL data of all echos
+					success = parser_->parse_datagram(dstart, dlength, config_, msg, numEchos, echoMask);
+					publishPointCloud = true; // for MRS1000
 
-				numValidEchos = 0;
-				for (int i = 0; i < maxAllowedEchos; i++)
-				{
-					aiValidEchoIdx[i] = 0;
-				}
-			}
-
-
-			int numOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
-
-			if (success == ExitSuccess)
-			{
-				std::vector<float> rangeTmp = msg.ranges;  // copy all range value
-				std::vector<float> intensityTmp = msg.intensities; // copy all intensity value
-					// XXX  - HIER MEHRERE SCANS publish, falls Mehrzielszenario läuft
-				if (numEchos > 5)
-				{
-					ROS_WARN("Too much echos");
-				}
-				else
-				{
-
-					int startOffset = 0;
-					int endOffset = 0;
-					int echoPartNum = msg.ranges.size() / numEchos;
-					for (int i = 0; i < numEchos; i++)
+					numValidEchos = 0;
+					for (int i = 0; i < maxAllowedEchos; i++)
 					{
-
-						bool sendMsg = false;
-						if ((echoMask & (1 << i)) & 	outputChannelFlagId)
-						{
-							aiValidEchoIdx[numValidEchos] = i; // save index
-							numValidEchos++;
-							sendMsg = true;
-						}
-						startOffset = i * echoPartNum;
-						endOffset = (i + 1) * echoPartNum;
-
-						msg.ranges.clear();
-						msg.intensities.clear();
-						msg.ranges = std::vector<float>(
-							rangeTmp.begin() + startOffset,
-							rangeTmp.begin() + endOffset);
-						// check also for MRS1104 
-						if (endOffset <= intensityTmp.size() && (intensityTmp.size() > 0))
-						{
-							msg.intensities = std::vector<float>(
-								intensityTmp.begin() + startOffset,
-								intensityTmp.begin() + endOffset);
-						}
-						else
-						{
-							msg.intensities.resize(echoPartNum); // fill with zeros
-						}
-						// msg.header.frame_id = ""
-						{
-							// numEchos
-							char szTmp[255] = { 0 };
-							if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() > 1)
-							{
-								const char* cpFrameId = config_.frame_id.c_str();
-								sprintf(szTmp, "%s_%+04d_DIST%d", cpFrameId, msg.header.seq, i + 1);
-								msg.header.frame_id = std::string(szTmp);
-							}
-						}
-
-#ifndef _MSC_VER
-						if (numOfLayers > 4)
-						{
-							sendMsg = false; // too many layers for publish as scan message. Only pointcloud messages will be pub.
-						}
-						if (sendMsg & 	outputChannelFlagId)  // publish only configured channels - workaround for cfg-bug MRS1104
-						{
-							diagnosticPub_->publish(msg);
-						}
-#else
-						printf("MSG received...");
-#endif
+						aiValidEchoIdx[i] = 0;
 					}
 				}
 
 
-				if (publishPointCloud == true)
+				int numOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
+
+				if (success == ExitSuccess)
 				{
 					bool elevationPreCalculated = false;
 					double elevationAngleDegree = 0.0;
 
-					const int numChannels = 4; // x y z i (for intensity)
 
+					std::vector<float> rangeTmp = msg.ranges;  // copy all range value
+					std::vector<float> intensityTmp = msg.intensities; // copy all intensity value
 
-					cloud_.header.stamp = ros::Time::now();
-					cloud_.header.frame_id = config_.frame_id;
-					cloud_.header.seq = 0;
-					cloud_.height = numOfLayers * numValidEchos; // due to multi echo multiplied by num. of layers
-					cloud_.width = msg.ranges.size();
-					cloud_.is_bigendian = false;
-					cloud_.is_dense = true;
-					cloud_.point_step = numChannels * sizeof(float);
-					cloud_.row_step = cloud_.point_step * cloud_.width;
-					cloud_.fields.resize(numChannels);
-					for (int i = 0; i < numChannels; i++) {
-						std::string channelId[] = { "x", "y", "z", "intensity" };
-						cloud_.fields[i].name = channelId[i];
-						cloud_.fields[i].offset = i * sizeof(float);
-						cloud_.fields[i].count = 1;
-						cloud_.fields[i].datatype = sensor_msgs::PointField::FLOAT32;
+					int intensityTmpNum = intensityTmp.size();
+					float *intensityTmpPtr = NULL;
+					if (intensityTmpNum > 0)
+					{
+						intensityTmpPtr = &intensityTmp[0];
 					}
-
-					cloud_.data.resize(cloud_.row_step * cloud_.height);
 
 					// Helpful: https://answers.ros.org/question/191265/pointcloud2-access-data/
 					// https://gist.github.com/yuma-m/b5dcce1b515335c93ce8
@@ -2362,94 +2525,263 @@ namespace sick_scan
 
 					}
 
-					for (size_t iEcho = 0; iEcho < numValidEchos; iEcho++)
+
+
+
+
+					// XXX  - HIER MEHRERE SCANS publish, falls Mehrzielszenario läuft
+					if (numEchos > 5)
 					{
-						float angle = config_.min_ang;
-						int rangeNum = rangeTmp.size() / numEchos;
+						ROS_WARN("Too much echos");
+					}
+					else
+					{
 
-						for (size_t i = 0; i < rangeNum; i++)
+						int startOffset = 0;
+						int endOffset = 0;
+						int echoPartNum = msg.ranges.size() / numEchos;
+						for (int i = 0; i < numEchos; i++)
 						{
-							geometry_msgs::Point32 point;
-							float range_meter = rangeTmp[iEcho * rangeNum + i];
-							float phi = angle; // azimuth angle
-							float alpha = 0.0;  // elevation angle
 
-							if (useGivenElevationAngle) // FOR MRS6124
+							bool sendMsg = false;
+							if ((echoMask & (1 << i)) & 	outputChannelFlagId)
 							{
-								alpha = -vang_vec[i] * deg2rad_const;
+								aiValidEchoIdx[numValidEchos] = i; // save index
+								numValidEchos++;
+								sendMsg = true;
+							}
+							startOffset = i * echoPartNum;
+							endOffset = (i + 1) * echoPartNum;
+
+							msg.ranges.clear();
+							msg.intensities.clear();
+							msg.ranges = std::vector<float>(
+								rangeTmp.begin() + startOffset,
+								rangeTmp.begin() + endOffset);
+							// check also for MRS1104 
+							if (endOffset <= intensityTmp.size() && (intensityTmp.size() > 0))
+							{
+								msg.intensities = std::vector<float>(
+									intensityTmp.begin() + startOffset,
+									intensityTmp.begin() + endOffset);
 							}
 							else
 							{
-								if (elevationPreCalculated) // FOR MRS6124 without VANGL
+								msg.intensities.resize(echoPartNum); // fill with zeros
+							}
+							// msg.header.frame_id = ""
+							{
+								// numEchos
+								char szTmp[255] = { 0 };
+								if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() > 1)
 								{
-									alpha = elevationAngleInRad;
+									const char* cpFrameId = config_.frame_id.c_str();
+#if 0
+									sprintf(szTmp, "%s_%+04d_DIST%d", cpFrameId, msg.header.seq, i + 1);
+#else // experimental
+									char szSignName[10] = { 0 };
+									if ((int)msg.header.seq < 0)
+									{
+										strcpy(szSignName, "NEG");
+									}
+									else
+									{
+										strcpy(szSignName, "POS");
+
+									}
+
+									sprintf(szTmp, "%s_%s_%03d_DIST%d", cpFrameId, szSignName, abs((int)msg.header.seq), i + 1);
+#endif
 								}
 								else
 								{
-									alpha = layer * elevationAngleDegree; // for MRS1104
+									strcpy(szTmp, config_.frame_id.c_str());
 								}
-							}
 
-
-							// Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
-							point.x = range_meter * cos(alpha) * cos(phi);
-							point.y = range_meter * cos(alpha) * sin(phi);
-							point.z = range_meter * sin(alpha);
-
-							//	cloud_.points[(layer - baseLayer) * msg.ranges.size() + i] = point;
-
-							long adroff = i * (numChannels * (int)sizeof(float)) + (layer - baseLayer) * cloud_.row_step;
-							adroff += iEcho * cloud_.row_step * numOfLayers;
-							unsigned char *ptr = &(cloud_.data[0]) + adroff;
-
-							float intensity = 0.0;
-							if (config_.intensity)
-							{
-								int intensityIndex = aiValidEchoIdx[iEcho] * rangeNum + i;
-								// intensity values available??
-								if (intensityIndex < intensityTmp.size())
+								msg.header.frame_id = std::string(szTmp);
+								// Hector slam can only process ONE valid frame id.
+								if (echoForSlam.length() > 0)
 								{
-									intensity = intensityTmp[intensityIndex];
+									if (slamBundle)
+									{
+										// try to map first echos to horizontal layers.
+										if (i == 0)
+										{
+											// first echo
+											msg.header.frame_id = echoForSlam;
+											strcpy(szTmp, echoForSlam.c_str());  //
+											if (elevationAngleInRad != 0.0)
+											{
+												float cosVal = cos(elevationAngleInRad);
+												int rangeNum = msg.ranges.size();
+												for (int j = 0; j < rangeNum; j++)
+												{
+													msg.ranges[j] *= cosVal;
+												}
+											}
+										}
+									}
+
+									if (echoForSlam.compare(szTmp) == 0)
+									{
+										sendMsg = true;
+									}
+									else
+									{
+										sendMsg = false;
+									}
 								}
+
 							}
-							memcpy(ptr + 0, &(point.x), sizeof(float));
-							memcpy(ptr + 4, &(point.y), sizeof(float));
-							memcpy(ptr + 8, &(point.z), sizeof(float));
-							memcpy(ptr + 12, &(intensity), sizeof(float));
-
-
-							angle += msg.angle_increment;
-						}
-						// Publish
-						static int cnt = 0;
-						int layerOff = (layer - baseLayer);
-
-					}
-					// if ( (msg.header.seq == 0) || (layerOff == 0)) // FIXEN!!!!
-					if ((msg.header.seq == 0) || (msg.header.seq == 237))
-					{
-						// Following cases are interesting:
-						// LMS5xx: seq is always 0 -> publish every scan
-						// MRS1104: Every 4th-Layer is 0 -> publish pointcloud every 4th layer message
-						// LMS1104: Publish every layer. The timing for the LMS1104 seems to be:
-						//          Every 67 ms receiving of a new scan message
-						//          Scan message contains 367 measurements
-						//          angle increment is 0.75° (yields 274,5° covery -> OK)
-						// MRS6124: Publish very 24th layer at the layer = 237 , MRS6124 contains no sequence with seq 0
-						;
 #ifndef _MSC_VER
-						cloud_pub_.publish(cloud_);
+							if (numOfLayers > 4)
+							{
+								sendMsg = false; // too many layers for publish as scan message. Only pointcloud messages will be pub.
+							}
+							if (sendMsg & 	outputChannelFlagId)  // publish only configured channels - workaround for cfg-bug MRS1104
+							{
+
+								pub_.publish(msg);
+							}
 #else
-						printf("PUBLISH:\n");
+							printf("MSG received...");
 #endif
+						}
+					}
+
+
+					if (publishPointCloud == true)
+					{
+						const int numChannels = 4; // x y z i (for intensity)
+
+
+						cloud_.header.stamp = recvTimeStamp;
+						cloud_.header.frame_id = config_.frame_id;
+						cloud_.header.seq = 0;
+						cloud_.height = numOfLayers * numValidEchos; // due to multi echo multiplied by num. of layers
+						cloud_.width = msg.ranges.size();
+						cloud_.is_bigendian = false;
+						cloud_.is_dense = true;
+						cloud_.point_step = numChannels * sizeof(float);
+						cloud_.row_step = cloud_.point_step * cloud_.width;
+						cloud_.fields.resize(numChannels);
+						for (int i = 0; i < numChannels; i++) {
+							std::string channelId[] = { "x", "y", "z", "intensity" };
+							cloud_.fields[i].name = channelId[i];
+							cloud_.fields[i].offset = i * sizeof(float);
+							cloud_.fields[i].count = 1;
+							cloud_.fields[i].datatype = sensor_msgs::PointField::FLOAT32;
+						}
+
+						cloud_.data.resize(cloud_.row_step * cloud_.height);
+
+						unsigned char *cloudDataPtr = &(cloud_.data[0]);
+
+						for (size_t iEcho = 0; iEcho < numValidEchos; iEcho++)
+						{
+							std::vector<float> cosAlphaTable;
+							std::vector<float> sinAlphaTable;
+
+							float angle = config_.min_ang;
+							int rangeNum = rangeTmp.size() / numEchos;
+
+							cosAlphaTable.resize(rangeNum);
+							sinAlphaTable.resize(rangeNum);
+
+							float *cosAlphaTablePtr = &cosAlphaTable[0];
+							float *sinAlphaTablePtr = &sinAlphaTable[0];
+
+							float *vangPtr = &vang_vec[0];
+							float *rangeTmpPtr = &rangeTmp[0];
+							for (size_t i = 0; i < rangeNum; i++)
+							{
+								geometry_msgs::Point32 point;
+								float range_meter = rangeTmpPtr[iEcho * rangeNum + i];
+								float phi = angle; // azimuth angle
+								float alpha = 0.0;  // elevation angle
+
+								if (useGivenElevationAngle) // FOR MRS6124
+								{
+									alpha = -vangPtr[i] * deg2rad_const;
+								}
+								else
+								{
+									if (elevationPreCalculated) // FOR MRS6124 without VANGL
+									{
+										alpha = elevationAngleInRad;
+									}
+									else
+									{
+										alpha = layer * elevationAngleDegree; // for MRS1104
+									}
+								}
+
+								if (iEcho == 0)
+								{
+									cosAlphaTablePtr[i] = cos(alpha);
+									sinAlphaTablePtr[i] = sin(alpha);
+								}
+								// Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
+								point.x = range_meter * cosAlphaTablePtr[i] * cos(phi);
+								point.y = range_meter * cosAlphaTablePtr[i] * sin(phi);
+								point.z = range_meter * sinAlphaTablePtr[i];
+
+								//	cloud_.points[(layer - baseLayer) * msg.ranges.size() + i] = point;
+
+								long adroff = i * (numChannels * (int)sizeof(float)) + (layer - baseLayer) * cloud_.row_step;
+								adroff += iEcho * cloud_.row_step * numOfLayers;
+								unsigned char *ptr = cloudDataPtr + adroff;
+
+								float intensity = 0.0;
+								if (config_.intensity)
+								{
+									int intensityIndex = aiValidEchoIdx[iEcho] * rangeNum + i;
+									// intensity values available??
+									if (intensityIndex < intensityTmpNum)
+									{
+										intensity = intensityTmpPtr[intensityIndex];
+									}
+								}
+								float dataArr[4];
+								dataArr[0] = point.x;
+								dataArr[1] = point.y;
+								dataArr[2] = point.z;
+								dataArr[3] = intensity;
+								memcpy(ptr + 0, dataArr, 4 * sizeof(float));
+
+								angle += msg.angle_increment;
+							}
+							// Publish
+							static int cnt = 0;
+							int layerOff = (layer - baseLayer);
+
+						}
+						// if ( (msg.header.seq == 0) || (layerOff == 0)) // FIXEN!!!!
+						if ((msg.header.seq == 0) || (msg.header.seq == 237))
+						{
+							// Following cases are interesting:
+							// LMS5xx: seq is always 0 -> publish every scan
+							// MRS1104: Every 4th-Layer is 0 -> publish pointcloud every 4th layer message
+							// LMS1104: Publish every layer. The timing for the LMS1104 seems to be:
+							//          Every 67 ms receiving of a new scan message
+							//          Scan message contains 367 measurements
+							//          angle increment is 0.75° (yields 274,5° covery -> OK)
+							// MRS6124: Publish very 24th layer at the layer = 237 , MRS6124 contains no sequence with seq 0
+							;
+#ifndef _MSC_VER
+							cloud_pub_.publish(cloud_);
+#else
+							printf("PUBLISH:\n");
+#endif
+						}
 					}
 				}
-			}
-			// Start Point
-			buffer_pos = dend + 1;
-		} // end of while loop
+				// Start Point
+				buffer_pos = dend + 1;
+			} // end of while loop
 
-		return ExitSuccess; // return success to continue looping
+			return ExitSuccess; // return success to continue looping
+		}
 	}
 
 
@@ -2659,16 +2991,16 @@ namespace sick_scan
 		}
 		else
 		{
-/*
-			// we must reconnect and set the new protocoltype
-			int iRet = this->close_device();
-			ROS_INFO("SOPAS - Close and reconnected to scanner due to protocol change and wait 15 sec. ");
-			ROS_INFO("SOPAS - Changing from %s to %s\n", shouldUseBinary ? "ASCII" : "BINARY", shouldUseBinary ? "BINARY" : "ASCII");
-			// Wait a few seconds after rebooting
-			ros::Duration(15.0).sleep();
+			/*
+						// we must reconnect and set the new protocoltype
+						int iRet = this->close_device();
+						ROS_INFO("SOPAS - Close and reconnected to scanner due to protocol change and wait 15 sec. ");
+						ROS_INFO("SOPAS - Changing from %s to %s\n", shouldUseBinary ? "ASCII" : "BINARY", shouldUseBinary ? "BINARY" : "ASCII");
+						// Wait a few seconds after rebooting
+						ros::Duration(15.0).sleep();
 
-			iRet = this->init_device();
-			*/
+						iRet = this->init_device();
+						*/
 			if (shouldUseBinary == true)
 			{
 				this->setProtocolType(CoLa_B);
@@ -2679,9 +3011,18 @@ namespace sick_scan
 			}
 
 			useBinaryCmdNow = shouldUseBinary;
-	    retValue= false;
+			retValue = false;
 		}
 		return(retValue);
+	}
+
+	void SickScanCommon::setSensorIsRadar(bool _isRadar)
+	{
+		sensorIsRadar = _isRadar;
+	}
+	bool SickScanCommon::getSensorIsRadar(void)
+	{
+		return(sensorIsRadar);
 	}
 
 	// SopasProtocol m_protocolId;

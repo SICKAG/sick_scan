@@ -241,6 +241,26 @@ namespace sick_scan
 	}
 
 	/*!
+	\brief flag to mark the device as radar (instead of laser scanner)
+	\param _deviceIsRadar: false for laserscanner, true for radar (like rms_3xx)
+	\sa getDeviceIsRadar
+	*/
+	void ScannerBasicParam::setDeviceIsRadar(bool _deviceIsRadar)
+	{
+		deviceIsRadar = _deviceIsRadar;
+	}
+
+	/*!
+	\brief flag to mark the device as radar (instead of laser scanner)
+	\param _deviceIsRadar: false for laserscanner, true for radar (like rms_3xx)
+	\sa getDeviceIsRadar
+	*/
+	bool ScannerBasicParam::getDeviceIsRadar(void)
+	{
+		return(deviceIsRadar);
+	}
+
+	/*!
 	\brief flag to decide between usage of ASCII-sopas or BINARY-sopas
 	\return _useBinary: True for binary, False for ASCII
 	\sa getUseBinaryProtocol
@@ -289,10 +309,9 @@ namespace sick_scan
 	SickGenericParser::SickGenericParser(std::string _scanType) :
 		AbstractParser(),
 		override_range_min_((float)0.05),
-		override_range_max_((float)10.0),
+		override_range_max_((float)100.0),
 		override_time_increment_((float)-1.0)
 	{
-
 		setScannerType(_scanType);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_TIM_5XX_NAME);
@@ -300,9 +319,11 @@ namespace sick_scan
         allowedScannerNames.push_back(SICK_SCANNER_LMS_1XX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_LMS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_6XXX_NAME);
+		allowedScannerNames.push_back(SICK_SCANNER_RMS_3XX_NAME); // Radar scanner
 		basicParams.resize(allowedScannerNames.size()); // resize to number of supported scanner types
 		for (int i = 0; i < basicParams.size(); i++) // set specific parameter for each scanner type - scanner type is identified by name
 		{
+			basicParams[i].setDeviceIsRadar(false); // Default
 			basicParams[i].setScannerName(allowedScannerNames[i]);  // set scanner type for this parameter object
 
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_1XXX_NAME) == 0)  // MRS1000 - 4 layer, 1101 shots per scan
@@ -314,6 +335,7 @@ namespace sick_scan
 				basicParams[i].setElevationDegreeResolution(2.5); // in [degree]
 				basicParams[i].setExpectedFrequency(50.0);
 				basicParams[i].setUseBinaryProtocol(true);
+				basicParams[i].setDeviceIsRadar(false); // Default
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)  // LMS1000 - 4 layer, 1101 shots per scan
 			{
@@ -324,34 +346,38 @@ namespace sick_scan
 				basicParams[i].setElevationDegreeResolution(0.0); // in [degree]
 				basicParams[i].setExpectedFrequency(50.0);
 				basicParams[i].setUseBinaryProtocol(true);
+				basicParams[i].setDeviceIsRadar(false); // Default
 			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_5XX_NAME) == 0) // TIM_5xx - 1 Layer, max. 811 shots per scan
-            {
-                basicParams[i].setNumberOfMaximumEchos(1);
-                basicParams[i].setNumberOfLayers(1);
-                basicParams[i].setNumberOfShots(811);
-                basicParams[i].setAngularDegreeResolution(0.3333);
-                basicParams[i].setExpectedFrequency(15.0);
-                basicParams[i].setUseBinaryProtocol(true);
-            }
-            if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0) // LMS_5xx - 1 Layer
-            {
-                basicParams[i].setNumberOfMaximumEchos(1);
-                basicParams[i].setNumberOfLayers(1);
-                basicParams[i].setNumberOfShots(381);
-                basicParams[i].setAngularDegreeResolution(0.5);
-                basicParams[i].setExpectedFrequency(15.0);
-                basicParams[i].setUseBinaryProtocol(true);
-            }
-            if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XX_NAME) == 0) // LMS_1xx - 1 Layer
-            {
-                basicParams[i].setNumberOfMaximumEchos(1);
-                basicParams[i].setNumberOfLayers(1);
-                basicParams[i].setNumberOfShots(541);
-                basicParams[i].setAngularDegreeResolution(0.5);
-                basicParams[i].setExpectedFrequency(25.0);
-                basicParams[i].setUseBinaryProtocol(true);
-            }
+      {
+        basicParams[i].setNumberOfMaximumEchos(1);
+        basicParams[i].setNumberOfLayers(1);
+        basicParams[i].setNumberOfShots(811);
+        basicParams[i].setAngularDegreeResolution(0.3333);
+        basicParams[i].setExpectedFrequency(15.0);
+        basicParams[i].setUseBinaryProtocol(true);
+				basicParams[i].setDeviceIsRadar(false); // Default
+			}
+      if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0) // LMS_5xx - 1 Layer
+      {
+        basicParams[i].setNumberOfMaximumEchos(1);
+        basicParams[i].setNumberOfLayers(1);
+        basicParams[i].setNumberOfShots(381);
+        basicParams[i].setAngularDegreeResolution(0.5);
+        basicParams[i].setExpectedFrequency(15.0);
+        basicParams[i].setUseBinaryProtocol(true);
+				basicParams[i].setDeviceIsRadar(false); // Default
+			}
+      if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XX_NAME) == 0) // LMS_1xx - 1 Layer
+      {
+        basicParams[i].setNumberOfMaximumEchos(1);
+        basicParams[i].setNumberOfLayers(1);
+        basicParams[i].setNumberOfShots(541);
+        basicParams[i].setAngularDegreeResolution(0.5);
+        basicParams[i].setExpectedFrequency(25.0);
+        basicParams[i].setUseBinaryProtocol(true);
+				basicParams[i].setDeviceIsRadar(false); // Default
+			}
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) //
 			{
 				basicParams[i].setNumberOfMaximumEchos(5);
@@ -361,7 +387,22 @@ namespace sick_scan
 				basicParams[i].setElevationDegreeResolution(1.25); // in [degree]
 				basicParams[i].setExpectedFrequency(50.0);
 				basicParams[i].setUseBinaryProtocol(true);
+				basicParams[i].setDeviceIsRadar(false); // Default
 			}
+
+			if (basicParams[i].getScannerName().compare(SICK_SCANNER_RMS_3XX_NAME) == 0) // Radar
+			{
+				basicParams[i].setNumberOfMaximumEchos(1);
+				basicParams[i].setNumberOfLayers(0); // for radar scanner
+				basicParams[i].setNumberOfShots(65);
+				basicParams[i].setAngularDegreeResolution(0.00);
+				basicParams[i].setElevationDegreeResolution(0.00); // in [degree]
+				basicParams[i].setExpectedFrequency(0.00);
+				basicParams[i].setUseBinaryProtocol(false); // use ASCII-Protocol
+				basicParams[i].setDeviceIsRadar(true); // Device is a radar
+
+			}
+
 		}
 
 		int scannerIdx = lookUpForAllowedScanner(scannerType);
@@ -510,7 +551,27 @@ namespace sick_scan
 		return(iRet);
 	}
 
-	/*!
+
+	void SickGenericParser::checkScanTiming(float time_increment, float scan_time, float angle_increment, float tol)
+	{
+		if (this->getCurrentParamPtr()->getNumberOfLayers() > 1)
+		{
+			return;
+		}
+
+		float expected_time_increment = this->getCurrentParamPtr()->getNumberOfLayers() * scan_time * angle_increment / (2.0 * M_PI);
+		if (fabs(expected_time_increment - time_increment) > 0.00001)
+		{
+			ROS_WARN_THROTTLE(60, "The time_increment, scan_time and angle_increment values reported by the scanner are inconsistent! "
+							"Expected time_increment: %.9f, reported time_increment: %.9f. "
+							"Perhaps you should set the parameter time_increment to the expected value. This message will print every 60 seconds.",
+												expected_time_increment, time_increment);
+		}
+	};
+
+
+
+			/*!
 	\brief Parsing Ascii datagram
 	\param datagram: Pointer to datagram data
 	\param datagram_length: Number of bytes in datagram
@@ -828,15 +889,7 @@ namespace sick_scan
 #endif
 		// ----- consistency check
 
-		float expected_time_increment = basicParams[scannerIdx].getNumberOfLayers() * msg.scan_time * msg.angle_increment / (2.0 * M_PI);
-		if (fabs(expected_time_increment - msg.time_increment) > 0.00001)
-		{
-			ROS_WARN_THROTTLE(60, "The time_increment, scan_time and angle_increment values reported by the scanner are inconsistent! "
-				"Expected time_increment: %.9f, reported time_increment: %.9f. "
-				"Perhaps you should set the parameter time_increment to the expected value. This message will print every 60 seconds.",
-				expected_time_increment, msg.time_increment);
-		}
-
+		this->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001);
 		return ExitSuccess;
 		}
 
@@ -861,7 +914,28 @@ namespace sick_scan
 		override_range_max_ = max;
 	}
 
-	/*!
+
+  /*!
+   \brief Getting maximum range
+   \return range in [m]
+   \sa set_range_max
+   */
+  float SickGenericParser::get_range_max(void)
+  {
+    return(override_range_max_);
+  }
+
+  /*!
+  \brief Getting minimum range
+  \return range in [m]
+  \sa set_range_min
+  */
+  float SickGenericParser::get_range_min(void)
+  {
+   return(override_range_min_);
+  }
+
+      /*!
 	\brief setting time increment between shots 
 
 	\param time increment

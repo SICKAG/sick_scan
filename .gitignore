@@ -23,8 +23,6 @@ test/sick_scan_test_lms_1xx_res\.xml
 
 test/sick_scan_test_lms_5xx_res\.xml
 
-doc/
-
 test/sick_scan_test_tim_5xx_res\.xml
 
 launch/sick_tim_5xx_test\.launch
@@ -44,3 +42,7 @@ test/\.catkin_workspace
 test/src/CMakeLists\.txt
 
 test/tmp/
+
+*.7z
+
+*.res
