@@ -91,7 +91,7 @@ There are two ways to prevent this:
 ## Troubleshooting 
 
 1. Check Scanner IP in the launch file. 
-2. Check Ethernet connection to scanner with a ping. 
+2. Check Ethernet connection to scanner with netcat e.g. "nc -z -v -w5 $SCANNERIPADDRESS 2112". 
 3. View node startup output wether the IP connection could be established 
 4. Check the scanner status using the LEDs on the device. The LED codes are described in the above mentioned operation manuals.
 5. Further testing and troubleshooting informations can found in the file test/readme_testplan.txt
