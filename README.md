@@ -160,6 +160,33 @@ The basic procedure can be seen in the following figure:
 More information about the structure of the individual files in the test run can be found [here](test/sick_scan_test.md):
 
 
+## Keywords
+
+MRS1000 
+MRS1104 
+LMS1000 
+LMS1104 
+MRS6000 
+MRS6124 
+RMS3xx 
+RMS320 
+ROS LiDAR 
+SICK LiDAR 
+SICK Laser 
+SICK Laserscanner 
+SICK Radar 
+LMS1xx 
+MRS1xxx 
+LMS1xxx 
+MRS6xxx 
+TiM5xx 
+TiM551 
+TiM561 
+TiM571 
+LMS5xx 
+LMS511 
+
+
 ## Creators
 
 **Michael Lehning**
