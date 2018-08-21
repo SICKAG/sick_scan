@@ -160,6 +160,33 @@ The basic procedure can be seen in the following figure:
 More information about the structure of the individual files in the test run can be found [here](test/sick_scan_test.md):
 
 
+## Keywords
+
+MRS1000 
+MRS1104 
+LMS1000 
+LMS1104 
+MRS6000 
+MRS6124 
+RMS3xx 
+RMS320 
+ROS LiDAR 
+SICK LiDAR 
+SICK Laser 
+SICK Laserscanner 
+SICK Radar 
+LMS1xx 
+MRS1xxx 
+LMS1xxx 
+MRS6xxx 
+TiM5xx 
+TiM551 
+TiM561 
+TiM571 
+LMS5xx 
+LMS511 
+
+
 ## Creators
 
 **Michael Lehning**
@@ -172,7 +199,8 @@ on behalf of SICK AG
 
 ------------------------------------------------------------------------
 
-![SICK Logo](https://sick-syd.data.continum.net/static_2018013123/_ui/desktop/common/images/base/pics/logo.png "SICK Logo")
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Logo_SICK_AG_2009.svg/1200px-Logo_SICK_AG_2009.svg.png" width="420">
+
 ![Lehning Logo](http://www.lehning.de/style/banner.jpg "LEHNING Logo")
 
 
