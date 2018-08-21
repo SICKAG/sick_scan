@@ -50,6 +50,7 @@ GnuPlotPalette pal;
 bool usingPal = false;
 
 ros::Publisher pub;
+ros::Publisher pub_cloud;
 
 
 
@@ -59,6 +60,7 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
 
   enum TARGET_MARKER_TYPE {TARGET_MARKER_BALL, TARGET_MARKER_ARROW, TARGET_MARKER_NUM};
   visualization_msgs::MarkerArray rawTargetArray[TARGET_MARKER_NUM];  // ball and arrow
+  sensor_msgs::PointCloud2 cloud_msg;
 
   for (int i = 0; i < TARGET_MARKER_NUM; i++)
   {
@@ -103,6 +105,21 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
   }
 
   int numRawTargets = oa->targets.width;
+
+  if (numRawTargets > 0)
+  {
+    cloud_msg.header = oa->header;
+
+    cloud_msg.height = oa->targets.height;
+    cloud_msg.width  = oa->targets.width;
+    cloud_msg.row_step = oa->targets.row_step;
+    cloud_msg.point_step = oa->targets.point_step;
+    cloud_msg.data = oa->targets.data;
+    cloud_msg.fields  = oa->targets.fields;
+    cloud_msg.is_dense = oa->targets.is_dense;
+    cloud_msg.is_bigendian = oa->targets.is_bigendian;
+    pub_cloud.publish(cloud_msg);
+  }
   for (size_t i = 0; i < oa->targets.width; i++)
   {
     int tmpId = i;
@@ -414,6 +431,8 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
 
     ros::Subscriber sub = nh.subscribe("radar", 1, callback);
     pub = nh.advertise<visualization_msgs::MarkerArray>("radar_markers", 1);
+
+    pub_cloud =  nh.advertise<sensor_msgs::PointCloud2>("radar_cloud", 1);
 
     ros::spin();
 
