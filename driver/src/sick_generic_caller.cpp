@@ -50,7 +50,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 27th May 2018
+*  Last modified: 21st Aug 2018
 *
 *      Authors:
 *         Michael Lehning <michael.lehning@lehning.de>
@@ -88,10 +88,11 @@
 // 001.002.002: MRS1xxx/LMS1xxx - legacy device ident cmd. changed to new device ident cmd
 // 001.002.003: MRS1xxx/LMS1xxx - support of hector_slam integrated
 // 001.002.004: RMS3xx - profiling and radar support optimized
+// 001.002.005: Startup process changed to state machine
 //
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "002"  
-#define SICK_GENERIC_PATCH_LEVEL "004"
+#define SICK_GENERIC_PATCH_LEVEL "005"
 
 #include <algorithm> // for std::min
 

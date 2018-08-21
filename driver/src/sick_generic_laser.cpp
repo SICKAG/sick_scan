@@ -1,9 +1,9 @@
 /**
 * \file
 * \brief Laser Scanner Main Handling
-* Copyright (C) 2013, Osnabrück University
-* Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
-* Copyright (C) 2017, SICK AG, Waldkirch
+* Copyright (C) 2013,     Osnabrück University
+* Copyright (C) 2017,2018 Ing.-Buero Dr. Michael Lehning, Hildesheim
+* Copyright (C) 2017,2018 SICK AG, Waldkirch
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -49,14 +49,13 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 12th Dec 2017
+*  Last modified: 21st Aug 2018
 *
 *      Authors:
-*              Michael Lehning <michael.lehning@lehning.de>
+*         Michael Lehning <michael.lehning@lehning.de>
 *         Jochen Sprickerhof <jochen@sprickerhof.de>
 *         Martin Günther <mguenthe@uos.de>
 *
-* Based on the TiM communication example by SICK AG.
 *
 */
 
@@ -85,6 +84,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/*!
+\brief splitting expressions like <tag>:=<value> into <tag> and <value>
+\param [In] tagVal: string expression like <tag>:=<value>
+\param [Out] tag: Tag after Parsing
+\param [Ozt] val: Value after Parsing
+\return Result of matching process (true: matching expression found, false: no match found)
+*/
+
 bool getTagVal(std::string tagVal, std::string &tag, std::string &val)
   {
   bool ret = false;
@@ -95,7 +102,8 @@ bool getTagVal(std::string tagVal, std::string &tag, std::string &val)
   if (pos == std::string::npos)
   {
     ret = false;
-  } else
+  }
+  else
   {
     tag = tagVal.substr(0, pos);
     val = tagVal.substr(pos + 2);
@@ -105,9 +113,7 @@ bool getTagVal(std::string tagVal, std::string &tag, std::string &val)
   }
 
 /*!
-\brief Internal Startup routine. In the future the scannerName should be coded in a specific param-Entry 
-       like "scannerType"
-       
+\brief Internal Startup routine.
 \param argc: Number of Arguments
 \param argv: Argument variable
 \param nodeName name of the ROS-node
@@ -247,37 +253,55 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
   sick_scan::SickScanCommonTcp *s = NULL;
 
   int result = sick_scan::ExitError;
+
+  sick_scan::SickScanConfig cfg;
+
+
+  enum NodeRunState { scanner_init, scanner_run, scanner_finalize };
+
+  NodeRunState runState = scanner_init;  //
   while (ros::ok())
   {
-    ROS_INFO("Start initialising scanner ...");
-    // attempt to connect/reconnect
-    delete s;  // disconnect scanner
-    if (useTCP)
-      s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser, colaDialectId);
-    else
+    switch(runState)
     {
-      ROS_ERROR("TCP is not switched on. Probably hostname or port not set. Use roslaunch to start node.");
-      exit(-1);
+      case scanner_init:
+        ROS_INFO("Start initialising scanner ...");
+        // attempt to connect/reconnect
+        delete s;  // disconnect scanner
+        if (useTCP)
+          s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser, colaDialectId);
+        else
+        {
+          ROS_ERROR("TCP is not switched on. Probably hostname or port not set. Use roslaunch to start node.");
+          exit(-1);
+        }
+
+
+        if (emulSensor)
+        {
+          s->setEmulSensor(true);
+        }
+        result = s->init();
+
+        runState = scanner_run; // after initialising switch to run state
+        break;
+
+      case scanner_run:
+        if (result == sick_scan::ExitSuccess) // OK -> loop again
+        {
+          ros::spinOnce();
+          result = s->loopOnce();
+        }
+        else
+        {
+          runState = scanner_finalize; // interrupt
+        }
+      case scanner_finalize:
+        break; // ExitError or similiar -> interrupt while-Loop
+      default:
+        ROS_ERROR("Invalid run state in main loop");
+        break;
     }
-
-
-    if (emulSensor)
-    {
-      s->setEmulSensor(true);
-    }
-    result = s->init();
-
-    sick_scan::SickScanConfig cfg;
-
-    while (ros::ok() && (result == sick_scan::ExitSuccess))
-    {
-      ros::spinOnce();
-      result = s->loopOnce();
-    }
-
-    if (result == sick_scan::ExitFatal)
-      return result;
-
   }
 
   delete s; // close connnect
