@@ -73,7 +73,7 @@
 #include <sick_scan/sick_scan_common_tcp.h>
 
 #include <sick_scan/sick_generic_parser.h>
-
+#include <sick_scan/sick_generic_laser.h>
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
@@ -87,6 +87,22 @@
 
 static bool isInitialized = false;
 static sick_scan::SickScanCommonTcp *s = NULL;
+static std::string versionInfo = "???";
+
+void setVersionInfo(std::string _versionInfo)
+{
+  versionInfo = _versionInfo;
+}
+
+std::string getVersionInfo()
+{
+
+  return(versionInfo);
+}
+
+enum NodeRunState { scanner_init, scanner_run, scanner_finalize };
+
+NodeRunState runState = scanner_init;  //
 
 
 /*!
@@ -121,17 +137,19 @@ bool getTagVal(std::string tagVal, std::string &tag, std::string &val)
 void my_handler(int signalRecv)
 {
   ROS_INFO("Caught signal %d\n",signalRecv);
+  ROS_INFO("good bye");
+  ROS_INFO("You are leaving the following version of this node:");
+  ROS_INFO("%s", getVersionInfo().c_str());
   if (s != NULL)
   {
     if (isInitialized)
     {
       s->stopScanData();
     }
-    delete s;
-    s = NULL;
+
+    runState = scanner_finalize;
   }
   ros::shutdown();
-
 }
 
 /*!
@@ -282,9 +300,6 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
   sick_scan::SickScanConfig cfg;
 
 
-  enum NodeRunState { scanner_init, scanner_run, scanner_finalize };
-
-  NodeRunState runState = scanner_init;  //
   while (ros::ok())
   {
     switch(runState)
@@ -307,7 +322,9 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
           s->setEmulSensor(true);
         }
         result = s->init();
+
         isInitialized = true;
+        signal(SIGINT, SIG_DFL); // change back to standard signal handler after initialising
         runState = scanner_run; // after initialising switch to run state
         break;
 

@@ -98,6 +98,9 @@
 #include <algorithm> // for std::min
 
 
+
+
+std::string getVersionInfo();
 /*!
 \brief Startup routine - if called with no argmuments we assume debug session.
        Set scanner name variable by parsing for "__name:=". This will be changed in the future
@@ -145,7 +148,14 @@ int main(int argc, char **argv)
 		argv_tmp[4] = sensorEmulVal;
 
 	}
-    ROS_INFO("sick_generic_caller V. %s.%s.%s", SICK_GENERIC_MAJOR_VER, SICK_GENERIC_MINOR_VER, SICK_GENERIC_PATCH_LEVEL);
+
+	std::string versionInfo = "sick_generic_caller V. ";
+	versionInfo += std::string(SICK_GENERIC_MAJOR_VER) + '.';
+	versionInfo += std::string(SICK_GENERIC_MINOR_VER) + '.';
+	versionInfo += std::string(SICK_GENERIC_PATCH_LEVEL);
+
+	setVersionInfo(versionInfo);
+  ROS_INFO("%s", versionInfo.c_str());
 	for (int i = 0; i < argc_tmp; i++)
 	{
 		if (strstr(argv_tmp[i], nameId) == argv_tmp[i])
