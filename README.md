@@ -15,10 +15,7 @@ towards rough outdoor environments.
 
 ## Supported Hardware
 
-This driver should work with all of the following products. However, this driver is brand new (Feb 2018) 
-The migration with the master-branch of the already published sick_scan-driver (see github.com/SICKAG/sick_scan ) is in preparation
-and will be finished until end of March 2018. Since 22nd of February 2018 the new driver is a devel-branch of
-the already published driver.
+This driver should work with all of the following products.
 
 ROS Device Driver for Sick Laserscanner - supported scanner types: 
 
@@ -124,9 +121,9 @@ In the following instructions, replace `<rosdistro>` with the name of your ROS d
 
 ### From binaries
 
-The driver has not been released yet. But once that happens, you can install it directly by typing:
+The driver is released at longer intervals as a binary package and can therefore be installed via the package manager. To be able to use all new functions of the driver, the driver should be built from the sources published in this reposity:
 
-~~`sudo apt-get install ros-<rosdistro>-sick_scan`~~
+`sudo apt-get install ros-<rosdistro>-sick_scan`
 
 ### From source
 
