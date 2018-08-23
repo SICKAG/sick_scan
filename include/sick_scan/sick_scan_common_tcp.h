@@ -84,6 +84,8 @@ public:
 
 		bool getEmulSensor();
 
+		bool stopScanData();
+
 	SopasEventMessage findFrameInReceiveBuffer();
 	void processFrame(ros::Time timeStamp, SopasEventMessage& frame);
 	// Queue<std::vector<unsigned char> > recvQueue;

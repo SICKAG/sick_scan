@@ -223,7 +223,7 @@ namespace sick_scan
 
 	SickScanCommonTcp::~SickScanCommonTcp()
 	{
-		stop_scanner();
+		// stop_scanner();
 		close_device();
 	}
 
@@ -584,6 +584,13 @@ namespace sick_scan
 		return 0;
 	}
 
+
+	bool SickScanCommonTcp::stopScanData()
+	{
+		stop_scanner();
+		return(true);
+	}
+
 	void SickScanCommonTcp::handleRead(boost::system::error_code error, size_t bytes_transfered)
 	{
 		ec_ = error;
@@ -658,7 +665,7 @@ namespace sick_scan
 		int preambelCnt = 0;
 		bool cmdIsBinary = false;
 
-		if (request != NULL)
+    if (request != NULL)
 		{
 			sLen = cmdLen;
 			preambelCnt = 0; // count 0x02 bytes to decide between ascii and binary command
@@ -720,7 +727,7 @@ namespace sick_scan
 #endif
 		}
 
-		// Set timeout in 5 seconds
+    // Set timeout in 5 seconds
 		const int BUF_SIZE = 1000;
 		char buffer[BUF_SIZE];
 		int bytes_read;

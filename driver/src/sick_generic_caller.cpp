@@ -89,10 +89,11 @@
 // 001.002.003: MRS1xxx/LMS1xxx - support of hector_slam integrated
 // 001.002.004: RMS3xx - profiling and radar support optimized
 // 001.002.005: Startup process changed to state machine
+// 001.002.006: Signal handler for ctrl-c added
 //
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "002"  
-#define SICK_GENERIC_PATCH_LEVEL "005"
+#define SICK_GENERIC_PATCH_LEVEL "006"
 
 #include <algorithm> // for std::min
 

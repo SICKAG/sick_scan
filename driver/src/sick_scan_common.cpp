@@ -631,8 +631,7 @@ namespace sick_scan
 		m_protocolId = cola_dialect_id;
 	}
 
-
-	/*!
+  /*!
 	\brief init routine of scanner
 	\return exit code
 	*/
@@ -653,6 +652,7 @@ namespace sick_scan
 				"1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.\n"
 				"2. Use the parameter \"use_binary_protocol\" to overwrite the default settings of the driver.", result);
 		}
+
 		return result;
 	}
 

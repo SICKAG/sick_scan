@@ -80,9 +80,14 @@
 #define _USE_MATH_DEFINES
 
 #include <math.h>
-#include "string"
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
+
+static bool isInitialized = false;
+static sick_scan::SickScanCommonTcp *s = NULL;
+
 
 /*!
 \brief splitting expressions like <tag>:=<value> into <tag> and <value>
@@ -112,6 +117,23 @@ bool getTagVal(std::string tagVal, std::string &tag, std::string &val)
   return (ret);
   }
 
+
+void my_handler(int signalRecv)
+{
+  ROS_INFO("Caught signal %d\n",signalRecv);
+  if (s != NULL)
+  {
+    if (isInitialized)
+    {
+      s->stopScanData();
+    }
+    delete s;
+    s = NULL;
+  }
+  ros::shutdown();
+
+}
+
 /*!
 \brief Internal Startup routine.
 \param argc: Number of Arguments
@@ -124,6 +146,7 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
   {
   std::string tag;
   std::string val;
+
 
   bool doInternalDebug = false;
   bool emulSensor = false;
@@ -153,8 +176,11 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
     }
   }
 
-  ros::init(argc, argv, nodeName);  // scannerName holds the node-name
+  ros::init(argc, argv, nodeName, ros::init_options::NoSigintHandler);  // scannerName holds the node-name
+  signal (SIGINT,my_handler);
+
   ros::NodeHandle nhPriv("~");
+
 
   std::string scannerName;
   if (false == nhPriv.getParam("scanner_type", scannerName))
@@ -250,7 +276,6 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
     colaDialectId = 'A';
   }
 
-  sick_scan::SickScanCommonTcp *s = NULL;
 
   int result = sick_scan::ExitError;
 
@@ -282,7 +307,7 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
           s->setEmulSensor(true);
         }
         result = s->init();
-
+        isInitialized = true;
         runState = scanner_run; // after initialising switch to run state
         break;
 
@@ -304,8 +329,14 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
     }
   }
 
-  delete s; // close connnect
-  delete parser; // close parser
+  if (s != NULL)
+  {
+    delete s; // close connnect
+  }
+  if (parser != NULL)
+  {
+    delete parser; // close parser
+  }
   return result;
 
   }
