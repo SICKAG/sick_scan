@@ -133,7 +133,7 @@ mkdir -p ~/ros_catkin_ws/src/
 cd ~/ros_catkin_ws/src/
 git clone -b devel --single-branch git://github.com/SICKAG/sick_scan.git
 cd ..
-catkin_make
+catkin_make install
 source ~/ros_catkin_ws/install/setup.bash
 ```
 
