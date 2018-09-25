@@ -89,6 +89,7 @@ add_library(sick_scan_lib
 	driver/src/sick_scan_common_nw.cpp)
 
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
 target_link_libraries(sick_scan_lib
     ${catkin_LIBRARIES})
 
@@ -142,6 +143,8 @@ add_executable(sensor_alignment
 target_link_libraries(sensor_alignment
 		${catkin_LIBRARIES}
 		)
+add_dependencies(sensor_alignment ${PROJECT_NAME}_gencfg)
+
 # target_link_libraries(${PROJECT_NAME}_pointcloud2_refresh
 #		${catkin_LIBRARIES}
 #	)
