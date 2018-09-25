@@ -90,10 +90,11 @@
 // 001.002.004: RMS3xx - profiling and radar support optimized
 // 001.002.005: Startup process changed to state machine
 // 001.002.006: Signal handler for ctrl-c added
+// 001.002.007: Fix for multi echo handling with lookup table
 //
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "002"  
-#define SICK_GENERIC_PATCH_LEVEL "006"
+#define SICK_GENERIC_PATCH_LEVEL "007"
 
 #include <algorithm> // for std::min
 
