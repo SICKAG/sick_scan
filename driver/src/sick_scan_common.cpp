@@ -2677,16 +2677,20 @@ namespace sick_scan
 
 						unsigned char *cloudDataPtr = &(cloud_.data[0]);
 
+
+						// prepare lookup for elevation angle table
+
+						std::vector<float> cosAlphaTable;
+						std::vector<float> sinAlphaTable;
+						int rangeNum = rangeTmp.size() / numValidEchos;
+						cosAlphaTable.resize(rangeNum);
+						sinAlphaTable.resize(rangeNum);
+
 						for (size_t iEcho = 0; iEcho < numValidEchos; iEcho++)
 						{
-							std::vector<float> cosAlphaTable;
-							std::vector<float> sinAlphaTable;
 
 							float angle = config_.min_ang;
-							int rangeNum = rangeTmp.size() / numEchos;
 
-							cosAlphaTable.resize(rangeNum);
-							sinAlphaTable.resize(rangeNum);
 
 							float *cosAlphaTablePtr = &cosAlphaTable[0];
 							float *sinAlphaTablePtr = &sinAlphaTable[0];
@@ -2720,6 +2724,10 @@ namespace sick_scan
 								{
 									cosAlphaTablePtr[i] = cos(alpha);
 									sinAlphaTablePtr[i] = sin(alpha);
+								}
+								else
+								{
+									// Just for Debugging: printf("%3d %8.3lf %8.3lf\n", (int)i, cosAlphaTablePtr[i], sinAlphaTablePtr[i]);
 								}
 								// Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
 								point.x = range_meter * cosAlphaTablePtr[i] * cos(phi);
