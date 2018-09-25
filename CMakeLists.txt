@@ -1,5 +1,7 @@
 ####################################################
 # CMakeLists.txt for project sick_scan
+#
+#
 ####################################################
 cmake_minimum_required(VERSION 2.8.3)
 project(sick_scan)
@@ -132,6 +134,10 @@ add_executable(sick_scan_test
 	driver/src/tinyxml/tinyxmlerror.cpp
 	driver/src/tinyxml/tinyxmlparser.cpp
 	)
+target_link_libraries(sick_scan_test
+        ${catkin_LIBRARIES}
+        ${roslib_LIBRARIES}
+        sick_scan_lib)
 
 #
 #  Sensor alignment tool
