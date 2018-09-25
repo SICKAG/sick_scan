@@ -39,7 +39,10 @@ find_package(PkgConfig REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS system)
 
-generate_dynamic_reconfigure_options(cfg/SickScan.cfg)
+generate_dynamic_reconfigure_options(
+		cfg/SickScan.cfg
+		cfg/tf_dyn.cfg
+)
 
 add_message_files(
 		FILES
@@ -128,7 +131,20 @@ add_executable(sick_scan_test
 	driver/src/tinyxml/tinyxmlerror.cpp
 	driver/src/tinyxml/tinyxmlparser.cpp
 	)
-target_link_libraries(sick_scan_test sick_scan_lib)
+
+#
+#  Sensor alignment tool
+#
+add_executable(sensor_alignment
+		tools/sensor_alignment/sensor_alignment_tf_dyn.cpp
+		)
+
+target_link_libraries(sensor_alignment
+		${catkin_LIBRARIES}
+		)
+# target_link_libraries(${PROJECT_NAME}_pointcloud2_refresh
+#		${catkin_LIBRARIES}
+#	)
 
 
 # Destinations:

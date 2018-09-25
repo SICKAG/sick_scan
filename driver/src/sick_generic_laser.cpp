@@ -299,7 +299,37 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 
   sick_scan::SickScanConfig cfg;
 
+#if 0
+  while (ros::ok()) {
+    ROS_INFO("Start initialising scanner ...");
+    // attempt to connect/reconnect
+    delete s;  // disconnect scanner
 
+    if (useTCP)
+      s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser, colaDialectId);
+    else {
+      ROS_ERROR("TCP is not switched on. Probably hostname or port not set. Use roslaunch to start node.");
+      exit(-1);
+    }
+
+
+    if (emulSensor) {
+      s->setEmulSensor(true);
+    }
+    result = s->init();
+
+    sick_scan::SickScanConfig cfg;
+
+    while (ros::ok() && (result == sick_scan::ExitSuccess)) {
+      ros::spinOnce();
+      result = s->loopOnce();
+    }
+
+    if (result == sick_scan::ExitFatal)
+      return result;
+
+  }
+#else
   while (ros::ok())
   {
     switch(runState)
@@ -325,7 +355,15 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 
         isInitialized = true;
         signal(SIGINT, SIG_DFL); // change back to standard signal handler after initialising
-        runState = scanner_run; // after initialising switch to run state
+        if (result == sick_scan::ExitSuccess) // OK -> loop again
+        {
+          runState = scanner_run; // after initialising switch to run state
+        }
+        else
+        {
+          runState = scanner_init; // If there was an error, try to restart scanner
+
+        }
         break;
 
       case scanner_run:
@@ -345,7 +383,7 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
         break;
     }
   }
-
+#endif
   if (s != NULL)
   {
     delete s; // close connnect
