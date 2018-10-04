@@ -20,6 +20,7 @@ This driver should work with all of the following products.
 ROS Device Driver for Sick Laserscanner - supported scanner types: 
 
 
+
 | **device name**    |  **part no.**                                                                                                                | **description**                                | **tested?**     |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|:---------------:|
 | MRS6124            | [6065086](https://www.sick.com/de/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs6000/c/g448151)                         | 24 layer max. range: 200m, ang. resol. 0.13 [deg] hor., 0.0625 [deg] ver. | ✔ [stable]|
