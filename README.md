@@ -29,7 +29,7 @@ ROS Device Driver for Sick Laserscanner - supported scanner types:
 |                    |                                                                                                                                  | Scan-Rate: 50 Hz, 4x12.5 Hz            |                 |
 | LMS1104            | [1092445](https://www.sick.com/ag/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1000/c/g387151)                         | 1 layer max. range: 64m, ang. resol. 0.25 [deg] |  ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 150 Hz, 4x37.5 Hz   |                 |
-| TiM551             | [1060445](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)                 | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [stable]|
+| TiM551             | [1060445](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim551-2050001/p/p343045)                 | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
 | TiM561             | [1071419](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim561-2050101/p/p369446)                 | 1 layer max. range: 10m, ang. resol. 0.33 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
