@@ -23,6 +23,7 @@
 
   -->
 <launch>
+  <arg name="hostname" default="192.168.0.1" />
   <node pkg="tf" type="static_transform_publisher" name="map_laser" args="0 0 0 0 0 0 1 map laser 100" />
 
   <node pkg="tf" type="static_transform_publisher" name="map_laser_NEG_500_DIST1" args="5  0 -2 0 0 0 1 map laser_NEG_500_DIST1 100" />
@@ -44,7 +45,7 @@
   <node name="sick_mrs_1xxx" pkg="sick_scan" type="sick_generic_caller" respawn="false" output="screen">
     <param name="scanner_type" type="string" value="sick_mrs_1xxx"/>
     <param name="intensity_resolution_16bit" type="bool" value="False" />
-    <param name="hostname" type="string" value="192.168.0.1" />
+    <param name="hostname" type="string" value="$(arg hostname)" />
     <param name="port" type="string" value="2112" />
   </node>
 </launch>

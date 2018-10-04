@@ -14,6 +14,8 @@
 
 -->
 <launch>
+  <arg name="hostname1" default="192.168.0.1" />
+  <arg name="hostname2" default="192.168.0.2" />
   <param name="robot_description" command="$(find xacro)/xacro.py '$(find sick_scan)/urdf/example.urdf.xacro'" />
 
   <node pkg="tf" type="static_transform_publisher" name="scanner1_to_map" args="0 0 0 0 0 0 map laser_1 100" />
@@ -27,7 +29,7 @@
     <param name="max_ang" type="double" value="2.35619449" /><!-- 135° -->
     <param name="range_max" type="double" value="100.0" />
     <param name="intensity" type="bool" value="True" />
-    <param name="hostname" type="string" value="192.168.0.61" />
+    <param name="hostname" type="string" value="$(arg hostname1)" />
     <param name="port" type="string" value="2112" />
     <param name="timelimit" type="int" value="5" />
     <remap from="scan" to="scan_1" />
@@ -41,7 +43,7 @@
     <param name="max_ang" type="double" value="2.35619449" /><!-- 135° -->
     <param name="range_max" type="double" value="100.0" />
     <param name="intensity" type="bool" value="True" />
-    <param name="hostname" type="string" value="192.168.0.24" />
+    <param name="hostname" type="string" value="$(arg hostname2)" />
     <param name="port" type="string" value="2112" />
     <param name="timelimit" type="int" value="5" />
     <remap from="scan" to="scan_2" />
