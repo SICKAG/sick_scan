@@ -87,6 +87,7 @@ add_library(sick_scan_lib
 	driver/src/binScanf.cpp
 	driver/src/sick_scan_common_tcp.cpp
 	driver/src/sick_generic_radar.cpp
+	driver/src/sick_generic_imu.cpp
 	driver/src/sick_generic_parser.cpp
 	driver/src/sick_scan_common_nw.cpp)
 

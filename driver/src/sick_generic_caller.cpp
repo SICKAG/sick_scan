@@ -73,6 +73,7 @@
 #include <string.h>
 
 #include "sick_scan/sick_generic_laser.h"
+#include "sick_scan/sick_generic_imu.h"
 #include "sick_scan/binScanf.hpp"
 #include "sick_scan/binPrintf.hpp"
 
@@ -94,11 +95,17 @@
 //
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "002"  
-#define SICK_GENERIC_PATCH_LEVEL "007"
+#define SICK_GENERIC_PATCH_LEVEL "008"
 
 #include <algorithm> // for std::min
 
-
+void imuParserTest()
+{
+  sick_scan::SickScanImu scanImu(NULL);
+  sick_scan::SickScanImuValue imuValue;
+  std::string imuTestStr = "sn ImuData 9C1FA9 3F7FBC00 BB900000 3D3740000 00000000 BA8B9AB1 00000000 00000000 3 BE491C74 BEA93A48 BE0E3FD5 3";
+  scanImu.parseAsciiDatagram((char *)imuTestStr.c_str(), imuTestStr.size(), &imuValue);
+}
 
 
 std::string getVersionInfo();
@@ -150,6 +157,15 @@ int main(int argc, char **argv)
 
 	}
 
+  // JUST FOR TESTING IMU STRING
+  for (int i = 0; i < argc; i++)
+  {
+     if (strcmp(argv[i],"imutest") == 0)
+     {
+       imuParserTest();
+     }
+  }
+  //
 	std::string versionInfo = "sick_generic_caller V. ";
 	versionInfo += std::string(SICK_GENERIC_MAJOR_VER) + '.';
 	versionInfo += std::string(SICK_GENERIC_MINOR_VER) + '.';

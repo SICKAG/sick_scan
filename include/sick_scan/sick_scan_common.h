@@ -66,6 +66,9 @@
 #include "sick_scan/sick_generic_parser.h"
 #include "sick_scan/sick_scan_common_nw.h"
 
+
+void swap_endian(unsigned char *ptr, int numBytes);
+
 namespace sick_scan
 {
 
@@ -127,6 +130,7 @@ namespace sick_scan
 #define PARAM_MAX_ANG "max_ang"
 #define PARAM_RES_ANG "res_ang"
 // --- END KEYWORD DEFINITIONS ---
+
 
 		SickScanCommon(SickGenericParser* parser);
 		virtual ~SickScanCommon();
