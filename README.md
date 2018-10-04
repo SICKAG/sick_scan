@@ -72,13 +72,13 @@ roslaunch sick_scan sick_rms_3xx.launch (under development)
 To start the scanner with a specific IP address, the launch command can be used for most launch files as follows.
 The hostname is the ip-adresse of the scanner:
 
-'''
+```bash
 roslaunch <launch-file> hostname:=<ip-address>
-'''
+```
 e.g.
-'''
+```bash
 roslaunch sick_scan sick_tim_5xx.launch hostname:=192.168.0.71 
-'''
+```
 
 ### Start multiple Nodes
 
