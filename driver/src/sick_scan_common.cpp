@@ -59,6 +59,7 @@
 #include <sick_scan/sick_scan_common.h>
 #include <sick_scan/sick_generic_radar.h>
 
+#include <sick_scan/sick_scan_config.h>
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
@@ -228,7 +229,13 @@ namespace sick_scan
 
 		// Pointcloud2 publisher
 		//
-		cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 100);
+
+
+    std::string cloud_topic_val = "cloud";
+    pn.getParam("cloud_topic", cloud_topic_val);
+
+    ROS_INFO("Publishing laserscan-pointcloud2 to %s", cloud_topic_val.c_str());
+    cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(cloud_topic_val, 100);
 
 		// just for debugging, but very helpful for the start
 		cloud_radar_rawtarget_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_radar_rawtarget", 100);
@@ -1749,8 +1756,15 @@ namespace sick_scan
 			startProtocolSequence.push_back(CMD_START_SCANDATA);
       if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)  // MRS1104 - start IMU-Transfer
       {
-        // TODO Flag to decide between IMU on or off
-        startProtocolSequence.push_back(CMD_START_IMU_DATA);
+        ros::NodeHandle tmp("~");
+        bool imu_enable = false;
+        tmp.getParam("imu_enable", imu_enable);
+        if (imu_enable)
+        {
+          ROS_INFO("Enable IMU data transfer");
+          // TODO Flag to decide between IMU on or off
+          startProtocolSequence.push_back(CMD_START_IMU_DATA);
+        }
       }
 		}
 

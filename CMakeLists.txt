@@ -88,7 +88,7 @@ add_library(sick_scan_lib
 	driver/src/sick_generic_radar.cpp
 	driver/src/sick_generic_imu.cpp
 	driver/src/sick_generic_parser.cpp
-	driver/src/sick_scan_common_nw.cpp)
+	driver/src/sick_scan_common_nw.cpp include/sick_scan/sick_scan_config.h driver/src/sick_scan_config.cpp)
 
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 

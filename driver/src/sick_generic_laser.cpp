@@ -214,6 +214,10 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 #ifdef _MSC_VER
     nhPriv.setParam("name", scannerName);
     rossimu_settings(nhPriv);  // just for tiny simulations under Visual C++
+#else
+    nhPriv.setParam("hostname", "192.168.0.4");
+    nhPriv.setParam("imu_enable", true);
+    nhPriv.setParam("cloud_topic","pt_cloud");
 #endif
   }
 
@@ -299,43 +303,12 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 
   sick_scan::SickScanConfig cfg;
 
-#if 0
-  while (ros::ok()) {
-    ROS_INFO("Start initialising scanner ...");
-    // attempt to connect/reconnect
-    delete s;  // disconnect scanner
-
-    if (useTCP)
-      s = new sick_scan::SickScanCommonTcp(hostname, port, timelimit, parser, colaDialectId);
-    else {
-      ROS_ERROR("TCP is not switched on. Probably hostname or port not set. Use roslaunch to start node.");
-      exit(-1);
-    }
-
-
-    if (emulSensor) {
-      s->setEmulSensor(true);
-    }
-    result = s->init();
-
-    sick_scan::SickScanConfig cfg;
-
-    while (ros::ok() && (result == sick_scan::ExitSuccess)) {
-      ros::spinOnce();
-      result = s->loopOnce();
-    }
-
-    if (result == sick_scan::ExitFatal)
-      return result;
-
-  }
-#else
   while (ros::ok())
   {
     switch(runState)
     {
       case scanner_init:
-        ROS_INFO("Start initialising scanner ...");
+        ROS_INFO("Start initialising scanner [Ip: %s] [Port: %s]", hostname.c_str(), port.c_str());
         // attempt to connect/reconnect
         delete s;  // disconnect scanner
         if (useTCP)
@@ -383,7 +356,6 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
         break;
     }
   }
-#endif
   if (s != NULL)
   {
     delete s; // close connnect
