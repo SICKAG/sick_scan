@@ -86,6 +86,7 @@
 
 #include <map>
 #include <climits>
+#include <sick_scan/sick_generic_imu.h>
 
 /*!
 \brief Universal swapping function
@@ -234,6 +235,7 @@ namespace sick_scan
 		cloud_radar_track_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_radar_track", 100);
 
 		radarScan_pub_ = nh_.advertise<sick_scan::RadarScan>("radar", 100);
+    imuScan_pub_ = nh_.advertise<sensor_msgs::Imu>("imu", 100);
 		// scan publisher
 		pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 1000);
 
@@ -582,10 +584,18 @@ namespace sick_scan
 			}
 			else
 			{
-				std::string tmpMsg = "Error Sopas answer mismatch " + errString + "Answer= >>>" + answerStr + "<<<";
-				ROS_ERROR("%s\n", tmpMsg.c_str());
-				diagnostics_.broadcast(getDiagnosticErrorCode(), tmpMsg);
-				result = -1;
+        if (cmdId == CMD_START_IMU_DATA)
+        {
+          ROS_INFO("IMU-Data transfer started. No checking of reply to avoid confusing with LMD Scandata\n");
+          result = 0;
+        }
+        else
+        {
+				  std::string tmpMsg = "Error Sopas answer mismatch " + errString + "Answer= >>>" + answerStr + "<<<";
+				  ROS_ERROR("%s\n", tmpMsg.c_str());
+				  diagnostics_.broadcast(getDiagnosticErrorCode(), tmpMsg);
+				  result = -1;
+        }
 			}
 		}
 		return result;
@@ -716,11 +726,15 @@ namespace sick_scan
 
 		sopasCmdVec[CMD_START_MEASUREMENT] = "\x02sMN LMCstartmeas\x03";
 		sopasCmdVec[CMD_STOP_MEASUREMENT] = "\x02sMN LMCstopmeas\x03";
+    sopasCmdVec[CMD_APPLICATION_MODE_FIELD_ON] = "\x02sWN SetActiveApplications 1 FEVL 1\x03"; // <STX>sWN{SPC}SetActiveApplications{SPC}1{SPC}FEVL{SPC}1<ETX>
 		sopasCmdVec[CMD_APPLICATION_MODE_FIELD_OFF] = "\x02sWN SetActiveApplications 1 FEVL 0\x03"; // <STX>sWN{SPC}SetActiveApplications{SPC}1{SPC}FEVL{SPC}1<ETX>
 		sopasCmdVec[CMD_APPLICATION_MODE_RANGING_ON] = "\x02sWN SetActiveApplications 1 RANG 1\x03";
 		sopasCmdVec[CMD_SET_TO_COLA_A_PROTOCOL] = "\x02sWN EIHstCola 0\x03";
 		sopasCmdVec[CMD_GET_PARTIAL_SCANDATA_CFG] = "\x02sRN LMDscandatacfg\x03";
 		sopasCmdVec[CMD_SET_TO_COLA_B_PROTOCOL] = "\x02sWN EIHstCola 1\x03";
+
+    sopasCmdVec[CMD_STOP_IMU_DATA] = "\x02sEN IMUData 0\x03";
+    sopasCmdVec[CMD_START_IMU_DATA] = "\x02sEN IMUData 1\x03";
 
 		// defining cmd mask for cmds with variable input
 		sopasCmdMaskVec[CMD_SET_PARTICLE_FILTER] = "\x02sWN LFPparticle %d %d\x03";
@@ -789,19 +803,30 @@ namespace sick_scan
 		{
 			sopasCmdChain.push_back(CMD_STOP_MEASUREMENT);
 			int numberOfLayers = parser_->getCurrentParamPtr()->getNumberOfLayers();
-			if ((numberOfLayers == 4) || (numberOfLayers == 24))
-			{
-				// just measuring - Application setting not supported
-				// "Old" device ident command "SRi 0" not supported
-				sopasCmdChain.push_back(CMD_DEVICE_IDENT);
-			}
-			else
-			{
-				sopasCmdChain.push_back(CMD_APPLICATION_MODE_FIELD_OFF);
-				sopasCmdChain.push_back(CMD_APPLICATION_MODE_RANGING_ON);
-				sopasCmdChain.push_back(CMD_DEVICE_IDENT_LEGACY);
-				sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
-			}
+
+      switch(numberOfLayers)
+      {
+        case 4:
+          sopasCmdChain.push_back(CMD_APPLICATION_MODE_FIELD_OFF);
+          sopasCmdChain.push_back(CMD_APPLICATION_MODE_RANGING_ON);
+					sopasCmdChain.push_back(CMD_DEVICE_IDENT);
+					sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
+
+					break;
+        case 24:
+          // just measuring - Application setting not supported
+          // "Old" device ident command "SRi 0" not supported
+          sopasCmdChain.push_back(CMD_DEVICE_IDENT);
+          break;
+
+        default:
+          sopasCmdChain.push_back(CMD_APPLICATION_MODE_FIELD_OFF);
+          sopasCmdChain.push_back(CMD_APPLICATION_MODE_RANGING_ON);
+          sopasCmdChain.push_back(CMD_DEVICE_IDENT_LEGACY);
+          sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
+          break;
+      }
+
 		}
 		sopasCmdChain.push_back(CMD_FIRMWARE_VERSION);  // read firmware
 		sopasCmdChain.push_back(CMD_DEVICE_STATE); // read device state
@@ -920,11 +945,14 @@ namespace sick_scan
 
 			// switch to either binary or ascii after switching the command mode
 			// via ... command
+
+
 			for (int iLoop = 0; iLoop < maxCmdLoop; iLoop++)
 			{
 				if (iLoop == 0)
 				{
 					useBinaryCmdNow = useBinaryCmd; // start with expected value
+
 				}
 				else
 				{
@@ -1001,10 +1029,50 @@ namespace sick_scan
 
 			case CMD_DEVICE_IDENT: // FOR MRS6xxx the Device Ident holds all specific information (used instead of CMD_SERIAL_NUMBER)
 			{
+				std::string deviceIdent = "";
 				int cmdLen = this->checkForBinaryAnswer(&replyDummy);
 				if (cmdLen == -1)
 				{
-					ROS_ERROR("BINARY REPLY REQUIRED");
+					int idLen = 0;
+					int versionLen = 0;
+					// ASCII-Return
+					std::string deviceIdentKeyWord = "sRA DeviceIdent";
+					char* ptr = (char *)(&(replyDummy[0]));
+					ptr++; // skip 0x02
+					ptr += deviceIdentKeyWord.length();
+					ptr++; //skip blank
+					sscanf(ptr,"%d", &idLen);
+					char *ptr2 = strchr(ptr,' ');
+					if (ptr2 != NULL)
+					{
+						ptr2++;
+						for (int i = 0; i < idLen; i++)
+						{
+							deviceIdent += *ptr2;
+							ptr2++;
+						}
+
+				  }
+					ptr = ptr2;
+					ptr++; //skip blank
+					sscanf(ptr,"%d", &versionLen);
+					ptr2 = strchr(ptr,' ');
+					if(ptr2 != NULL)
+					{
+						ptr2++;
+						deviceIdent += " V";
+						for (int i = 0; i < versionLen; i++)
+						{
+							deviceIdent += *ptr2;
+							ptr2++;
+						}
+					}
+					diagnostics_.setHardwareID(deviceIdent);
+					if (!isCompatibleDevice(deviceIdent))
+					{
+						return ExitFatal;
+					}
+//					ROS_ERROR("BINARY REPLY REQUIRED");
 				}
 				else
 				{
@@ -1040,11 +1108,17 @@ namespace sick_scan
 				break;
 			}
 			case CMD_SERIAL_NUMBER:
+				if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)
+				{
+					// do nothing for MRS1104 here
+				}
+				else
+				{
 				diagnostics_.setHardwareID(sopasReplyStrVec[CMD_DEVICE_IDENT_LEGACY] + " " + sopasReplyStrVec[CMD_SERIAL_NUMBER]);
 
 				if (!isCompatibleDevice(sopasReplyStrVec[CMD_DEVICE_IDENT_LEGACY]))
 					return ExitFatal;
-
+				}
 				break;
 				/*
 				DEVICE_STATE
@@ -1673,6 +1747,11 @@ namespace sick_scan
 			startProtocolSequence.push_back(CMD_START_MEASUREMENT);
 			startProtocolSequence.push_back(CMD_RUN);  // leave user level
 			startProtocolSequence.push_back(CMD_START_SCANDATA);
+      if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)  // MRS1104 - start IMU-Transfer
+      {
+        // TODO Flag to decide between IMU on or off
+        startProtocolSequence.push_back(CMD_START_IMU_DATA);
+      }
 		}
 
 		std::vector<int>::iterator it;
@@ -1689,7 +1768,7 @@ namespace sick_scan
 			if (useBinaryCmd)
 			{
 				this->convertAscii2BinaryCmd(sopasCmd.c_str(), &reqBinary);
-				result = sendSopasAndCheckAnswer(reqBinary, &replyDummy);
+				result = sendSopasAndCheckAnswer(reqBinary, &replyDummy, cmdId);
 				sopasReplyBinVec[cmdId] = replyDummy;
 
 				switch (cmdId)
@@ -1702,7 +1781,7 @@ namespace sick_scan
 			}
 			else
 			{
-				result = sendSopasAndCheckAnswer(sopasCmd.c_str(), &replyDummy);
+				result = sendSopasAndCheckAnswer(sopasCmd.c_str(), &replyDummy, cmdId);
 			}
 
 			if (result != 0)
@@ -2040,6 +2119,26 @@ namespace sick_scan
 			errorCode = radar.parseDatagram(recvTimeStamp, (unsigned char *)receiveBuffer, actual_length, useBinaryProtocol);
 			return errorCode; // return success to continue looping
 		}
+
+    SickScanImu scanImu(this);
+    if (scanImu.isImuDatagram((char *)receiveBuffer,actual_length))
+    {
+      int errorCode = ExitSuccess;
+      if (scanImu.isImuAckDatagram((char *)receiveBuffer,actual_length))
+      {
+
+      }
+      else
+      {
+        // parse radar telegram and send pointcloud2-debug messages
+        errorCode = scanImu.parseDatagram(recvTimeStamp, (unsigned char *) receiveBuffer, actual_length,
+                                          useBinaryProtocol);
+
+      }
+      return errorCode; // return success to continue looping
+
+
+    }
 		else
 		{
 
@@ -2052,7 +2151,7 @@ namespace sick_scan
 			 */
 			char* buffer_pos = (char*)receiveBuffer;
 			char *dstart, *dend;
-			bool dumpDbg = false;
+			bool dumpDbg = true; // !!!!!
 			bool dataToProcess = true;
 			std::vector<float> vang_vec;
 			vang_vec.clear();
@@ -2067,6 +2166,7 @@ namespace sick_scan
 				int numEchos = 0;
 				int echoMask = 0;
 				bool publishPointCloud = true;
+
 				if (useBinaryProtocol)
 				{
 					// if binary protocol used then parse binary message
@@ -2076,13 +2176,29 @@ namespace sick_scan
 					{
 						long idVal = 0;
 						long lenVal = 0;
-						memcpy(&idVal, receiveBuffer + 0, 4);
-						memcpy(&lenVal, receiveBuffer + 4, 4);
+						memcpy(&idVal, receiveBuffer + 0, 4);  // read identifier
+						memcpy(&lenVal, receiveBuffer + 4, 4);  // read length indicator
 						swap_endian((unsigned char*)&lenVal, 4);
 
-						if (idVal == 0x02020202)
+						if (idVal == 0x02020202)  // id for binary message
 						{
-							// binary message
+              {
+                static int cnt = 0;
+                char szFileName[255];
+
+#ifdef _MSC_VER
+                sprintf(szFileName, "c:\\temp\\dump%05d.bin", cnt);
+#else
+                sprintf(szFileName, "/tmp/dump%05d.txt", cnt);
+#endif
+                FILE *fout;
+                fout = fopen(szFileName, "wb");
+                fwrite(receiveBuffer, actual_length, 1, fout);
+                fclose(fout);
+                cnt++;
+              }
+
+              // binary message
 							if (lenVal < actual_length)
 							{
 								short elevAngleX200 = 0;  // signed short (F5 B2  -> Layer 24
@@ -2410,7 +2526,7 @@ namespace sick_scan
 					// change Parsing Mode
 					dataToProcess = false; // only one package allowed - no chaining
 				}
-				else // Parsing of Ascii-Ending of datagram
+				else // Parsing of Ascii-Encoding of datagram, xxx
 				{
 					dstart = strchr(buffer_pos, 0x02);
 					if (dstart != NULL)
@@ -2861,6 +2977,9 @@ namespace sick_scan
 		std::string keyWord1 = "sWN FREchoFilter";
 		std::string keyWord2 = "sEN LMDscandata";
 		std::string keyWord3 = "sWN LMDscandatacfg";
+		std::string keyWord4 = "sWN SetActiveApplications";
+    std::string keyWord5 = "sEN IMUData";
+
 		std::string cmdAscii = requestAscii;
 		int copyUntilSpaceCnt = 2;
 		int spaceCnt = 0;
@@ -2930,6 +3049,34 @@ namespace sick_scan
 
 		}
 
+		if (cmdAscii.find(keyWord4) != std::string::npos)
+		{
+			char tmpStr[1024] = {0};
+			char szApplStr[255] = {0};
+			int keyWord4Len = keyWord4.length();
+			int scanDataStatus = 0;
+			int dummy0, dummy1;
+			strcpy(tmpStr, requestAscii + keyWord4Len + 2);
+			sscanf(tmpStr, "%d %s %d", &dummy0, szApplStr, &dummy1);
+			// rebuild string
+			buffer[0] = 0x00;
+			buffer[1] = dummy0 ? 0x01 : 0x00;
+			for (int ii = 0; ii < 4; ii++)
+			{
+				buffer[2+ii] = szApplStr[ii]; // idx: 1,2,3,4
+			}
+			buffer[6] = dummy1 ? 0x01 : 0x00;
+			bufferLen = 7;
+		}
+
+    if (cmdAscii.find(keyWord5) != std::string::npos)
+    {
+      int imuSetStatus = 0;
+      int keyWord5Len = keyWord5.length();
+      sscanf(requestAscii + keyWord5Len + 1, " %d", &imuSetStatus);
+      buffer[0] = (unsigned char)(0xFF & imuSetStatus);
+      bufferLen = 1;
+    }
 
 		// copy base command string to buffer
 		bool switchDoBinaryData = false;

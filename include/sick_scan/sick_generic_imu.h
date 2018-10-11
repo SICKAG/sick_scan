@@ -64,7 +64,8 @@
 #endif
 #include "sick_scan/sick_generic_parser.h"
 #include "sick_scan/sick_scan_common_nw.h"
-
+#include <ros/ros.h>
+#include <sensor_msgs/Imu.h>
 namespace sick_scan
   {
 
@@ -72,6 +73,8 @@ namespace sick_scan
       class SickScanImuValue
       {
       public:
+          UINT32 TimeStamp() const { return timeStamp; }
+          void TimeStamp(UINT32 val) { timeStamp = val; }
           float QuaternionX() const { return quaternionX; }
           void QuaternionX(float val) { quaternionX = val; }
           float QuaternionY() const { return quaternionY; }
@@ -80,11 +83,47 @@ namespace sick_scan
           void QuaternionZ(float val) { quaternionZ = val; }
           float QuaternionW() const { return quaternionW; }
           void QuaternionW(float val) { quaternionW = val; }
+
+          float QuaternionAccuracy() const { return quaternionAccuracy; }
+          void QuaternionAccuracy(float val) { quaternionAccuracy = val; }
+
+
+          float AngularVelocityX() const { return velocityX; }
+          void AngularVelocityX(float val) { velocityX = val; }
+          float AngularVelocityY() const { return velocityY; }
+          void AngularVelocityY(float val) { velocityY = val; }
+          float AngularVelocityZ() const { return velocityZ; }
+          void AngularVelocityZ(float val) { velocityZ = val; }
+
+          UINT16 AngularVelocityReliability() const {return velocityReliability;}
+          void AngularVelocityReliability(UINT16 val) {velocityReliability = val;}
+
+          float LinearAccelerationX() const { return linearAccelerationX; }
+          void LinearAccelerationX(float val) { linearAccelerationX = val; }
+          float LinearAccelerationY() const { return linearAccelerationY; }
+          void LinearAccelerationY(float val) { linearAccelerationY = val; }
+          float LinearAccelerationZ() const { return linearAccelerationZ; }
+          void LinearAccelerationZ(float val) { linearAccelerationZ = val; }
+
+          UINT16 LinearAccelerationReliability() const {return linearAccelerationReliability;}
+          void LinearAccelerationReliability(UINT16 val) {linearAccelerationReliability = val;}
+
       private:
+          UINT32 timeStamp;
           float quaternionX;
           float quaternionY;
           float quaternionZ;
           float quaternionW;
+          float quaternionAccuracy;
+          float velocityX;
+          float velocityY;
+          float velocityZ;
+          UINT16 velocityReliability;
+          float linearAccelerationX;
+          float linearAccelerationY;
+          float linearAccelerationZ;
+          UINT16 linearAccelerationReliability;
+
           };
 
       class SickScanImu
@@ -94,8 +133,15 @@ namespace sick_scan
             {
             commonPtr = commonPtr_;
             }
+          bool isImuDatagram(char *datagram, size_t datagram_length);
+          bool isImuBinaryDatagram(char *datagram, size_t datagram_length);
+          bool isImuAsciiDatagram(char *datagram, size_t datagram_length);
+          bool isImuAckDatagram(char *datagram, size_t datagram_length);
+
           int parseDatagram(ros::Time timeStamp, unsigned char *receiveBuffer, int actual_length, bool useBinaryProtocol);
           int parseAsciiDatagram(char* datagram, size_t datagram_length, SickScanImuValue *imValuePtr);
+          int parseBinaryDatagram(char* datagram, size_t datagram_length, SickScanImuValue *imValuePtr);
+          static void ImuParserTest();
       private:
           SickScanCommon *commonPtr;
           bool emul;

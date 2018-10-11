@@ -70,7 +70,6 @@ catkin_package(
         LIBRARIES sick_scan_lib
         INCLUDE_DIRS include )
 
-
 include_directories(include include/tinyxml ${catkin_INCLUDE_DIRS} )
 
 add_library(sick_scan_lib

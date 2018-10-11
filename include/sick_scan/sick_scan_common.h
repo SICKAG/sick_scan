@@ -90,6 +90,7 @@ namespace sick_scan
 			CMD_SET_MEAN_FILTER,
 			CMD_ALIGNMENT_MODE,
 			CMD_APPLICATION_MODE,
+      CMD_APPLICATION_MODE_FIELD_ON,
 			CMD_APPLICATION_MODE_FIELD_OFF,
 			CMD_APPLICATION_MODE_RANGING_ON,
 			CMD_SET_ACCESS_MODE_3,
@@ -101,7 +102,11 @@ namespace sick_scan
 			CMD_STOP_SCANDATA,
 			CMD_START_SCANDATA,
 			CMD_START_RADARDATA,
-			// start of radar specific commands
+
+      CMD_START_IMU_DATA, // start of IMU data
+      CMD_STOP_IMU_DATA, // start of IMU data
+
+        // start of radar specific commands
 			CMD_SET_TRANSMIT_RAWTARGETS_ON,  // transmit raw target for radar
   		CMD_SET_TRANSMIT_RAWTARGETS_OFF, // do not transmit raw target for radar
 
@@ -219,6 +224,7 @@ namespace sick_scan
 				ros::Publisher cloud_radar_rawtarget_pub_;
 				ros::Publisher cloud_radar_track_pub_;
 				ros::Publisher radarScan_pub_;
+				ros::Publisher  imuScan_pub_;
 				// sensor_msgs::PointCloud cloud_;
 				sensor_msgs::PointCloud2 cloud_;
 		//////

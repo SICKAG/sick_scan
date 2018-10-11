@@ -707,6 +707,17 @@ namespace sick_scan
       }
       else
       {
+        bool debugBinCmd = false;
+        if (debugBinCmd)
+        {
+  				printf("=== START HEX DUMP ===\n");
+  				for (int i = 0; i < msgLen; i++)
+	  			{
+		  			unsigned char *ptr = (UINT8*)request;
+			  		printf("%02x ", ptr[i]);
+				  }
+				  printf("\n=== END HEX DUMP ===\n");
+        }
         m_nw.sendCommandBuffer((UINT8*)request, msgLen);
       }
 #else
@@ -728,7 +739,7 @@ namespace sick_scan
 		}
 
     // Set timeout in 5 seconds
-		const int BUF_SIZE = 1000;
+		const int BUF_SIZE = 65536;
 		char buffer[BUF_SIZE];
 		int bytes_read;
 		// !!!
@@ -749,6 +760,7 @@ namespace sick_scan
 		  if (reply)
 		  {
   			reply->resize(bytes_read);
+
   			std::copy(buffer, buffer + bytes_read, &(*reply)[0]);
   		}
     }
