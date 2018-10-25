@@ -47,13 +47,15 @@ generate_dynamic_reconfigure_options(
 )
 
 add_message_files(
+
 		FILES
+		SickImu.msg
 		RadarObject.msg
 		RadarPreHeaderDeviceBlock.msg
 		RadarPreHeaderMeasurementParam1Block.msg
 		RadarPreHeaderStatusBlock.msg
 		RadarPreHeaderEncoderBlock.msg
-        RadarPreHeader.msg
+		RadarPreHeader.msg
 		RadarScan.msg
 )
 
@@ -70,7 +72,7 @@ catkin_package(
         LIBRARIES sick_scan_lib
         INCLUDE_DIRS include )
 
-include_directories(include include/tinyxml ${catkin_INCLUDE_DIRS} )
+include_directories(include include/tinyxml ${catkin_INCLUDE_DIRS} include/sick_scan)
 
 add_library(sick_scan_lib
     driver/src/sick_scan_common.cpp
@@ -88,7 +90,12 @@ add_library(sick_scan_lib
 	driver/src/sick_generic_radar.cpp
 	driver/src/sick_generic_imu.cpp
 	driver/src/sick_generic_parser.cpp
-	driver/src/sick_scan_common_nw.cpp include/sick_scan/sick_scan_config.h driver/src/sick_scan_config.cpp)
+	driver/src/sick_scan_common_nw.cpp
+		include/sick_scan/sick_scan_config.h
+		driver/src/sick_scan_config.cpp
+		include/sick_scan/softwarePLL.h
+		driver/src/softwarePLL.cpp
+		)
 
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 

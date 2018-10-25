@@ -72,3 +72,9 @@ Makefile
 setup_custom_pythonpath\.sh
 
 CTestTestfile\.cmake
+
+tools/imu_tester/venv/
+
+tools/imu_tester/imutimestampsmu+2sigma.png
+
+tools/imu_tester/.idea

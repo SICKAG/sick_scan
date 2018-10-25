@@ -2134,7 +2134,7 @@ namespace sick_scan
 			return errorCode; // return success to continue looping
 		}
 
-    SickScanImu scanImu(this);
+    static SickScanImu scanImu(this); // todo remove static
     if (scanImu.isImuDatagram((char *)receiveBuffer,actual_length))
     {
       int errorCode = ExitSuccess;
@@ -2196,6 +2196,7 @@ namespace sick_scan
 
 						if (idVal == 0x02020202)  // id for binary message
 						{
+#if  0
               {
                 static int cnt = 0;
                 char szFileName[255];
@@ -2211,7 +2212,7 @@ namespace sick_scan
                 fclose(fout);
                 cnt++;
               }
-
+#endif
               // binary message
 							if (lenVal < actual_length)
 							{

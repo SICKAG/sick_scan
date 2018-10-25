@@ -175,6 +175,7 @@ namespace sick_scan
           adrOffset += 4;
         }
 
+        imuValue->TimeStamp(timeStamp);
         imuValue->QuaternionX(tmpArr[0]);
         imuValue->QuaternionY(tmpArr[1]);
         imuValue->QuaternionZ(tmpArr[2]);
@@ -433,7 +434,33 @@ namespace sick_scan
         int exitCode = ExitSuccess;
         SickScanImuValue imuValue;
         sensor_msgs::Imu imuMsg_;
+        static int cnt = 0;
+        static u_int32_t timeStampSecBuffer[1000];
+        static u_int32_t timeStampNanoSecBuffer[1000];
+            static u_int32_t timeStampSecCorBuffer[1000];
+            static u_int32_t timeStampNanoSecCorBuffer[1000];
+        static u_int32_t imuTimeStamp[1000];
+        static int timeStampValid[1000];
 
+        int idx = cnt % 1000;
+        cnt++;
+
+        int dumpIdx = 500;
+        if (cnt == dumpIdx)
+        {
+            printf("TICK;TS_SEC;TS_NANO;TS;TS_CORR_SEC;TS_CORR_NANO;TS_CORR;TS_DIFF;TS_VALID\n");
+
+            for (int i = 0; i < dumpIdx; i++)
+            {
+                double tsDouble = timeStampSecBuffer[i] +  1E-9 * timeStampNanoSecBuffer[i];
+                double tsDoubleCorr = timeStampSecCorBuffer[i] +  1E-9 * timeStampNanoSecCorBuffer[i];
+                double tsDiff =  tsDouble - tsDoubleCorr;
+                printf("%10u;%10u;%10u;%16.8lf;%10u;%10u;%16.8lf;%16.8lf;%d\n",
+                        imuTimeStamp[i],
+                        timeStampSecBuffer[i], timeStampNanoSecBuffer[i], tsDouble,
+                       timeStampSecCorBuffer[i], timeStampNanoSecCorBuffer[i], tsDoubleCorr, tsDiff, timeStampValid[i]);
+            }
+        }
         if (useBinaryProtocol)
         {
           this->parseBinaryDatagram((char *) receiveBuffer, actual_length, &imuValue);
@@ -443,9 +470,21 @@ namespace sick_scan
           this->parseAsciiDatagram((char *) receiveBuffer, actual_length, &imuValue);
         }
 
+            timeStampSecBuffer[idx] = timeStamp.sec;
+            timeStampNanoSecBuffer[idx] = timeStamp.nsec;
+            imuTimeStamp[idx] = imuValue.TimeStamp();
+
+       //  bool bRet = imuSoftwarePLL.getCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec,imuValue.TimeStamp());
+
+        bool bRet = imuSoftwarePLL.getSimpleCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec,imuValue.TimeStamp());
+
+        timeStampSecCorBuffer[idx] = timeStamp.sec;
+        timeStampNanoSecCorBuffer[idx] = timeStamp.nsec;
+        timeStampValid[idx] = bRet ? 1 : 0;
+
         imuMsg_.header.stamp = timeStamp;
         imuMsg_.header.seq = 0;
-        imuMsg_.header.frame_id = "laser"; // todo ...
+        imuMsg_.header.frame_id = "imu_link"; // todo ...
 
         imuMsg_.orientation.x = imuValue.QuaternionX();
         imuMsg_.orientation.y = imuValue.QuaternionY();
@@ -496,7 +535,8 @@ namespace sick_scan
         imuMsg_.orientation_covariance[7] = 0;
         imuMsg_.orientation_covariance[8] = 0.0025;
 
-        this->commonPtr->imuScan_pub_.publish(imuMsg_);
+        if (true == bRet)
+           this->commonPtr->imuScan_pub_.publish(imuMsg_);
 
 
         return(exitCode);

@@ -66,6 +66,7 @@
 #include "sick_scan/sick_scan_common_nw.h"
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
+#include "softwarePLL.h"
 namespace sick_scan
   {
 
@@ -143,6 +144,7 @@ namespace sick_scan
           int parseBinaryDatagram(char* datagram, size_t datagram_length, SickScanImuValue *imValuePtr);
           static void ImuParserTest();
       private:
+          SoftwarePLL imuSoftwarePLL;
           SickScanCommon *commonPtr;
           bool emul;
           };
