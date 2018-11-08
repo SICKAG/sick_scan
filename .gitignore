@@ -78,3 +78,8 @@ tools/imu_tester/venv/
 tools/imu_tester/imutimestampsmu+2sigma.png
 
 tools/imu_tester/.idea
+
+tools/sick_generic_device_finder/venv
+
+tools/sick_generic_device_finder/.idea
+
