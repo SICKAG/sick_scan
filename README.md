@@ -25,7 +25,7 @@ ROS Device Driver for Sick Laserscanner - supported scanner types:
 
 | **device name**    |  **part no.**                                                                                                                | **description**                                | **tested?**     |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|:---------------:|
-| MRS6124            | [6065086](https://www.sick.com/de/de/mess-und-detektionsloesungen/3d-lidar-sensoren/mrs6000/mrs6124r-131001/p/p533545)   | 24 layer (standard)                            | ✔ [stable]|
+| MRS6124            | [6065086](https://www.sick.com/de/de/mess-und-detektionsloesungen/3d-lidar-sensoren/mrs6000/mrs6124r-131001/p/p533545)   | 24 layer (standard)                            | ✔ [stable]| 
 | MRS1104            | [1081208](https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044) | 4 layer                                        | ✔ [stable]|
 | LMS1104            | [unpublished] | 1 layer (based on MRS1104 technology) |  ✔ [experimental]|
 | TiM551             | [1060445](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)                 | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [stable]|
@@ -41,6 +41,9 @@ ROS Device Driver for Sick Laserscanner - supported scanner types:
 | RMS3xx             | [8021530](https://www.sick.com/media/docs/4/04/504/Operating_instructions_RMS3xx_en_IM0075504.PDF)| Radar Sensor | ✔ [experimental]|
 |                    |                                                                                                   | Opening angle: +/- 50 [deg]   |                 |
 
+## IMU Support
+Devices of the MRS6xxx and MRS1xxx series will in future (2019) be available with an optionally built-in IMU. 
+Further information on the implementation and use of the experimental Imu support can be found on the [Imu page](doc/IMU.md).
 ##  Start Node
 
 Use the following command to start ROS node:

@@ -52,115 +52,142 @@
 
 
 #endif
+
 #include <sick_scan/sick_scan_common_tcp.h>
 #include <sick_scan/sick_scan_common.h>
 #include <sick_scan/sick_generic_parser.h>
 #include <sick_scan/sick_generic_imu.h>
+
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
+
+#include <tf/tf.h>
+#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Pose2D.h>
+
 #include "sensor_msgs/Imu.h"
 
 #define _USE_MATH_DEFINES
+
 #include <math.h>
 #include "string"
 #include <stdio.h>
 #include <stdlib.h>
 
 namespace sick_scan
-  {
+{
 
-      bool SickScanImu::isImuDatagram(char *datagram, size_t datagram_length)
-        {
+    bool SickScanImu::isImuDatagram(char *datagram, size_t datagram_length)
+    {
         bool ret = false;
         if (this->isImuBinaryDatagram(datagram, datagram_length))
         {
-          ret = true;
+            ret = true;
         } else
         {
-          if (this->isImuAsciiDatagram(datagram, datagram_length))
-          {
-            ret = true;
-          }
-          else
-          {
-             if (this->isImuAckDatagram(datagram, datagram_length))
-             {
-               ret = true;
-             }
-          }
+            if (this->isImuAsciiDatagram(datagram, datagram_length))
+            {
+                ret = true;
+            } else
+            {
+                if (this->isImuAckDatagram(datagram, datagram_length))
+                {
+                    ret = true;
+                }
+            }
         }
 
         return (ret);
-        }
+    }
 
 
-      bool SickScanImu::isImuAckDatagram(char *datagram, size_t datagram_length)
+    /*!
+    \brief Checking angle to be in the interval [-M_PI,M_PI]
+           Of course you can also use fmod, e.g. fmod(angle + M_PI,2*M_PI) - M_PI
+    \param angle: Input angle to be checked
+    \return normalized angle value (normalized means here the interval -M_PI,M_PI)
+    */
+    double SickScanImu::simpleFmodTwoPi(double angle)
+    {
+        while (angle < M_PI)
         {
+            angle += 2 * M_PI;
+        }
+        while (angle > M_PI)
+        {
+            angle -= 2 * M_PI;
+        }
+        return (angle);
+    }
+
+    bool SickScanImu::isImuAckDatagram(char *datagram, size_t datagram_length)
+    {
         bool isImuMsg = false;
         std::string szKeyWord = "sEA IMUData";
         std::string cmpKeyWord = "";
         int keyWordLen = szKeyWord.length();
-        int posTrial[] = {0,1,8};
-        for (int iPos = 0; iPos < sizeof(posTrial)/sizeof(posTrial[0]); iPos++)
+        int posTrial[] = {0, 1, 8};
+        for (int iPos = 0; iPos < sizeof(posTrial) / sizeof(posTrial[0]); iPos++)
 
-        if (datagram_length >= (keyWordLen + posTrial[iPos])) // 8 Bytes preheader
-        {
-          for (int i = 0; i < keyWordLen; i++)
-          {
-            cmpKeyWord += datagram[i + posTrial[iPos]];
-          }
-        }
+            if (datagram_length >= (keyWordLen + posTrial[iPos])) // 8 Bytes preheader
+            {
+                cmpKeyWord = "";
+                for (int i = 0; i < keyWordLen; i++)
+                {
+                    cmpKeyWord += datagram[i + posTrial[iPos]];
+                }
+            }
         if (szKeyWord.compare(cmpKeyWord) == 0)
         {
-          isImuMsg = true;
+            isImuMsg = true;
         }
         return (isImuMsg);
-        }
+    }
 
-      /*!
-      \brief Checking ASCII diagram for imu message type
-      \param datagram: Pointer to datagram data
-      \param datagram_length: Number of bytes in datagram
-      \return bool flag holding prof result (false -> no ascii imu datagram, true -> ascii imu datagram)
-      */
-      bool SickScanImu::isImuBinaryDatagram(char *datagram, size_t datagram_length)
-        {
+    /*!
+    \brief Checking ASCII diagram for imu message type
+    \param datagram: Pointer to datagram data
+    \param datagram_length: Number of bytes in datagram
+    \return bool flag holding prof result (false -> no ascii imu datagram, true -> ascii imu datagram)
+    */
+    bool SickScanImu::isImuBinaryDatagram(char *datagram, size_t datagram_length)
+    {
         bool isImuMsg = false;
         std::string szKeyWord = "sSN IMUData";
         std::string cmpKeyWord = "";
         int keyWordLen = szKeyWord.length();
         if (datagram_length >= (keyWordLen + 8)) // 8 Bytes preheader
         {
-          for (int i = 0; i < keyWordLen; i++)
-          {
-            cmpKeyWord += datagram[i + 8];
-          }
+            for (int i = 0; i < keyWordLen; i++)
+            {
+                cmpKeyWord += datagram[i + 8];
+            }
         }
         if (szKeyWord.compare(cmpKeyWord) == 0)
         {
-          isImuMsg = true;
+            isImuMsg = true;
         } else
         {
-          isImuMsg = false;
+            isImuMsg = false;
         }
         return (isImuMsg);
-        }
+    }
 
-      /*!
-      \brief Parsing Ascii datagram
-      \param datagram: Pointer to datagram data
-      \param datagram_length: Number of bytes in datagram
-      */
-      int SickScanImu::parseBinaryDatagram(char *datagram, size_t datagram_length, SickScanImuValue *imuValue)
-        {
+    /*!
+    \brief Parsing Ascii datagram
+    \param datagram: Pointer to datagram data
+    \param datagram_length: Number of bytes in datagram
+    */
+    int SickScanImu::parseBinaryDatagram(char *datagram, size_t datagram_length, SickScanImuValue *imuValue)
+    {
         int iRet = 0;
         float tmpArr[8] = {0};
         uint32_t timeStamp;
         unsigned char *receiveBuffer = (unsigned char *) datagram;
         if (false == isImuBinaryDatagram(datagram, datagram_length))
         {
-          return (-1);
+            return (-1);
         }
 
         unsigned char *bufPtr = (unsigned char *) datagram;
@@ -170,22 +197,24 @@ namespace sick_scan
         int adrOffset = 24;
         for (int i = 0; i < 8; i++)
         {
-          memcpy(&(tmpArr[i]), receiveBuffer + adrOffset, 4);
-          swap_endian((unsigned char *) (&(tmpArr[i])), 4);
-          adrOffset += 4;
+            memcpy(&(tmpArr[i]), receiveBuffer + adrOffset, 4);
+            swap_endian((unsigned char *) (&(tmpArr[i])), 4);
+            adrOffset += 4;
         }
 
+        double angleVelMultiplier = 128.0;
         imuValue->TimeStamp(timeStamp);
+
         imuValue->QuaternionX(tmpArr[0]);
         imuValue->QuaternionY(tmpArr[1]);
         imuValue->QuaternionZ(tmpArr[2]);
-        imuValue->QuaternionW(tmpArr[3]);
+        imuValue->QuaternionW(tmpArr[3]);  // w is first element
 
         imuValue->QuaternionAccuracy(tmpArr[4]);
 
-        imuValue->AngularVelocityX(tmpArr[5]);
-        imuValue->AngularVelocityY(tmpArr[6]);
-        imuValue->AngularVelocityZ(tmpArr[7]);
+        imuValue->AngularVelocityX(angleVelMultiplier * tmpArr[5]);
+        imuValue->AngularVelocityY(angleVelMultiplier * tmpArr[6]);
+        imuValue->AngularVelocityZ(angleVelMultiplier * tmpArr[7]);
 
 
         uint8_t val = receiveBuffer[adrOffset];
@@ -193,9 +222,9 @@ namespace sick_scan
         imuValue->AngularVelocityReliability((UINT16) val);
         for (int i = 0; i < 3; i++)
         {
-          memcpy(&(tmpArr[i]), receiveBuffer + adrOffset, 4);
-          swap_endian((unsigned char *) (&(tmpArr[i])), 4);
-          adrOffset += 4;
+            memcpy(&(tmpArr[i]), receiveBuffer + adrOffset, 4);
+            swap_endian((unsigned char *) (&(tmpArr[i])), 4);
+            adrOffset += 4;
         }
 
 
@@ -207,43 +236,43 @@ namespace sick_scan
         val = receiveBuffer[adrOffset];
         imuValue->LinearAccelerationReliability((UINT16) val);
         return (iRet);
-        }
+    }
 
-      /*!
-      \brief Checking ASCII diagram for imu message type
-      \param datagram: Pointer to datagram data
-      \param datagram_length: Number of bytes in datagram
-      \return bool flag holding prof result (false -> no ascii imu datagram, true -> ascii imu datagram)
-      */
-      bool SickScanImu::isImuAsciiDatagram(char *datagram, size_t datagram_length)
-        {
+    /*!
+    \brief Checking ASCII diagram for imu message type
+    \param datagram: Pointer to datagram data
+    \param datagram_length: Number of bytes in datagram
+    \return bool flag holding prof result (false -> no ascii imu datagram, true -> ascii imu datagram)
+    */
+    bool SickScanImu::isImuAsciiDatagram(char *datagram, size_t datagram_length)
+    {
         bool isImuMsg = false;
         std::string szKeyWord = "sSN IMUData";
         int keyWordLen = szKeyWord.length();
         if (datagram_length >= keyWordLen)
         {
 
-          char *ptr = NULL;
-          ptr = strstr(datagram, szKeyWord.c_str());
-          if (ptr != NULL)
-          {
-            int offset = ptr - datagram;
-            if ((offset == 0) || (offset == 1)) // should work with 0x02 and without 0x02
+            char *ptr = NULL;
+            ptr = strstr(datagram, szKeyWord.c_str());
+            if (ptr != NULL)
             {
-              isImuMsg = true;
+                int offset = ptr - datagram;
+                if ((offset == 0) || (offset == 1)) // should work with 0x02 and without 0x02
+                {
+                    isImuMsg = true;
+                }
             }
-          }
         }
         return (isImuMsg);
-        }
+    }
 
-      /*!
-      \brief Parsing Ascii datagram
-      \param datagram: Pointer to datagram data
-      \param datagram_length: Number of bytes in datagram
-      */
-      int SickScanImu::parseAsciiDatagram(char *datagram, size_t datagram_length, SickScanImuValue *imuValue)
-        {
+    /*!
+    \brief Parsing Ascii datagram
+    \param datagram: Pointer to datagram data
+    \param datagram_length: Number of bytes in datagram
+    */
+    int SickScanImu::parseAsciiDatagram(char *datagram, size_t datagram_length, SickScanImuValue *imuValue)
+    {
         int exitCode = ExitSuccess;
         bool dumpData = false;
         int verboseLevel = 0;
@@ -265,7 +294,7 @@ namespace sick_scan
 
         if (verboseLevel > 0)
         {
-          ROS_WARN("Verbose LEVEL activated. Only for DEBUG.");
+            ROS_WARN("Verbose LEVEL activated. Only for DEBUG.");
         }
 
 
@@ -278,9 +307,9 @@ namespace sick_scan
 
         while (cur_field != NULL)
         {
-          fields.push_back(cur_field);
-          //std::cout << cur_field << std::endl;
-          cur_field = strtok(NULL, " ");
+            fields.push_back(cur_field);
+            //std::cout << cur_field << std::endl;
+            cur_field = strtok(NULL, " ");
         }
 
         //std::cout << fields[27] << std::endl;
@@ -288,14 +317,14 @@ namespace sick_scan
         count = fields.size();
 
         enum IMU_TOKEN_SEQ // see specification
-            {
+        {
             IMU_TOKEN_SSN,          // 0: sSN
             IMU_TOKEN_IMUDATA, // 1: LMDradardata
             IMU_TOKEN_TIMESTAMP,  // unsigned long value timestamp
+            IMU_TOKEN_QUATERNION_W,
             IMU_TOKEN_QUATERNION_X,
             IMU_TOKEN_QUATERNION_Y,
             IMU_TOKEN_QUATERNION_Z,
-            IMU_TOKEN_QUATERNION_W,
             IMU_TOKEN_QUATERNION_ACCURACY, // float value
             IMU_TOKEN_ANGULAR_VELOCITY_X,
             IMU_TOKEN_ANGULAR_VELOCITY_Y,
@@ -306,82 +335,82 @@ namespace sick_scan
             IMU_TOKEN_LINEAR_ACCELERATION_Z,
             IMU_TOKEN_LINEAR_ACCELERATION_RELIABILITY, // int value
             IMU_TOKEN_NUM
-            };
+        };
         for (int i = 0; i < IMU_TOKEN_NUM; i++)
         {
-          UINT16 uiValue = 0x00;
-          UINT32 udiValue = 0x00;
-          unsigned long int uliDummy;
-          uliDummy = strtoul(fields[i], NULL, 16);
-          float floatDummy;
-          switch (i)
-          {
-            case IMU_TOKEN_TIMESTAMP:
-              imuValue->TimeStamp(uliDummy);
-              break;
-            case IMU_TOKEN_QUATERNION_X:
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->QuaternionX(floatDummy);  // following IEEE 754 float convention
-              break;
-            case IMU_TOKEN_QUATERNION_Y:
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->QuaternionY(floatDummy);
-              break;
-            case IMU_TOKEN_QUATERNION_Z:
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->QuaternionZ(floatDummy);
-              break;
-            case IMU_TOKEN_QUATERNION_W:
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->QuaternionW(floatDummy);
-              break;
+            UINT16 uiValue = 0x00;
+            UINT32 udiValue = 0x00;
+            unsigned long int uliDummy;
+            uliDummy = strtoul(fields[i], NULL, 16);
+            float floatDummy;
+            switch (i)
+            {
+                case IMU_TOKEN_TIMESTAMP:
+                    imuValue->TimeStamp(uliDummy);
+                    break;
+                case IMU_TOKEN_QUATERNION_X:
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->QuaternionX(floatDummy);  // following IEEE 754 float convention
+                    break;
+                case IMU_TOKEN_QUATERNION_Y:
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->QuaternionY(floatDummy);
+                    break;
+                case IMU_TOKEN_QUATERNION_Z:
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->QuaternionZ(floatDummy);
+                    break;
+                case IMU_TOKEN_QUATERNION_W:
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->QuaternionW(floatDummy);
+                    break;
 
-            case IMU_TOKEN_QUATERNION_ACCURACY: // float value
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->QuaternionAccuracy(floatDummy);
-              break;
-            case IMU_TOKEN_ANGULAR_VELOCITY_X:
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->AngularVelocityX(floatDummy);
-              break;
-            case IMU_TOKEN_ANGULAR_VELOCITY_Y:
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->AngularVelocityY(floatDummy);
-              break;
-            case IMU_TOKEN_ANGULAR_VELOCITY_Z:
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->AngularVelocityZ(floatDummy);
-              break;
-            case IMU_TOKEN_ANGULAR_VELOCITY_RELIABILITY:
-              uiValue = (UINT16) (0xFFFF & uliDummy);
-              imuValue->AngularVelocityReliability(
-                      uiValue);  // per definition is a 8 bit value, but we use a 16 bit value
-              break;
-            case IMU_TOKEN_LINEAR_ACCELERATION_X:
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->LinearAccelerationX(floatDummy);
-              break;
-            case IMU_TOKEN_LINEAR_ACCELERATION_Y:
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->LinearAccelerationY(floatDummy);
-              break;
-            case IMU_TOKEN_LINEAR_ACCELERATION_Z:
-              memcpy(&floatDummy, &uliDummy, sizeof(float));
-              imuValue->LinearAccelerationZ(floatDummy);
-              break;
-            case IMU_TOKEN_LINEAR_ACCELERATION_RELIABILITY:
-              uiValue = (UINT16) (0xFFFF & uliDummy);
-              imuValue->LinearAccelerationReliability(
-                      uiValue);  // per definition is a 8 bit value, but we use a 16 bit value
-              break;
+                case IMU_TOKEN_QUATERNION_ACCURACY: // float value
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->QuaternionAccuracy(floatDummy);
+                    break;
+                case IMU_TOKEN_ANGULAR_VELOCITY_X:
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->AngularVelocityX(floatDummy);
+                    break;
+                case IMU_TOKEN_ANGULAR_VELOCITY_Y:
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->AngularVelocityY(floatDummy);
+                    break;
+                case IMU_TOKEN_ANGULAR_VELOCITY_Z:
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->AngularVelocityZ(floatDummy);
+                    break;
+                case IMU_TOKEN_ANGULAR_VELOCITY_RELIABILITY:
+                    uiValue = (UINT16) (0xFFFF & uliDummy);
+                    imuValue->AngularVelocityReliability(
+                            uiValue);  // per definition is a 8 bit value, but we use a 16 bit value
+                    break;
+                case IMU_TOKEN_LINEAR_ACCELERATION_X:
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->LinearAccelerationX(floatDummy);
+                    break;
+                case IMU_TOKEN_LINEAR_ACCELERATION_Y:
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->LinearAccelerationY(floatDummy);
+                    break;
+                case IMU_TOKEN_LINEAR_ACCELERATION_Z:
+                    memcpy(&floatDummy, &uliDummy, sizeof(float));
+                    imuValue->LinearAccelerationZ(floatDummy);
+                    break;
+                case IMU_TOKEN_LINEAR_ACCELERATION_RELIABILITY:
+                    uiValue = (UINT16) (0xFFFF & uliDummy);
+                    imuValue->LinearAccelerationReliability(
+                            uiValue);  // per definition is a 8 bit value, but we use a 16 bit value
+                    break;
 
-          }
+            }
         }
         return (0);
-        }
+    }
 
-      void imuParserTest()
-        {
+    void imuParserTest()
+    {
         sick_scan::SickScanImu scanImu(NULL);
         sick_scan::SickScanImuValue imuValue;
         //                                             checked with online converter
@@ -390,32 +419,32 @@ namespace sick_scan
         std::string imuTestStr = "sSN IMUData 34FEEDF 3F7FF800 BBBC0000 3C848000 00000000 00000000 00000000 3B0B9AB1 00000000 3 BE9F6AD9 BDDCBB53 411D2CF1 0";
         const char imuTestBinStr[] =
                 "\x02\x02\x02\x02\x00\x00\x00\x3E"  // 8 Byte Header
-                        "\x73\x53\x4E\x20\x49\x4D\x55\x44\x61\x74\x61"  // 11 Byte Keyword
-                        "\x20" // 1 Byte Space
-                        "\x26\x9E\x05\xEB"  // Offset: 20 Timestamp
-                        "\x3F\x7F\xF4\x00"
-                        "\xBB\x60\x00\x00"
-                        "\x3C\xA2\x80\x00"
-                        "\x39\x40\x00\x00"
+                "\x73\x53\x4E\x20\x49\x4D\x55\x44\x61\x74\x61"  // 11 Byte Keyword
+                "\x20" // 1 Byte Space
+                "\x26\x9E\x05\xEB"  // Offset: 20 Timestamp
+                "\x3F\x7F\xF4\x00"
+                "\xBB\x60\x00\x00"
+                "\x3C\xA2\x80\x00"
+                "\x39\x40\x00\x00"
 
-                        "\x00\x00\x00\x00" // Start-Offset 40
+                "\x00\x00\x00\x00" // Start-Offset 40
 
-                        "\xBB\x0B\x9A\xB1" // Start-Offset 44
-                        "\x3B\x0B\x9A\xB1"
-                        "\xBA\x8B\x9A\xB1"
-                        "\x03"             // Start-Offset 56
-                        "\xBE\xD5\x5F\xC0" // Start-Offset 57
-                        "\xBD\x89\x58\x1E"
-                        "\x41\x1D\x8A\x24"
-                        "\x00"
-                        "\xBC";
+                "\xBB\x0B\x9A\xB1" // Start-Offset 44
+                "\x3B\x0B\x9A\xB1"
+                "\xBA\x8B\x9A\xB1"
+                "\x03"             // Start-Offset 56
+                "\xBE\xD5\x5F\xC0" // Start-Offset 57
+                "\xBD\x89\x58\x1E"
+                "\x41\x1D\x8A\x24"
+                "\x00"
+                "\xBC";
 
         char *datagramPtr = (char *) imuTestStr.c_str();
         int datagramLen = imuTestStr.size();
 
         if (scanImu.isImuAsciiDatagram(datagramPtr, datagramLen))
         {
-          scanImu.parseAsciiDatagram(datagramPtr, datagramLen, &imuValue);
+            scanImu.parseAsciiDatagram(datagramPtr, datagramLen, &imuValue);
         }
 
         datagramPtr = (char *) imuTestBinStr;
@@ -423,25 +452,31 @@ namespace sick_scan
 
         if (scanImu.isImuBinaryDatagram(datagramPtr, datagramLen))
         {
-          scanImu.parseBinaryDatagram(datagramPtr, datagramLen, &imuValue);
+            scanImu.parseBinaryDatagram(datagramPtr, datagramLen, &imuValue);
         }
 
-        }
+    }
 
-      int SickScanImu::parseDatagram(ros::Time timeStamp, unsigned char *receiveBuffer, int actual_length,
-                                     bool useBinaryProtocol)
-        {
+    int SickScanImu::parseDatagram(ros::Time timeStamp, unsigned char *receiveBuffer, int actual_length,
+                                   bool useBinaryProtocol)
+    {
         int exitCode = ExitSuccess;
         SickScanImuValue imuValue;
         sensor_msgs::Imu imuMsg_;
         static int cnt = 0;
         static u_int32_t timeStampSecBuffer[1000];
         static u_int32_t timeStampNanoSecBuffer[1000];
-            static u_int32_t timeStampSecCorBuffer[1000];
-            static u_int32_t timeStampNanoSecCorBuffer[1000];
+        static u_int32_t timeStampSecCorBuffer[1000];
+        static u_int32_t timeStampNanoSecCorBuffer[1000];
         static u_int32_t imuTimeStamp[1000];
         static int timeStampValid[1000];
+        static ros::Time lastTimeStamp;
 
+        static double lastRoll = 0.0;
+        static double lastPitch = 0.0;
+        static double lastYaw = 0.0;
+
+        static bool firstTime = true;
         int idx = cnt % 1000;
         cnt++;
 
@@ -452,31 +487,31 @@ namespace sick_scan
 
             for (int i = 0; i < dumpIdx; i++)
             {
-                double tsDouble = timeStampSecBuffer[i] +  1E-9 * timeStampNanoSecBuffer[i];
-                double tsDoubleCorr = timeStampSecCorBuffer[i] +  1E-9 * timeStampNanoSecCorBuffer[i];
-                double tsDiff =  tsDouble - tsDoubleCorr;
+                double tsDouble = timeStampSecBuffer[i] + 1E-9 * timeStampNanoSecBuffer[i];
+                double tsDoubleCorr = timeStampSecCorBuffer[i] + 1E-9 * timeStampNanoSecCorBuffer[i];
+                double tsDiff = tsDouble - tsDoubleCorr;
                 printf("%10u;%10u;%10u;%16.8lf;%10u;%10u;%16.8lf;%16.8lf;%d\n",
-                        imuTimeStamp[i],
-                        timeStampSecBuffer[i], timeStampNanoSecBuffer[i], tsDouble,
+                       imuTimeStamp[i],
+                       timeStampSecBuffer[i], timeStampNanoSecBuffer[i], tsDouble,
                        timeStampSecCorBuffer[i], timeStampNanoSecCorBuffer[i], tsDoubleCorr, tsDiff, timeStampValid[i]);
             }
         }
         if (useBinaryProtocol)
         {
-          this->parseBinaryDatagram((char *) receiveBuffer, actual_length, &imuValue);
+            this->parseBinaryDatagram((char *) receiveBuffer, actual_length, &imuValue);
 
         } else
         {
-          this->parseAsciiDatagram((char *) receiveBuffer, actual_length, &imuValue);
+            this->parseAsciiDatagram((char *) receiveBuffer, actual_length, &imuValue);
         }
 
-            timeStampSecBuffer[idx] = timeStamp.sec;
-            timeStampNanoSecBuffer[idx] = timeStamp.nsec;
-            imuTimeStamp[idx] = imuValue.TimeStamp();
+        timeStampSecBuffer[idx] = timeStamp.sec;
+        timeStampNanoSecBuffer[idx] = timeStamp.nsec;
+        imuTimeStamp[idx] = imuValue.TimeStamp();
 
-       //  bool bRet = imuSoftwarePLL.getCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec,imuValue.TimeStamp());
+        //  bool bRet = imuSoftwarePLL.getCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec,imuValue.TimeStamp());
 
-        bool bRet = imuSoftwarePLL.getSimpleCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec,imuValue.TimeStamp());
+        bool bRet = imuSoftwarePLL.getSimpleCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec, imuValue.TimeStamp());
 
         timeStampSecCorBuffer[idx] = timeStamp.sec;
         timeStampNanoSecCorBuffer[idx] = timeStamp.nsec;
@@ -486,24 +521,84 @@ namespace sick_scan
         imuMsg_.header.seq = 0;
         imuMsg_.header.frame_id = "imu_link"; // todo ...
 
+
+
         imuMsg_.orientation.x = imuValue.QuaternionX();
         imuMsg_.orientation.y = imuValue.QuaternionY();
         imuMsg_.orientation.z = imuValue.QuaternionZ();
         imuMsg_.orientation.w = imuValue.QuaternionW();
+        imuMsg_.orientation_covariance[0] = 1.0;
 
-        imuMsg_.orientation_covariance[0]  = 1.0;
+        tf::Quaternion qOrientation(
+                imuMsg_.orientation.x,
+                imuMsg_.orientation.y,
+                imuMsg_.orientation.z,
+                imuMsg_.orientation.w);
+        tf::Matrix3x3 m(qOrientation);
+        double roll, pitch, yaw;
+        m.getRPY(roll, pitch, yaw); // convert to roll pitch yaw and try to derive Angular Velocity from these values
+
         imuMsg_.angular_velocity.x = imuValue.AngularVelocityX();
         imuMsg_.angular_velocity.y = imuValue.AngularVelocityY();
         imuMsg_.angular_velocity.z = imuValue.AngularVelocityZ();
 
+        if (firstTime)
+        {
+            lastTimeStamp = timeStamp;
+            firstTime = false;
+        } else
+        {
+            /*
+             * The built-in IMU unit provides three parameter sets:
+             * quaternions, angular velocity and linear accelerations.
+             * The angular velocities give noisy data without offset compensation (i.e. with drift).
+             * For this reason, the angular velocities are derived from the quaternions. The quaternions are converted
+             * into Euler angles for this purpose. The angular velocity is then calculated from these
+             * sequential Euler angles.
+             */
+            ros::Duration timeDiffRos = timeStamp - lastTimeStamp;
+            double timeDiff = timeDiffRos.toSec();
+            if (timeDiff > 1E-6) // Epsilon-Check
+            {
+                double angleDiffX = roll - lastRoll;
+                double angleDiffY = pitch - lastPitch;
+                double angleDiffZ = yaw - lastYaw;
+                angleDiffX = simpleFmodTwoPi(angleDiffX);
+                angleDiffY = simpleFmodTwoPi(angleDiffY);
+                angleDiffZ = simpleFmodTwoPi(angleDiffZ);
+                double angleAngleApproxX = angleDiffX / timeDiff;
+                double angleAngleApproxY = angleDiffY / timeDiff;
+                double angleAngleApproxZ = angleDiffZ / timeDiff;
+
+                imuMsg_.angular_velocity.x = angleAngleApproxX;
+                imuMsg_.angular_velocity.y = angleAngleApproxY;
+                imuMsg_.angular_velocity.z = angleAngleApproxZ;
+
+            }
+        }
+        lastTimeStamp = timeStamp;
+        lastRoll = roll;
+        lastPitch = pitch;
+        lastYaw = yaw;
+
         imuMsg_.linear_acceleration.x = imuValue.LinearAccelerationX();
         imuMsg_.linear_acceleration.y = imuValue.LinearAccelerationY();
         imuMsg_.linear_acceleration.z = imuValue.LinearAccelerationZ();
-
         // setting main diagonal elements of covariance matrix
         // to some meaningful values.
         // see https://github.com/ROBOTIS-GIT/OpenCR/blob/master/arduino/opencr_arduino/opencr/libraries/ROS/examples/01.%20Basics/d_IMU/d_IMU.ino
         // as a reference.
+
+
+
+        for (int i = 0; i < 9; i++)
+        {
+            imuMsg_.angular_velocity_covariance[i] = 0.00;
+            imuMsg_.linear_acceleration_covariance[i] = 0.00;
+            imuMsg_.orientation_covariance[i] = 0.00;
+
+        }
+
 
         imuMsg_.angular_velocity_covariance[0] = 0.02;
         imuMsg_.angular_velocity_covariance[1] = 0;
@@ -536,10 +631,11 @@ namespace sick_scan
         imuMsg_.orientation_covariance[8] = 0.0025;
 
         if (true == bRet)
-           this->commonPtr->imuScan_pub_.publish(imuMsg_);
+            this->commonPtr->imuScan_pub_.publish(imuMsg_);
 
 
-        return(exitCode);
+        return (exitCode);
 
-     }
-  }
+    }
+}
+

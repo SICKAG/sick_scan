@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 		strcpy(logTagVal, "__log:=/tmp/tmp.log");
 		strcpy(internalDebugTagVal, "__internalDebug:=1");
 		// strcpy(sensorEmulVal, "__emulSensor:=1");
-    strcpy(sensorEmulVal, "__emulSensor:=0");
+        strcpy(sensorEmulVal, "__emulSensor:=0");
 		argc_tmp = 5;
 		argv_tmp = (char **)malloc(sizeof(char *) * argc_tmp);
 

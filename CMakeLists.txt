@@ -21,6 +21,12 @@ project(sick_scan)
 
 
 
+# message(${CMAKE_BINARY_DIR})
+
+# set(CATKIN_DEVEL_PREFIX "${CMAKE_BINARY_DIR}/devel")
+# set(CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/devel;/opt/ros/melodic")
+
+
 find_package(catkin REQUIRED
     COMPONENTS
       roscpp
@@ -118,6 +124,7 @@ target_link_libraries(radar_object_marker sick_scan_lib)
 #
 #
 #
+
 
 
 add_executable(pcl_converter tools/pcl_converter/src/pcl_converter.cpp tools/pcl_converter/src/gnuplotPaletteReader.cpp)
