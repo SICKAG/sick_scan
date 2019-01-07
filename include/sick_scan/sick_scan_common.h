@@ -48,6 +48,8 @@
 #include <string.h>
 #include <vector>
 
+#include <boost/asio.hpp>
+
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud.h>
@@ -80,6 +82,8 @@ namespace sick_scan
 			CMD_DEVICE_IDENT_LEGACY,
 			CMD_DEVICE_IDENT,  // for MRS6124
 			CMD_SERIAL_NUMBER,
+			CMD_REBOOT,
+			CMD_WRITE_EEPROM,
 			CMD_FIRMWARE_VERSION,
 			CMD_DEVICE_STATE,
 			CMD_OPERATION_HOURS,
@@ -123,6 +127,8 @@ namespace sick_scan
 			CMD_START_MEASUREMENT,
 			CMD_STOP_MEASUREMENT,
 			CMD_SET_ECHO_FILTER,
+            CMD_SET_IP_ADDR,
+            CMD_SET_GATEWAY,
 			CMD_SET_TO_COLA_A_PROTOCOL,  //		sWN EIHstCola 1  // Cola B 	sWN EIHstCola 0  // Cola A 
 			CMD_SET_TO_COLA_B_PROTOCOL,  // 
 			// ML: Add above new CMD-Identifier
@@ -178,36 +184,13 @@ namespace sick_scan
 		 * \returns true if reboot command was accepted, false otherwise
 		 */
 		virtual bool rebootScanner();
-		/// Send a SOPAS command to the scanner that logs in the authorized client
-		/**
-		 * \returns true if user change was accepted, false otherwise
-		 */
-		bool switchToAuthorizeClient();
-		/// Send a SOPAS command to the scanner that stops measurement data Output "sEN LMDscandata 0"
-		/**
-		 * \returns true if command was accepted, false otherwise
-		 */
-		bool stopScanData();
-		/// Send a SOPAS command to the scanner that srats measurement data Output "sEN LMDscandata 1"
-		/**
-		 * \returns true if command was accepted, false otherwise
-		 */
-		bool startScanData();
-		/// Send a SOPAS command to the scanner that stops measurement"sMN LMCstopmeas"
-		/**
-		 * \returns true if command was accepted, false otherwise
-		 */
-		bool stopMeasurement();
 
-		/** Send a SOPAS command to the scanner that loggs out the service user and changes the state to running.
-		 * Use this command to leave after setup "sMN Run"
-		 * \returns true if command was accepted, false otherwise
-		 */
-		bool run();
-		/// Send a SOPAS command to the scanner that start active measurement and rotation/laser "sMN LMCstartmeas"
+		/// Send a SOPAS command to the scanner that logs in the authorized client, changes the ip adress and the reboots the scanner
 		/**
-		 * \returns true if command was accepted, false otherwise
+		 * \param IpAdress new IP adress
+		 * \returns true if ip was changed and scanner is rebooting
 		 */
+		bool changeIPandreboot(boost::asio::ip::address_v4 IpAdress);
 
 		SickScanCommonNw m_nw;
 
@@ -318,7 +301,9 @@ namespace sick_scan
 		bool checkForProtocolChangeAndMaybeReconnect(bool& useBinaryCmdNow);
 		void setSensorIsRadar(bool _isRadar);
 		bool getSensorIsRadar(void);
-		int readTimeOutInMs;
+        bool setNewIpAddress(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd);
+
+        int readTimeOutInMs;
 private:
 	bool sensorIsRadar;
 	};
