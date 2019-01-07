@@ -384,8 +384,6 @@ namespace sick_scan
 
 		return true;
 	}
-
-
 	/*!
 	\brief Destructor of SickScanCommon
 	*/
@@ -699,6 +697,9 @@ namespace sick_scan
 
 		sopasCmdVec[CMD_DEVICE_IDENT_LEGACY] = "\x02sRI 0\x03\0";
 		sopasCmdVec[CMD_DEVICE_IDENT] = "\x02sRN DeviceIdent\x03\0";
+		sopasCmdVec[CMD_REBOOT] = "\x02sMN mSCreboot\x03";
+		sopasCmdVec[CMD_SET_IP_ADDR] = "\x02sWN EIIpAddr\x03";//dummy call needs param see sopasCmdMaskVec[CMD_SET_IP_ADDR]
+		sopasCmdVec[CMD_WRITE_EEPROM] ="\x02sMN mEEwriteall\x03";
 		sopasCmdVec[CMD_SERIAL_NUMBER] = "\x02sRN SerialNumber\x03\0";
 		sopasCmdVec[CMD_FIRMWARE_VERSION] = "\x02sRN FirmwareVersion\x03\0";
 		sopasCmdVec[CMD_DEVICE_STATE] = "\x02sRN SCdevicestate\x03\0";
@@ -751,7 +752,8 @@ namespace sick_scan
 		sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES] = "\x02sWN LMPoutputRange 1 %X %X %X\x03";
 		sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 0 00 00 0 0 0 0 1\x03";
 		sopasCmdMaskVec[CMD_SET_ECHO_FILTER] = "\x02sWN FREchoFilter %d\x03";
-
+        sopasCmdMaskVec[CMD_SET_IP_ADDR] = "\x02sWN EIIpAddr %02X %02X %02X %02X\x03";
+		sopasCmdMaskVec[CMD_SET_GATEWAY] = "\x02sWN EIgate %02X %02X %02X %02X\x03";
 		//error Messages
 		sopasCmdErrMsg[CMD_DEVICE_IDENT_LEGACY] = "Error reading device ident";
 		sopasCmdErrMsg[CMD_DEVICE_IDENT] = "Error reading device ident for MRS-family";
@@ -773,6 +775,10 @@ namespace sick_scan
 		sopasCmdErrMsg[CMD_SET_PARTIAL_SCANDATA_CFG] = "Error setting Scandataconfig";
 		sopasCmdErrMsg[CMD_STOP_SCANDATA] = "Error stopping scandata output";
 		sopasCmdErrMsg[CMD_START_SCANDATA] = "Error starting Scandata output";
+		sopasCmdErrMsg[CMD_SET_IP_ADDR]= "Error setting IP address";
+		sopasCmdErrMsg[CMD_SET_GATEWAY]= "Error setting gateway";
+		sopasCmdErrMsg[CMD_REBOOT]= "Error rebooting the device";
+		sopasCmdErrMsg[CMD_WRITE_EEPROM]= "Error writing data to EEPRom";
 
 		// ML: Add hier more useful cmd and mask entries
 
@@ -862,12 +868,37 @@ namespace sick_scan
 
 		maxNumberOfEchos = this->parser_->getCurrentParamPtr()->getNumberOfMaximumEchos();  // 1 for TIM 571, 3 for MRS1104, 5 for 6000
 
+
 		bool rssiFlag = false;
 		bool rssiResolutionIs16Bit = true; //True=16 bit Flase=8bit
 		int activeEchos = 0;
 		ros::NodeHandle pn("~");
 		pn.getParam("intensity", rssiFlag);
 		pn.getParam("intensity_resolution_16bit", rssiResolutionIs16Bit);
+
+		//check new ip adress and add cmds to write ip to comand chain
+		std::string sNewIPAddr ="";
+		boost::asio::ip::address_v4 ipNewIPAddr;
+		bool setNewIPAddr=false;
+		setNewIPAddr=pn.getParam("new_IP_address",sNewIPAddr);
+		if(setNewIPAddr)
+		{
+			boost::system::error_code ec;
+			ipNewIPAddr=boost::asio::ip::address_v4::from_string(sNewIPAddr, ec);
+			if (ec == 0)
+			{
+				sopasCmdChain.clear();
+				sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3);
+			}
+			else
+			{
+				setNewIPAddr = false;
+				ROS_ERROR("ERROR: IP ADDRESS could not be parsed Boost Error %s:%d", ec.category().name(),ec.value());
+				;
+			}
+
+		}
+
 		this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
 
 		// parse active_echos entry and set flag array
@@ -1007,6 +1038,7 @@ namespace sick_scan
 
 			switch (cmdId)
 			{
+
 			case CMD_SET_TO_COLA_A_PROTOCOL:
 			{
 				bool protocolCheck = checkForProtocolChangeAndMaybeReconnect(useBinaryCmdNow);
@@ -1114,6 +1146,8 @@ namespace sick_scan
 				}
 				break;
 			}
+
+
 			case CMD_SERIAL_NUMBER:
 				if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)
 				{
@@ -1274,9 +1308,20 @@ namespace sick_scan
 				return ExitError;
 
 			}
+
 		}
 
 
+		// handle special configuration commands ...
+
+		if (setNewIPAddr)
+		{
+
+			setNewIpAddress(ipNewIPAddr,useBinaryCmdNow);
+			//TODO reboot scanner
+			//TODO restart node
+
+		}
 
 		if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
 		{
@@ -2134,22 +2179,22 @@ namespace sick_scan
 			return errorCode; // return success to continue looping
 		}
 
-    static SickScanImu scanImu(this); // todo remove static
-    if (scanImu.isImuDatagram((char *)receiveBuffer,actual_length))
-    {
-      int errorCode = ExitSuccess;
-      if (scanImu.isImuAckDatagram((char *)receiveBuffer,actual_length))
-      {
+         static SickScanImu scanImu(this); // todo remove static
+         if (scanImu.isImuDatagram((char *)receiveBuffer,actual_length))
+             {
+                int errorCode = ExitSuccess;
+                if (scanImu.isImuAckDatagram((char *)receiveBuffer,actual_length))
+                {
 
-      }
-      else
-      {
+                }
+                else
+                {
         // parse radar telegram and send pointcloud2-debug messages
-        errorCode = scanImu.parseDatagram(recvTimeStamp, (unsigned char *) receiveBuffer, actual_length,
+                   errorCode = scanImu.parseDatagram(recvTimeStamp, (unsigned char *) receiveBuffer, actual_length,
                                           useBinaryProtocol);
 
-      }
-      return errorCode; // return success to continue looping
+                }
+                return errorCode; // return success to continue looping
 
 
     }
@@ -2785,11 +2830,17 @@ namespace sick_scan
 					{
 						const int numChannels = 4; // x y z i (for intensity)
 
+						bool fireEveryLayer = false; // if true, every layer will be fired.fireEveryLayer
+						int  numTmpLayer = numOfLayers;
+						if (fireEveryLayer)
+                        {
+						    numTmpLayer = 1; // fire every layer ...
+						}
 
 						cloud_.header.stamp = recvTimeStamp;
 						cloud_.header.frame_id = config_.frame_id;
 						cloud_.header.seq = 0;
-						cloud_.height = numOfLayers * numValidEchos; // due to multi echo multiplied by num. of layers
+						cloud_.height = numTmpLayer * numValidEchos; // due to multi echo multiplied by num. of layers
 						cloud_.width = msg.ranges.size();
 						cloud_.is_bigendian = false;
 						cloud_.is_dense = true;
@@ -2867,8 +2918,17 @@ namespace sick_scan
 
 								//	cloud_.points[(layer - baseLayer) * msg.ranges.size() + i] = point;
 
-								long adroff = i * (numChannels * (int)sizeof(float)) + (layer - baseLayer) * cloud_.row_step;
-								adroff += iEcho * cloud_.row_step * numOfLayers;
+								long adroff = i * (numChannels * (int)sizeof(float));
+								if (fireEveryLayer)
+                                {
+
+                                }
+                                else
+                                {
+                                    adroff += (layer - baseLayer) * cloud_.row_step;
+                                }
+								adroff += iEcho * cloud_.row_step * numTmpLayer;
+
 								unsigned char *ptr = cloudDataPtr + adroff;
 
 								float intensity = 0.0;
@@ -2896,7 +2956,16 @@ namespace sick_scan
 
 						}
 						// if ( (msg.header.seq == 0) || (layerOff == 0)) // FIXEN!!!!
+						bool shallIFire = false;
+						if (fireEveryLayer)
+                        {
+						    shallIFire = true;
+                        }
 						if ((msg.header.seq == 0) || (msg.header.seq == 237))
+                        {
+						    shallIFire = true;
+                        }
+                        if (shallIFire) // shall i fire the signal???
 						{
 							// Following cases are interesting:
 							// LMS5xx: seq is always 0 -> publish every scan
@@ -2993,9 +3062,13 @@ namespace sick_scan
 		std::string keyWord2 = "sEN LMDscandata";
 		std::string keyWord3 = "sWN LMDscandatacfg";
 		std::string keyWord4 = "sWN SetActiveApplications";
-    std::string keyWord5 = "sEN IMUData";
+		std::string keyWord5 = "sEN IMUData";
+		std::string keyWord6 = "sWN EIIpAddr";
 
 		std::string cmdAscii = requestAscii;
+
+
+		
 		int copyUntilSpaceCnt = 2;
 		int spaceCnt = 0;
 		char hexStr[255] = { 0 };
@@ -3093,6 +3166,18 @@ namespace sick_scan
       bufferLen = 1;
     }
 
+    if (cmdAscii.find(keyWord6) != std::string::npos)
+    {
+      int adrPartArr[4];
+      int imuSetStatus = 0;
+      int keyWord6Len = keyWord6.length();
+      sscanf(requestAscii + keyWord6Len + 1, " %d %d %d %d", &(adrPartArr[0]), &(adrPartArr[1]), &(adrPartArr[2]), &(adrPartArr[3]) );
+      buffer[0] = (unsigned char)(0xFF & adrPartArr[0]);
+      buffer[1] = (unsigned char)(0xFF & adrPartArr[1]);
+      buffer[2] = (unsigned char)(0xFF & adrPartArr[2]);
+      buffer[3] = (unsigned char)(0xFF & adrPartArr[3]);
+      bufferLen = 4;
+    }
 		// copy base command string to buffer
 		bool switchDoBinaryData = false;
 		for (int i = 1; i <= (int)(msgLen); i++)  // STX DATA ETX --> 0 1 2
@@ -3140,6 +3225,14 @@ namespace sick_scan
 		unsigned char xorVal = 0x00;
 		xorVal = sick_crc8((unsigned char *)(&((*requestBinary)[8])), requestBinary->size() - 8);
 		requestBinary->push_back(xorVal);
+#if 0
+		for (int i = 0; i < requestBinary->size(); i++)
+		{
+			unsigned char c = (*requestBinary)[i];
+			printf("[%c]%02x ", (c < ' ') ? '.' : c, c) ;
+		}
+		printf("\n");
+#endif
 		return(0);
 
 	};
@@ -3186,7 +3279,36 @@ namespace sick_scan
 		return(retValue);
 	}
 
-	void SickScanCommon::setSensorIsRadar(bool _isRadar)
+
+
+    bool SickScanCommon::setNewIpAddress(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd)
+    {
+	    char szCmd[255];
+		bool result=false;
+	    std::array<unsigned char, 4>ipbytearray;
+        ipbytearray=ipNewIPAddr.to_bytes();
+        char ipcommand[255];
+
+        // Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+        // CMD_SET_PARTIAL_SCANDATA_CFG = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
+        const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_IP_ADDR].c_str();
+        sprintf(ipcommand, pcCmdMask, ipbytearray[0],ipbytearray[1],ipbytearray[2],ipbytearray[3] );
+        if (useBinaryCmd)
+        {
+            std::vector<unsigned char> reqBinary;
+            this->convertAscii2BinaryCmd(ipcommand, &reqBinary);
+            result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_IP_ADDR]);
+        }
+        else
+        {
+            std::vector<unsigned char> ipcomandReply;
+            result = sendSopasAndCheckAnswer(ipcommand, &ipcomandReply);
+        }
+	    return(result);
+    }
+
+
+    void SickScanCommon::setSensorIsRadar(bool _isRadar)
 	{
 		sensorIsRadar = _isRadar;
 	}
