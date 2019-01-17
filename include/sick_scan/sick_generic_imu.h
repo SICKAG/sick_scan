@@ -142,7 +142,7 @@ namespace sick_scan
           int parseDatagram(ros::Time timeStamp, unsigned char *receiveBuffer, int actual_length, bool useBinaryProtocol);
           int parseAsciiDatagram(char* datagram, size_t datagram_length, SickScanImuValue *imValuePtr);
           int parseBinaryDatagram(char* datagram, size_t datagram_length, SickScanImuValue *imValuePtr);
-          static void ImuParserTest();
+          static void imuParserTest();
           double simpleFmodTwoPi(double angle);
       private:
           SoftwarePLL imuSoftwarePLL;

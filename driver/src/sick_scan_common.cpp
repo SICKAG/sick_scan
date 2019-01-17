@@ -698,7 +698,6 @@ namespace sick_scan
 		sopasCmdVec[CMD_DEVICE_IDENT_LEGACY] = "\x02sRI 0\x03\0";
 		sopasCmdVec[CMD_DEVICE_IDENT] = "\x02sRN DeviceIdent\x03\0";
 		sopasCmdVec[CMD_REBOOT] = "\x02sMN mSCreboot\x03";
-		sopasCmdVec[CMD_SET_IP_ADDR] = "\x02sWN EIIpAddr\x03";//dummy call needs param see sopasCmdMaskVec[CMD_SET_IP_ADDR]
 		sopasCmdVec[CMD_WRITE_EEPROM] ="\x02sMN mEEwriteall\x03";
 		sopasCmdVec[CMD_SERIAL_NUMBER] = "\x02sRN SerialNumber\x03\0";
 		sopasCmdVec[CMD_FIRMWARE_VERSION] = "\x02sRN FirmwareVersion\x03\0";
@@ -741,8 +740,8 @@ namespace sick_scan
 		sopasCmdVec[CMD_GET_PARTIAL_SCANDATA_CFG] = "\x02sRN LMDscandatacfg\x03";
 		sopasCmdVec[CMD_SET_TO_COLA_B_PROTOCOL] = "\x02sWN EIHstCola 1\x03";
 
-    sopasCmdVec[CMD_STOP_IMU_DATA] = "\x02sEN IMUData 0\x03";
-    sopasCmdVec[CMD_START_IMU_DATA] = "\x02sEN IMUData 1\x03";
+    sopasCmdVec[CMD_STOP_IMU_DATA] = "\x02sEN InertialMeasurementUnit 0\x03";
+    sopasCmdVec[CMD_START_IMU_DATA] = "\x02sEN InertialMeasurementUnit 1\x03";
 
 		// defining cmd mask for cmds with variable input
 		sopasCmdMaskVec[CMD_SET_PARTICLE_FILTER] = "\x02sWN LFPparticle %d %d\x03";
@@ -944,6 +943,7 @@ namespace sick_scan
 		int    angleStart10000th = 0;
 		int    angleEnd10000th = 0;
 
+
 		// Mainloop for initial SOPAS cmd-Handling
 		//
 		// To add new commands do the followings:
@@ -1035,6 +1035,8 @@ namespace sick_scan
 			//============================================
 			maxCmdLoop = 1;
 
+
+      // handle special configuration commands ...
 
 			switch (cmdId)
 			{
@@ -1311,17 +1313,15 @@ namespace sick_scan
 
 		}
 
+    if (setNewIPAddr)
+    {
 
-		// handle special configuration commands ...
+      setNewIpAddress(ipNewIPAddr,useBinaryCmd);
+      //rebootScanner();
+      return ExitSuccess;
+      //TODO fix ip recive error
 
-		if (setNewIPAddr)
-		{
-
-			setNewIpAddress(ipNewIPAddr,useBinaryCmdNow);
-			//TODO reboot scanner
-			//TODO restart node
-
-		}
+    }
 
 		if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
 		{
@@ -3068,7 +3068,7 @@ namespace sick_scan
 		std::string cmdAscii = requestAscii;
 
 
-		
+
 		int copyUntilSpaceCnt = 2;
 		int spaceCnt = 0;
 		char hexStr[255] = { 0 };
@@ -3288,9 +3288,6 @@ namespace sick_scan
 	    std::array<unsigned char, 4>ipbytearray;
         ipbytearray=ipNewIPAddr.to_bytes();
         char ipcommand[255];
-
-        // Uses sprintf-Mask to set bitencoded echos and rssi enable flag
-        // CMD_SET_PARTIAL_SCANDATA_CFG = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
         const char* pcCmdMask = sopasCmdMaskVec[CMD_SET_IP_ADDR].c_str();
         sprintf(ipcommand, pcCmdMask, ipbytearray[0],ipbytearray[1],ipbytearray[2],ipbytearray[3] );
         if (useBinaryCmd)
@@ -3298,11 +3295,16 @@ namespace sick_scan
             std::vector<unsigned char> reqBinary;
             this->convertAscii2BinaryCmd(ipcommand, &reqBinary);
             result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_IP_ADDR]);
+            this->convertAscii2BinaryCmd(ipcommand, &reqBinary);
+            result &= sendSopasAndCheckAnswer(sopasCmdMaskVec[CMD_REBOOT].c_str(), &sopasReplyBinVec[CMD_REBOOT]);
         }
         else
         {
             std::vector<unsigned char> ipcomandReply;
+            std::vector<unsigned char> resetReply;
+            std::string restartCmd = sopasCmdVec[CMD_REBOOT];
             result = sendSopasAndCheckAnswer(ipcommand, &ipcomandReply);
+            result &= sendSopasAndCheckAnswer(restartCmd,&resetReply);
         }
 	    return(result);
     }

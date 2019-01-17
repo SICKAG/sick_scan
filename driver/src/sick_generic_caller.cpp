@@ -122,6 +122,7 @@ int main(int argc, char **argv)
 	int argc_tmp;
 	std::string scannerName = "????";
 
+	sick_scan::SickScanImu::imuParserTest();
 
 	argc_tmp = argc;
 	argv_tmp = argv;

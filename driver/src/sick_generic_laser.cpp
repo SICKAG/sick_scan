@@ -228,6 +228,12 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
   {
     useTCP = true;
   }
+  bool changeIP = false;
+  std::string sNewIp;
+  if (nhPriv.getParam("new_IP_address", sNewIp))
+  {
+    changeIP = true;
+  }
   std::string port;
   nhPriv.param<std::string>("port", port, "2112");
 
@@ -330,6 +336,12 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
         signal(SIGINT, SIG_DFL); // change back to standard signal handler after initialising
         if (result == sick_scan::ExitSuccess) // OK -> loop again
         {
+          if(changeIP)
+          {
+            runState = scanner_finalize;
+          }
+
+
           runState = scanner_run; // after initialising switch to run state
         }
         else

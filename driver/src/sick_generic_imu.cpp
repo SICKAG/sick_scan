@@ -124,7 +124,7 @@ namespace sick_scan
     bool SickScanImu::isImuAckDatagram(char *datagram, size_t datagram_length)
     {
         bool isImuMsg = false;
-        std::string szKeyWord = "sEA IMUData";
+        std::string szKeyWord = "sEA InertialMeasurementUnit";
         std::string cmpKeyWord = "";
         int keyWordLen = szKeyWord.length();
         int posTrial[] = {0, 1, 8};
@@ -153,8 +153,16 @@ namespace sick_scan
     */
     bool SickScanImu::isImuBinaryDatagram(char *datagram, size_t datagram_length)
     {
+        /*
+         * sSN InertialM
+06b0  65 61 73 75 72 65 6d 65 6e 74 55 6e 69 74 20 be   easurementUnit .
+06c0  9d 86 2d bb 9c e9 44 41 1c 33 d6 bb 0b a1 6f 00   ..-...DA.3....o.
+06d0  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+06e0  00 00 00 3f 7f ec 00 3a 60 00 00 3c cd 00 00 39   ...?...:`..<...9
+06f0  a0 00 00 00 00 00 02 1c 7e 93 a8 23
+         */
         bool isImuMsg = false;
-        std::string szKeyWord = "sSN IMUData";
+        std::string szKeyWord = "sSN InertialMeasurementUnit";
         std::string cmpKeyWord = "";
         int keyWordLen = szKeyWord.length();
         if (datagram_length >= (keyWordLen + 8)) // 8 Bytes preheader
@@ -181,8 +189,10 @@ namespace sick_scan
     */
     int SickScanImu::parseBinaryDatagram(char *datagram, size_t datagram_length, SickScanImuValue *imuValue)
     {
+        static int cnt = 0;
+        cnt++;
         int iRet = 0;
-        float tmpArr[8] = {0};
+        float tmpArr[13] = {0};
         uint32_t timeStamp;
         unsigned char *receiveBuffer = (unsigned char *) datagram;
         if (false == isImuBinaryDatagram(datagram, datagram_length))
@@ -192,48 +202,48 @@ namespace sick_scan
 
         unsigned char *bufPtr = (unsigned char *) datagram;
 
-        memcpy(&timeStamp, receiveBuffer + 20, 4);
+        memcpy(&timeStamp, receiveBuffer + 36 + 13 * 4, 4);
         swap_endian((unsigned char *) &timeStamp, 4);
-        int adrOffset = 24;
-        for (int i = 0; i < 8; i++)
+        int adrOffset = 36;
+        for (int i = 0; i < 13; i++)
         {
             memcpy(&(tmpArr[i]), receiveBuffer + adrOffset, 4);
             swap_endian((unsigned char *) (&(tmpArr[i])), 4);
             adrOffset += 4;
+
+            if ((cnt % 10) == 0)
+            {
+                if (i == 0)
+                {
+                    printf("===================\n");
+                }
+                printf("%2d: %8.6f\n", i, tmpArr[i]);
+            }
         }
-
-        double angleVelMultiplier = 128.0;
-        imuValue->TimeStamp(timeStamp);
-
-        imuValue->QuaternionX(tmpArr[0]);
-        imuValue->QuaternionY(tmpArr[1]);
-        imuValue->QuaternionZ(tmpArr[2]);
-        imuValue->QuaternionW(tmpArr[3]);  // w is first element
-
-        imuValue->QuaternionAccuracy(tmpArr[4]);
-
-        imuValue->AngularVelocityX(angleVelMultiplier * tmpArr[5]);
-        imuValue->AngularVelocityY(angleVelMultiplier * tmpArr[6]);
-        imuValue->AngularVelocityZ(angleVelMultiplier * tmpArr[7]);
-
-
-        uint8_t val = receiveBuffer[adrOffset];
-        adrOffset++;
-        imuValue->AngularVelocityReliability((UINT16) val);
-        for (int i = 0; i < 3; i++)
-        {
-            memcpy(&(tmpArr[i]), receiveBuffer + adrOffset, 4);
-            swap_endian((unsigned char *) (&(tmpArr[i])), 4);
-            adrOffset += 4;
-        }
-
 
         imuValue->LinearAccelerationX(tmpArr[0]);
         imuValue->LinearAccelerationY(tmpArr[1]);
         imuValue->LinearAccelerationZ(tmpArr[2]);
 
 
-        val = receiveBuffer[adrOffset];
+        double angleVelMultiplier = 1.0;
+        imuValue->AngularVelocityX(angleVelMultiplier * tmpArr[3]);
+        imuValue->AngularVelocityY(angleVelMultiplier * tmpArr[4]);
+        imuValue->AngularVelocityZ(angleVelMultiplier * tmpArr[5]);
+
+        imuValue->TimeStamp(timeStamp);
+
+
+        imuValue->QuaternionW(tmpArr[9]);  // w is first element
+        imuValue->QuaternionX(tmpArr[10]);
+        imuValue->QuaternionY(tmpArr[12]);
+        imuValue->QuaternionZ(tmpArr[12]);
+
+        imuValue->QuaternionAccuracy(0.0); // not used tmpArr[4]);
+
+
+        uint8_t val = 0x00;
+        imuValue->AngularVelocityReliability((UINT16) val);
         imuValue->LinearAccelerationReliability((UINT16) val);
         return (iRet);
     }
@@ -247,7 +257,7 @@ namespace sick_scan
     bool SickScanImu::isImuAsciiDatagram(char *datagram, size_t datagram_length)
     {
         bool isImuMsg = false;
-        std::string szKeyWord = "sSN IMUData";
+        std::string szKeyWord = "sSN InertialMeasurementUnit";
         int keyWordLen = szKeyWord.length();
         if (datagram_length >= keyWordLen)
         {
@@ -409,7 +419,7 @@ namespace sick_scan
         return (0);
     }
 
-    void imuParserTest()
+    void SickScanImu::imuParserTest()
     {
         sick_scan::SickScanImu scanImu(NULL);
         sick_scan::SickScanImuValue imuValue;
@@ -418,26 +428,35 @@ namespace sick_scan
         //                                    55570143 0.9998779 -0.0057373047 0.016174316  0.0 0.0 0.002130192             -0.31136206 -0.10777917 9.823472
         std::string imuTestStr = "sSN IMUData 34FEEDF 3F7FF800 BBBC0000 3C848000 00000000 00000000 00000000 3B0B9AB1 00000000 3 BE9F6AD9 BDDCBB53 411D2CF1 0";
         const char imuTestBinStr[] =
-                "\x02\x02\x02\x02\x00\x00\x00\x3E"  // 8 Byte Header
-                "\x73\x53\x4E\x20\x49\x4D\x55\x44\x61\x74\x61"  // 11 Byte Keyword
-                "\x20" // 1 Byte Space
-                "\x26\x9E\x05\xEB"  // Offset: 20 Timestamp
-                "\x3F\x7F\xF4\x00"
-                "\xBB\x60\x00\x00"
-                "\x3C\xA2\x80\x00"
-                "\x39\x40\x00\x00"
 
-                "\x00\x00\x00\x00" // Start-Offset 40
+/*
+ *      02 02 02 02 00 00   ................
+        0640  00 58
+        73 53 4e 20 49 6e 65 72 74 69 61 6c 4d 65   .XsSN InertialMe
+        0650  61 73 75 72 65 6d 65 6e 74 55 6e 69 74 20 be a4   asurementUnit ..
+        0660  e1 1c 3b 6b 5d e5 41 1c 6e ad bb 0b a1 6f bb 0b   ..;k].A.n....o..
+        0670  a1 6f 00 00 00 00 00 00 00 00 00 00 00 00 00 00   .o..............
+        0680  00 00 3f 7f ec 00 3a 60 00 00 3c cd 00 00 39 a0   ..?...:`..<...9.
+        0690  00 00 00 00 00 02 1c 7e 6c 01 20
 
-                "\xBB\x0B\x9A\xB1" // Start-Offset 44
-                "\x3B\x0B\x9A\xB1"
-                "\xBA\x8B\x9A\xB1"
-                "\x03"             // Start-Offset 56
-                "\xBE\xD5\x5F\xC0" // Start-Offset 57
-                "\xBD\x89\x58\x1E"
-                "\x41\x1D\x8A\x24"
-                "\x00"
-                "\xBC";
+        56 Data Bytes + 2 Byte Timestamp + CRC
+        14 Float + 4 Byte CRC
+
+        3 Acceleratoin = 12 Bytes
+        3 AngularVelocity = 12
+        Magnetic Field = 12 Bytes
+        Orientatoin = 16 Bytes
+        TimeStamp = 4
+        Sum: 12 + 12 + 12 + 16 + 4 = 56 Bytes
+
+*/
+        "\x02\x02\x02\x02\x00\x00\x00\x58"  // 8 Byte Header
+        "\x73\x53\x4e\x20\x49\x6e\x65\x72\x74\x69\x61\x6c\x4d\x65"  //  Keyword
+        "\x61\x73\x75\x72\x65\x6d\x65\x6e\x74\x55\x6e\x69\x74\x20\xbe\xa4"
+        "\xe1\x1c\x3b\x6b\x5d\xe5\x41\x1c\x6e\xad\xbb\x0b\xa1\x6f\xbb\x0b"
+        "\xa1\x6f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        "\x00\x00\x3f\x7f\xec\x00\x3a\x60\x00\x00\x3c\xcd\x00\x00\x39\xa0"
+        "\x00\x00\x00\x00\x00\x02\x1c\x7e\x6c\x01\x20";
 
         char *datagramPtr = (char *) imuTestStr.c_str();
         int datagramLen = imuTestStr.size();
@@ -511,8 +530,9 @@ namespace sick_scan
 
         //  bool bRet = imuSoftwarePLL.getCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec,imuValue.TimeStamp());
 
-        bool bRet = imuSoftwarePLL.getSimpleCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec, imuValue.TimeStamp());
+        // bool bRet = imuSoftwarePLL.getSimpleCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec, imuValue.TimeStamp());
 
+        bool bRet = true; // TODO SoftwarePLL disabled
         timeStampSecCorBuffer[idx] = timeStamp.sec;
         timeStampNanoSecCorBuffer[idx] = timeStamp.nsec;
         timeStampValid[idx] = bRet ? 1 : 0;
