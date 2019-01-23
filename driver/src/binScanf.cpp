@@ -229,7 +229,7 @@ binVsscanf(const char *bufOrg, const char *s, va_list ap, int bufLen)
 	buf = bufOrg;
 	bufEnd = buf + bufLen;
 
-	count = noassign = width = lflag = 0;
+	count = noassign = width = lflag = base = 0;
 	// Parse Inputbuffer buf
 	while (*s && (buf < bufEnd))
 	{
