@@ -9,36 +9,37 @@
 - [Testing](#testing)
 - [Creators](#creators)
 
-This stack provides a ROS driver for the SICK series of laser scanners mentioned in the following list.
+This stack provides a ROS driver for the SICK laser and radar sensors mentioned in the following list.
 The SICK MRS6124 is a multi-layer, multi-echo 3D laser scanner that is geared
 towards rough outdoor environments. 
 
 ## Supported Hardware
 
-This driver should work with all of the following products. However, this driver is brand new (Feb 2018) 
-The migration with the master-branch of the already published sick_scan-driver (see github.com/SICKAG/sick_scan ) is in preparation
-and will be finished until end of March 2018. Since 22nd of February 2018 the new driver is a devel-branch of
-the already published driver.
+This driver should work with all of the following products.
 
-ROS Device Driver for Sick Laserscanner - supported scanner types: 
+ROS Device Driver for SICK laser and radar sensors - supported scanner types: 
+
 
 
 | **device name**    |  **part no.**                                                                                                                | **description**                                | **tested?**     |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|:---------------:|
-| MRS6124            | [6065086](https://www.sick.com/de/de/mess-und-detektionsloesungen/3d-lidar-sensoren/mrs6000/mrs6124r-131001/p/p533545)   | 24 layer (standard)                            | ✔ [stable]| 
-| MRS1104            | [1081208](https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044) | 4 layer                                        | ✔ [stable]|
-| LMS1104            | [unpublished] | 1 layer (based on MRS1104 technology) |  ✔ [experimental]|
-| TiM551             | [1060445](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)                 | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [stable]|
+| MRS6124            | [6065086](https://www.sick.com/de/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs6000/c/g448151)                         | 24 layer max. range: 200m, ang. resol. 0.13 [deg] hor., 0.0625 [deg] ver. | ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 10 Hz                       |                 |
+| MRS1104            | [1081208](https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044)         | 4 layer max. range: 64m, ang. resol. 0.25 [deg] hor., 2.50 [deg] ver.                                         | ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 50 Hz, 4x12.5 Hz            |                 |
+| LMS1104            | [1092445](https://www.sick.com/ag/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1000/c/g387151)                         | 1 layer max. range: 64m, ang. resol. 0.25 [deg] |  ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 150 Hz, 4x37.5 Hz   |                 |
+| TiM551             | [1060445](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim551-2050001/p/p343045)                 | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| TiM561             | [1071419](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)                 | 1 layer max. range: 10m, ang. resol. 0.33 [deg]| ✔ [stable]|
+| TiM561             | [1071419](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim561-2050101/p/p369446)                 | 1 layer max. range: 10m, ang. resol. 0.33 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| TiM571             | [1079742](https://www.sick.com/media/docs/9/29/229/Operating_instructions_TiM55x_TiM56x_TiM57x_de_IM0051229.PDF)                 | 1 layer max. range: 25m, ang. resol. 0.33 [deg]| ✔ [stable]|
+| TiM571             | [1079742](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim571-2050101/p/p412444)                 | 1 layer max. range: 25m, ang. resol. 0.33 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| LMS511-10100 PRO   | [1046135](https://www.sick.com/media/docs/4/14/514/Operating_instructions_LMS5xx_LASER_MEASUREMENT_SENSORS_en_IM0037514.PDF)     | 1 layer max. range: 80m, ang. resol. 0.167 [deg]| ✔ [stable]|
+| LMS511-10100 PRO   | [e.g. 1046135](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/lms5xx/c/g179651)     | 1 layer max. range: 80m, ang. resol. 0.167 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 100 Hz   |                 |
-| LMS1xx-Family      | [e.g. 1041114](https://www.sick.com/media/docs/1/31/331/Operating_instructions_LMS1xx_Laser_Measurement_Sensors_en_IM0031331.PDF)| 1 layer max. range: 28m, ang. resol. 0.25 [deg]| ✔ [stable]|
+| LMS1xx-Family      | [e.g. 1041114](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1xx/c/g91901) | 1 layer max. range: 28m, ang. resol. 0.25 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| RMS3xx             | [8021530](https://www.sick.com/media/docs/4/04/504/Operating_instructions_RMS3xx_en_IM0075504.PDF)| Radar Sensor | ✔ [experimental]|
+| RMS3xx             | [8021530](https://cdn.sick.com/media/docs/4/04/504/Operating_instructions_RMS3xx_en_IM0075504.PDF)| Radar Sensor | ✔ [stable]|
 |                    |                                                                                                   | Opening angle: +/- 50 [deg]   |                 |
 
 ## IMU Support
@@ -68,6 +69,19 @@ roslaunch sick_scan sick_lms_5xx.launch
 
 For RMS3xx-family:
 roslaunch sick_scan sick_rms_3xx.launch (under development)
+
+### Setting ip adresse for scanner
+
+To start the scanner with a specific IP address, the launch command can be used for most launch files as follows.
+The hostname is the ip-address of the scanner:
+
+```bash
+roslaunch <launch-file> hostname:=<ip-address>
+```
+e.g.
+```bash
+roslaunch sick_scan sick_tim_5xx.launch hostname:=192.168.0.71 
+```
 
 ### Start multiple Nodes
 
@@ -127,9 +141,9 @@ In the following instructions, replace `<rosdistro>` with the name of your ROS d
 
 ### From binaries
 
-The driver has not been released yet. But once that happens, you can install it directly by typing:
+The driver is released at longer intervals as a binary package and can therefore be installed via the package manager. To be able to use all new functions of the driver, the driver should be built from the sources published in this reposity:
 
-~~`sudo apt-get install ros-<rosdistro>-sick_scan`~~
+`sudo apt-get install ros-<rosdistro>-sick_scan`
 
 ### From source
 
@@ -139,7 +153,7 @@ mkdir -p ~/ros_catkin_ws/src/
 cd ~/ros_catkin_ws/src/
 git clone -b devel --single-branch git://github.com/SICKAG/sick_scan.git
 cd ..
-catkin_make
+catkin_make install
 source ~/ros_catkin_ws/install/setup.bash
 ```
 

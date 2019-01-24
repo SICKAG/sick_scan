@@ -34,12 +34,18 @@ stop_event = Event()
 
 rawData =[]
 
+def uniq(input):
+  output = []
+  for x in input:
+    if x not in output:
+      output.append(x)
+  return output
 
 def getScannerXML():
     global rawData
     sock = socket.socket(socket.AF_INET,  # Internet
                          socket.SOCK_DGRAM)  # UDP
-    sock.settimeout(ANSWERTIMEOUT - 9)
+    sock.settimeout(ANSWERTIMEOUT - 5)
     sock.bind((HOST, UDP_PORT))
     # broadcast rechte holen
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -58,7 +64,8 @@ def getScannerXML():
             break
             print("Wait time out 2")
 
-def getIpFromXmlData(DataList):
+def getIpFromXmlData(DataListInput):
+    DataList=uniq(DataListInput)
     for Data in DataList:
         if b"<?xml"  in Data:
             if (DEBUGMSGENABLED):
@@ -75,6 +82,7 @@ def getIpFromXmlData(DataList):
             DeviceType = "???"
             SerialNumber = "???"
             DHCPClientEnabled= "???"
+            FirmwareVersion= "????"
             for child in root:
                     k = child.attrib['key']
                     v = child.attrib['value']
@@ -90,7 +98,9 @@ def getIpFromXmlData(DataList):
                         SerialNumber=v
                     if (k=='DHCPClientEnabled'):
                         DHCPClientEnabled=v
-            print("Device type = "+DeviceType+" SN = "+SerialNumber+" IP = "+ipAddress+" IPMask = "+IPMask+" Gatway = "+IPGateway+" DHCPEnable = "+DHCPClientEnabled)
+                    if (k=='FirmwareVersion'):
+                        FirmwareVersion=v		   
+            print("Device type = "+DeviceType+" SN = "+SerialNumber+" IP = "+ipAddress+" IPMask = "+IPMask+" Gatway = "+IPGateway+" DHCPEnable = "+DHCPClientEnabled+"Firmwarevers.= "+FirmwareVersion)
 
 
 

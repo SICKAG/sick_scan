@@ -751,7 +751,7 @@ namespace sick_scan
 		sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES] = "\x02sWN LMPoutputRange 1 %X %X %X\x03";
 		sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 0 00 00 0 0 0 0 1\x03";
 		sopasCmdMaskVec[CMD_SET_ECHO_FILTER] = "\x02sWN FREchoFilter %d\x03";
-        sopasCmdMaskVec[CMD_SET_IP_ADDR] = "\x02sWN EIIpAddr %02X %02X %02X %02X\x03";
+		sopasCmdMaskVec[CMD_SET_IP_ADDR] = "\x02sWN EIIpAddr %02X %02X %02X %02X\x03";
 		sopasCmdMaskVec[CMD_SET_GATEWAY] = "\x02sWN EIgate %02X %02X %02X %02X\x03";
 		//error Messages
 		sopasCmdErrMsg[CMD_DEVICE_IDENT_LEGACY] = "Error reading device ident";
@@ -1317,10 +1317,9 @@ namespace sick_scan
     {
 
       setNewIpAddress(ipNewIPAddr,useBinaryCmd);
-      //rebootScanner();
-      return ExitSuccess;
-      //TODO fix ip recive error
-
+      ROS_INFO("IP address changed. Node restart required");
+      ROS_INFO("Exiting node NOW.");
+      exit(0);//stopping node hard to avoide further IP-Communication
     }
 
 		if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
@@ -3292,6 +3291,7 @@ namespace sick_scan
         sprintf(ipcommand, pcCmdMask, ipbytearray[0],ipbytearray[1],ipbytearray[2],ipbytearray[3] );
         if (useBinaryCmd)
         {
+          //sopasCmdMaskVec[CMD_SET_IP_ADDR] = "\x02sWN EIIpAddr %02X %02X %02X %02X\x03";
             std::vector<unsigned char> reqBinary;
             this->convertAscii2BinaryCmd(ipcommand, &reqBinary);
             result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_IP_ADDR]);
