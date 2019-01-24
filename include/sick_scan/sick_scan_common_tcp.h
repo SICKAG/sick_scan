@@ -86,6 +86,7 @@ public:
 
 		bool stopScanData();
 
+		int numberOfDatagramInInputFifo();
 	SopasEventMessage findFrameInReceiveBuffer();
 	void processFrame(ros::Time timeStamp, SopasEventMessage& frame);
 	// Queue<std::vector<unsigned char> > recvQueue;
@@ -118,7 +119,8 @@ public:
          * \param [in] isBinaryProtocol true=binary False=ASCII
          */
         virtual int
-        get_datagram(ros::Time& recvTimeStamp, unsigned char *receiveBuffer, int bufferSize, int *actual_length, bool isBinaryProtocol);
+        get_datagram(ros::Time &recvTimeStamp, unsigned char *receiveBuffer, int bufferSize, int *actual_length,
+                     bool isBinaryProtocol, int *numberOfRemainingFifoEntries);
 
         // Helpers for boost asio
         int readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read = 0,

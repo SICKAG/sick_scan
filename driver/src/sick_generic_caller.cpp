@@ -2,8 +2,8 @@
 * \file
 * \brief Laser Scanner Entry Point
 *
-* Copyright (C) 2018,2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
-* Copyright (C) 2018,2017, SICK AG, Waldkirch
+* Copyright (C) 2019,2018,2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
+* Copyright (C) 2019,2018,2017, SICK AG, Waldkirch
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -95,10 +95,11 @@
 // 001.002.008: IMU Parser structure added
 // 001.002.009: Application setting modified for MRS1104
 // 001.002.010: First version of IMU parser
-//
+// 001.002.011: Ip Address change added, bugfixing
+
 #define SICK_GENERIC_MAJOR_VER "001"
-#define SICK_GENERIC_MINOR_VER "002"  
-#define SICK_GENERIC_PATCH_LEVEL "010"
+#define SICK_GENERIC_MINOR_VER "002"
+#define SICK_GENERIC_PATCH_LEVEL "011"
 
 #include <algorithm> // for std::min
 

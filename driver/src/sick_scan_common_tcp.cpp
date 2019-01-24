@@ -613,6 +613,11 @@ namespace sick_scan
 	}
 
 
+	int SickScanCommonTcp::numberOfDatagramInInputFifo()
+  {
+    this->recvQueue.getNumberOfEntriesInQueue();
+  }
+
 	int SickScanCommonTcp::readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read, bool *exception_occured, bool isBinary)
 	{
 		// Set up the deadline to the proper timeout, error and delimiters
@@ -626,7 +631,7 @@ namespace sick_scan
 
 		int numBytes = 0;
 		// Polling - should be changed to condition variable in the future
-		int waitingTimeInMs = 10;
+		int waitingTimeInMs = 1; // try to lookup for new incoming packages
 		int i;
 		for (i = 0; i < timeout_ms; i += waitingTimeInMs)
 		{
@@ -768,8 +773,13 @@ namespace sick_scan
 	}
 
 
-	int SickScanCommonTcp::get_datagram(ros::Time& recvTimeStamp, unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol)
+	int SickScanCommonTcp::get_datagram(ros::Time &recvTimeStamp, unsigned char *receiveBuffer, int bufferSize, int *actual_length,
+                                        bool isBinaryProtocol, int *numberOfRemainingFifoEntries)
 	{
+    if (NULL != numberOfRemainingFifoEntries)
+    {
+      *numberOfRemainingFifoEntries = 0;
+    }
 		this->setReplyMode(1);
 
     if (this->getEmulSensor())
@@ -802,7 +812,14 @@ namespace sick_scan
 		  }
 		  else
 		  {
+		  	// Look into receiving queue for new Datagrams
+		  	//
+		  	//
         DatagramWithTimeStamp datagramWithTimeStamp = this->recvQueue.pop();
+        if (NULL != numberOfRemainingFifoEntries)
+        {
+          *numberOfRemainingFifoEntries = this->recvQueue.getNumberOfEntriesInQueue();
+        }
         recvTimeStamp = datagramWithTimeStamp.timeStamp;
 			  dataBuffer = datagramWithTimeStamp.datagram;
 

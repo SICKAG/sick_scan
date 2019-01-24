@@ -233,7 +233,8 @@ namespace sick_scan
 		 * \param [out] actual_length the actual amount of data written
 		 * \param [in] isBinaryProtocol used Communication protocol True=Binary false=ASCII
 		 */
-		virtual int get_datagram( ros::Time& recvTimeStamp, unsigned char* receiveBuffer, int bufferSize, int* actual_length, bool isBinaryProtocol) = 0;
+		virtual int get_datagram(ros::Time &recvTimeStamp, unsigned char *receiveBuffer, int bufferSize, int *actual_length,
+                             bool isBinaryProtocol, int *numberOfRemainingFifoEntries) = 0;
 
 		/// Converts reply from sendSOPASCommand to string
 		/**

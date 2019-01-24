@@ -2120,7 +2120,18 @@ namespace sick_scan
 		// tcp packet
 		ros::Time recvTimeStampPush = ros::Time::now();  // timestamp
 
-		int result = get_datagram(recvTimeStamp, receiveBuffer, 65536, &actual_length, useBinaryProtocol);
+		/*
+		 * Try to get datagram
+		 *
+		 *
+		 */
+
+
+    int packetsInLoop = 0;
+
+    
+
+		int result = get_datagram(recvTimeStamp, receiveBuffer, 65536, &actual_length, useBinaryProtocol, &packetsInLoop);
 
 		ros::Duration dur = recvTimeStampPush - recvTimeStamp;
 
@@ -2987,9 +2998,9 @@ namespace sick_scan
 				buffer_pos = dend + 1;
 			} // end of while loop
 
-			return ExitSuccess; // return success to continue looping
-		}
-	}
+      return ExitSuccess; // return success to continue looping
+    }
+  }
 
 
 	/*!

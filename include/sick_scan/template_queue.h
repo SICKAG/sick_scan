@@ -8,8 +8,24 @@
 #include <iostream>
 template <typename T>
 class Queue
-    {
+{
 public:
+
+  /*!
+  \brief get number of entries in queue
+  \return Number of entries in queue
+  \sa isQueueEmpty()
+  */
+  int getNumberOfEntriesInQueue()
+  {
+    int retVal = 0;
+    boost::mutex::scoped_lock mlock(mutex_);
+    retVal = queue_.size();
+    return(retVal);
+  }
+
+
+
 	bool isQueueEmpty()
 	{
 		bool retVal = false;
