@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!-- LAUNCH FILE                                     -->
+<!-- SCANNER: MRS1104 and similiar                   -->
+<!-- Call:  roslaunch sick_scan sick_mrs_1xxx.launch -->
+<!-- start and stop angle is given in [rad] in the ROS coordinate sstem-->
+<!--
+default min_angle for this scanner type is  -137.5 degree.
+default max_angle for this scanner type is +137.5 degree.
+-->
+<launch>
+    <arg name="hostname" default="192.168.0.1" />
+    <arg name="cloud_topic" default="cloud" />
+    <arg name="frame_id" default="cloud" />
+    <!-- robot_description and robot_state_publisher is prepared but final STL-model is missing -->
+    <param name="robot_description" command="$(find xacro)/xacro.py '$(find sick_scan)/urdf/example.urdf.xacro'" />
+    <node name="sick_mrs_1xxx" pkg="sick_scan" type="sick_generic_caller" respawn="false" output="screen">
+        <!-- default values: -->
+        <!-- Value interpretation of "filter_echos": 0 = First Echo, 1 = All Echos, 2 = Last Echo (see "sWN FREchoFilter") -->
+        <!--
+          <param name="scanner_type" type="string" value="sick_mrs_1xxx"
+          <param name="filter_echos" type="int" value="1" />
+          <param name="intensity" type="bool" value="True" />
+          <param name="skip" type="int" value="0" />
+          <param name="frame_id" type="str" value="laser" />
+          <param name="time_offset" type="double" value="-0.001" />
+          <param name="publish_datagram" type="bool" value="False" />
+          <param name="subscribe_datagram" type="bool" value="false" />
+          <param name="device_number" type="int" value="0" />
+          <param name="range_min" type="double" value="0.05" />
+          <param name="range_max" type="double" value="100.0" />
+        -->
+        <param name="filter_echos" type="int" value="0" />
+        <param name="scanner_type" type="string" value="sick_mrs_1xxx"/>
+        <param name="min_ang" type="double" value="-2.3998277" />
+        <param name="max_ang" type="double" value="+2.3998277" />
+        <param name="intensity_resolution_16bit" type="bool" value="False" />
+        <param name="hostname" type="string" value="$(arg hostname)" />
+        <param name="port" type="string" value="2112" />
+        <param name="timelimit" type="int" value="5" />
+        <param name="imu_enable" type="bool" value="True" />
+        <param name="imu_enable_additional_info" type="bool" value="False" />
+        <param name="cloud_topic" type="string" value="$(arg cloud_topic)"/>
+        <param name="frame_id" type="str" value="$(arg frame_id)" />
+
+    </node>
+</launch>

@@ -73,16 +73,37 @@
 #include <sick_scan/sick_scan_common_tcp.h>
 
 #include <sick_scan/sick_generic_parser.h>
-
+#include <sick_scan/sick_generic_laser.h>
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
 #define _USE_MATH_DEFINES
 
 #include <math.h>
-#include "string"
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
+
+static bool isInitialized = false;
+static sick_scan::SickScanCommonTcp *s = NULL;
+static std::string versionInfo = "???";
+
+void setVersionInfo(std::string _versionInfo)
+{
+  versionInfo = _versionInfo;
+}
+
+std::string getVersionInfo()
+{
+
+  return(versionInfo);
+}
+
+enum NodeRunState { scanner_init, scanner_run, scanner_finalize };
+
+NodeRunState runState = scanner_init;  //
+
 
 /*!
 \brief splitting expressions like <tag>:=<value> into <tag> and <value>
@@ -112,6 +133,25 @@ bool getTagVal(std::string tagVal, std::string &tag, std::string &val)
   return (ret);
   }
 
+
+void my_handler(int signalRecv)
+{
+  ROS_INFO("Caught signal %d\n",signalRecv);
+  ROS_INFO("good bye");
+  ROS_INFO("You are leaving the following version of this node:");
+  ROS_INFO("%s", getVersionInfo().c_str());
+  if (s != NULL)
+  {
+    if (isInitialized)
+    {
+      s->stopScanData();
+    }
+
+    runState = scanner_finalize;
+  }
+  ros::shutdown();
+}
+
 /*!
 \brief Internal Startup routine.
 \param argc: Number of Arguments
@@ -124,6 +164,7 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
   {
   std::string tag;
   std::string val;
+
 
   bool doInternalDebug = false;
   bool emulSensor = false;
@@ -153,8 +194,11 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
     }
   }
 
-  ros::init(argc, argv, nodeName);  // scannerName holds the node-name
+  ros::init(argc, argv, nodeName, ros::init_options::NoSigintHandler);  // scannerName holds the node-name
+  signal (SIGINT,my_handler);
+
   ros::NodeHandle nhPriv("~");
+
 
   std::string scannerName;
   if (false == nhPriv.getParam("scanner_type", scannerName))
@@ -170,6 +214,10 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 #ifdef _MSC_VER
     nhPriv.setParam("name", scannerName);
     rossimu_settings(nhPriv);  // just for tiny simulations under Visual C++
+#else
+    nhPriv.setParam("hostname", "192.168.0.4");
+    nhPriv.setParam("imu_enable", true);
+    nhPriv.setParam("cloud_topic","pt_cloud");
 #endif
   }
 
@@ -179,6 +227,12 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
   if (nhPriv.getParam("hostname", hostname))
   {
     useTCP = true;
+  }
+  bool changeIP = false;
+  std::string sNewIp;
+  if (nhPriv.getParam("new_IP_address", sNewIp))
+  {
+    changeIP = true;
   }
   std::string port;
   nhPriv.param<std::string>("port", port, "2112");
@@ -250,22 +304,17 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
     colaDialectId = 'A';
   }
 
-  sick_scan::SickScanCommonTcp *s = NULL;
 
   int result = sick_scan::ExitError;
 
   sick_scan::SickScanConfig cfg;
 
-
-  enum NodeRunState { scanner_init, scanner_run, scanner_finalize };
-
-  NodeRunState runState = scanner_init;  //
   while (ros::ok())
   {
     switch(runState)
     {
       case scanner_init:
-        ROS_INFO("Start initialising scanner ...");
+        ROS_INFO("Start initialising scanner [Ip: %s] [Port: %s]", hostname.c_str(), port.c_str());
         // attempt to connect/reconnect
         delete s;  // disconnect scanner
         if (useTCP)
@@ -283,7 +332,23 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
         }
         result = s->init();
 
-        runState = scanner_run; // after initialising switch to run state
+        isInitialized = true;
+        signal(SIGINT, SIG_DFL); // change back to standard signal handler after initialising
+        if (result == sick_scan::ExitSuccess) // OK -> loop again
+        {
+          if(changeIP)
+          {
+            runState = scanner_finalize;
+          }
+
+
+          runState = scanner_run; // after initialising switch to run state
+        }
+        else
+        {
+          runState = scanner_init; // If there was an error, try to restart scanner
+
+        }
         break;
 
       case scanner_run:
@@ -303,9 +368,14 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
         break;
     }
   }
-
-  delete s; // close connnect
-  delete parser; // close parser
+  if (s != NULL)
+  {
+    delete s; // close connnect
+  }
+  if (parser != NULL)
+  {
+    delete parser; // close parser
+  }
   return result;
 
   }

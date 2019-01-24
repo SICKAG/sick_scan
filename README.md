@@ -42,6 +42,9 @@ ROS Device Driver for SICK laser and radar sensors - supported scanner types:
 | RMS3xx             | [8021530](https://cdn.sick.com/media/docs/4/04/504/Operating_instructions_RMS3xx_en_IM0075504.PDF)| Radar Sensor | ✔ [stable]|
 |                    |                                                                                                   | Opening angle: +/- 50 [deg]   |                 |
 
+## IMU Support
+Devices of the MRS6xxx and MRS1xxx series will in future (2019) be available with an optionally built-in IMU. 
+Further information on the implementation and use of the experimental Imu support can be found on the [Imu page](doc/IMU.md).
 ##  Start Node
 
 Use the following command to start ROS node:

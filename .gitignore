@@ -28,10 +28,6 @@ test/sick_scan_test_tim_5xx_res\.xml
 launch/sick_tim_5xx_test\.launch
 
 html/
-html/
-html/
-html/
-html/
 
 \.#html_step3\.sh
 
@@ -46,3 +42,44 @@ test/tmp/
 *.7z
 
 *.res
+
+test/demo_roscon/
+
+CMakeFiles/bond_generate_messages_py\.dir/
+
+CMakeFiles/clean_test_results\.dir/
+
+CMakeFiles/
+
+gtest/googlemock/
+
+gtest/
+
+devel/
+
+cmake/
+
+catkin_generated/
+
+cmake_install\.cmake
+
+CMakeCache\.txt
+
+sick_scan\.cbp
+
+Makefile
+
+setup_custom_pythonpath\.sh
+
+CTestTestfile\.cmake
+
+tools/imu_tester/venv/
+
+tools/imu_tester/imutimestampsmu+2sigma.png
+
+tools/imu_tester/.idea
+
+tools/sick_generic_device_finder/venv
+
+tools/sick_generic_device_finder/.idea
+

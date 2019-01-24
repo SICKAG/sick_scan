@@ -73,6 +73,7 @@
 #include <string.h>
 
 #include "sick_scan/sick_generic_laser.h"
+#include "sick_scan/sick_generic_imu.h"
 #include "sick_scan/binScanf.hpp"
 #include "sick_scan/binPrintf.hpp"
 
@@ -89,14 +90,20 @@
 // 001.002.003: MRS1xxx/LMS1xxx - support of hector_slam integrated
 // 001.002.004: RMS3xx - profiling and radar support optimized
 // 001.002.005: Startup process changed to state machine
+// 001.002.006: Signal handler for ctrl-c added
+// 001.002.007: Fix for multi echo handling with lookup table
+// 001.002.008: IMU Parser structure added
+// 001.002.009: Application setting modified for MRS1104
+// 001.002.010: First version of IMU parser
 //
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "002"  
-#define SICK_GENERIC_PATCH_LEVEL "005"
+#define SICK_GENERIC_PATCH_LEVEL "010"
 
 #include <algorithm> // for std::min
 
 
+std::string getVersionInfo();
 /*!
 \brief Startup routine - if called with no argmuments we assume debug session.
        Set scanner name variable by parsing for "__name:=". This will be changed in the future
@@ -115,6 +122,7 @@ int main(int argc, char **argv)
 	int argc_tmp;
 	std::string scannerName = "????";
 
+	sick_scan::SickScanImu::imuParserTest();
 
 	argc_tmp = argc;
 	argv_tmp = argv;
@@ -133,7 +141,7 @@ int main(int argc, char **argv)
 		strcpy(logTagVal, "__log:=/tmp/tmp.log");
 		strcpy(internalDebugTagVal, "__internalDebug:=1");
 		// strcpy(sensorEmulVal, "__emulSensor:=1");
-    strcpy(sensorEmulVal, "__emulSensor:=0");
+        strcpy(sensorEmulVal, "__emulSensor:=0");
 		argc_tmp = 5;
 		argv_tmp = (char **)malloc(sizeof(char *) * argc_tmp);
 
@@ -144,7 +152,14 @@ int main(int argc, char **argv)
 		argv_tmp[4] = sensorEmulVal;
 
 	}
-    ROS_INFO("sick_generic_caller V. %s.%s.%s", SICK_GENERIC_MAJOR_VER, SICK_GENERIC_MINOR_VER, SICK_GENERIC_PATCH_LEVEL);
+  //
+	std::string versionInfo = "sick_generic_caller V. ";
+	versionInfo += std::string(SICK_GENERIC_MAJOR_VER) + '.';
+	versionInfo += std::string(SICK_GENERIC_MINOR_VER) + '.';
+	versionInfo += std::string(SICK_GENERIC_PATCH_LEVEL);
+
+	setVersionInfo(versionInfo);
+  ROS_INFO("%s", versionInfo.c_str());
 	for (int i = 0; i < argc_tmp; i++)
 	{
 		if (strstr(argv_tmp[i], nameId) == argv_tmp[i])

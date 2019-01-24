@@ -54,6 +54,85 @@ ros::Publisher pub_cloud;
 
 
 
+
+void normalize( float& angle )
+{
+    while ( angle < -M_PI ) angle += (2 * M_PI);
+    while ( angle >  M_PI ) angle -= (2 * M_PI);
+}
+
+bool isWithinRange( float testAngle, float a, float b )
+{
+    a -= testAngle;
+    b -= testAngle;
+    normalize( a );
+    normalize( b );
+    if ( a * b >= 0 )
+        return false; // lying on the same side
+    return fabs( a - b ) < M_PI;
+}
+
+
+
+/* check for both directions */
+bool checkForAngleInterval(float orgAngle, float* dstAngle, float mainAngle, float mainAngleTol)
+{
+   float tmpAngle;
+   bool bRet = isWithinRange(orgAngle, mainAngle - mainAngleTol, mainAngle + mainAngleTol);
+   if (bRet == true)
+   {
+       tmpAngle = mainAngle;
+       normalize(tmpAngle);
+       *dstAngle = tmpAngle;
+       return(bRet);
+   }
+   bRet = isWithinRange(orgAngle, M_PI + mainAngle - mainAngleTol, M_PI + mainAngle + mainAngleTol);
+   if (bRet == true)
+   {
+       tmpAngle = mainAngle + M_PI;
+       normalize(tmpAngle);
+       *dstAngle = tmpAngle;
+       return(bRet);
+
+   }
+
+
+
+   return(bRet);
+
+
+
+}
+
+bool checkForAngleIntervalTestbed()
+{
+    double testAngleArrDeg[] = {-161.0, -10.0, -20.0, -30.0, 330.0, 10.0, 20.0, 30.0, -160.0};
+
+    std::vector<double> testAngleArr;
+
+    for ( int i =0; i  < sizeof(testAngleArrDeg)/sizeof(testAngleArrDeg[0]); i++)
+    {
+        double tmpAngle = testAngleArrDeg[i] / 180.0 * M_PI;
+        testAngleArr.push_back(tmpAngle);
+    }
+
+
+    double mainAngle = 20.0/180.0 * M_PI;
+    double mainAngleTol = 30.0/180.0 * M_PI;
+    for (int i  = 0; i < testAngleArr.size(); i++)
+    {
+        float angle = testAngleArr[i];
+        float dstAngle;
+        bool bRet = checkForAngleInterval(angle, &dstAngle, mainAngle, mainAngleTol);
+
+        printf("Ergebnis: %2d %6.2lf %6.2lf %s\n", i, angle, dstAngle, bRet ? "JA" : "NEIN");
+    }
+
+
+}
+
+
+
 void callback(const sick_scan::RadarScan::ConstPtr &oa)
   {
   RadarObjectMarkerCfg *cfgPtr = &boost::serialization::singleton<RadarObjectMarkerCfg>::get_mutable_instance();
@@ -76,6 +155,9 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
     coordIdx[i] = -1;
   }
 
+
+  bool useCurrTimeStamp = true;
+  ros::Time  currTimeStamp = ros::Time::now();  // timestamp incoming package, will be overwritten by get_datagram
   for (int i = 0; i < oa->targets.fields.size(); i++)
   {
     std::string fieldName = oa->targets.fields[i].name;
@@ -109,6 +191,11 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
   if (numRawTargets > 0)
   {
     cloud_msg.header = oa->header;
+
+    if (useCurrTimeStamp)
+    {
+      cloud_msg.header.stamp = currTimeStamp;
+    }
 
     cloud_msg.height = oa->targets.height;
     cloud_msg.width  = oa->targets.width;
@@ -157,6 +244,12 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
     {
 
       rawTargetArray[iLoop].markers[i].header = oa->header;
+
+      if (useCurrTimeStamp)
+      {
+        rawTargetArray[iLoop].markers[i].header.stamp = currTimeStamp;
+      }
+
       rawTargetArray[iLoop].markers[i].ns = "rawtargets";
       rawTargetArray[iLoop].markers[i].id = tmpId + iLoop * numRawTargets;
       switch (iLoop)
@@ -240,7 +333,6 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
   {
     pub.publish(rawTargetArray[iLoop]);
   }
-#if 1
 
   /***********************************************************************
    *
@@ -252,21 +344,120 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
   visualization_msgs::MarkerArray object_boxes;
   object_boxes.markers.resize(2 * oa->objects.size());
 
+  visualization_msgs::MarkerArray object_labels;
+  object_labels.markers.resize(1 * oa->objects.size());
+
+  float vp_dir = 0.0;
+  float vp_dir_deg = 0.0;
+
+  double angleMainDirDeg = 20;
+  double angleMainDir = angleMainDirDeg / 180.0 * M_PI;
+  double angleMainDirTolDeg = 20.0;
+  double angleMainDirTol = angleMainDirTolDeg / 180.0 * M_PI;
+
+  std::vector<float> vehiclePredefinedDir;
+  std::vector<float> vehicleAbsoluteSpeed;
+  std::vector<bool>  vehicleIsInPredefinedDir;
+
+  int objNum = oa->objects.size();
+
+  vehiclePredefinedDir.resize(objNum);
+  vehicleIsInPredefinedDir.resize(objNum);  // flag arraw whether the vehicle drives in tihs dir. or not
+  vehicleAbsoluteSpeed.resize(objNum);
+
   for (int iLoop = 0; iLoop < 2; iLoop++)
   {
     for (size_t i = 0; i < oa->objects.size(); i++)
     {
+        int colorId = oa->objects[i].id % 256;
+        float vp[3];
+        vp[0] = oa->objects[i].velocity.twist.linear.x;
+        vp[1] = oa->objects[i].velocity.twist.linear.y;
+        vp[2] = oa->objects[i].velocity.twist.linear.z;
+        float vabs = sqrt(vp[0] * vp[0] + vp[1]*vp[1] + vp[2]*vp[2]);
+        vehicleAbsoluteSpeed[i] = vabs;
+        vp_dir = atan2(vp[1], vp[0]);
+        vp_dir_deg = vp_dir / 3.141592 * 180.0;
+        float dstAngle;
+
+        bool bRet = checkForAngleInterval(vp_dir, &dstAngle, angleMainDir, angleMainDirTol);
+        vehiclePredefinedDir[i] = dstAngle;
+        vehicleIsInPredefinedDir[i] = bRet;
+
       int idx = i + iLoop * oa->objects.size();
       int tmpId = i; // better: oa->objects[i].id;
       object_boxes.markers[idx].header = oa->header;
-      object_boxes.markers[idx].ns = "object_boxes";
+
+      if (useCurrTimeStamp)
+      {
+        object_boxes.markers[idx].header.stamp = currTimeStamp;
+      }
+      std::string nameSpaceBoxes = "object_boxes_slow";
+      if (vabs > 5.0)
+      {
+          nameSpaceBoxes = "object_boxes_fast";
+      }
+      object_boxes.markers[idx].ns = nameSpaceBoxes;
       object_boxes.markers[idx].id = tmpId + iLoop * oa->objects.size(); // i; // oa->objects[i].id;
       object_boxes.markers[idx].action = visualization_msgs::Marker::ADD;
       object_boxes.markers[idx].color.a = 0.75;
-      object_boxes.markers[idx].color.r = GLASBEY_LUT[tmpId * 3] / 255.0;
-      object_boxes.markers[idx].color.g = GLASBEY_LUT[tmpId * 3 + 1] / 255.0;
-      object_boxes.markers[idx].color.b = GLASBEY_LUT[tmpId * 3 + 2] / 255.0;
-      object_boxes.markers[idx].lifetime = ros::Duration(2.5);
+      object_boxes.markers[idx].color.r = GLASBEY_LUT[colorId * 3] / 255.0;
+      object_boxes.markers[idx].color.g = GLASBEY_LUT[colorId * 3 + 1] / 255.0;
+      object_boxes.markers[idx].color.b = GLASBEY_LUT[colorId * 3 + 2] / 255.0;
+      object_boxes.markers[idx].lifetime = ros::Duration(1.0);
+
+      if (iLoop == 0)
+      {
+          object_labels.markers[i].header = oa->header;
+          if (useCurrTimeStamp)
+          {
+              if (iLoop == 0) {
+                  object_labels.markers[i].header.stamp = currTimeStamp;
+              }
+          }
+
+          object_labels.markers[i].id = tmpId + iLoop * oa->objects.size(); // i; // oa->objects[i].id;
+          object_labels.markers[i].action = visualization_msgs::Marker::ADD;
+          object_labels.markers[i].color.a = 0.75;
+          object_labels.markers[i].color.r = GLASBEY_LUT[colorId * 3] / 255.0;
+          object_labels.markers[i].color.g = GLASBEY_LUT[colorId * 3 + 1] / 255.0;
+          object_labels.markers[i].color.b = GLASBEY_LUT[colorId * 3 + 2] / 255.0;
+          object_labels.markers[i].lifetime = ros::Duration(1.0);
+
+          object_labels.markers[i].type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+          object_labels.markers[i].pose = oa->objects[i].object_box_center.pose;
+          object_labels.markers[i].scale.z = 1.0;
+
+          {
+
+              char szLabel[255];
+              sprintf(szLabel,"%5.1lf [m/s]", vabs );
+
+              if (vabs > 10.0)
+              {
+              // printf("Dir: %8.3lf [deg]\n", vp_dir_deg);
+              }
+              std::string object_label_ns = "???";
+              if (vabs > 5.0) // 18 km/h
+              {
+                  object_label_ns = "object_label_fast";
+              }
+              else
+              {
+                  object_label_ns = "object_label_slow";
+
+              }
+              object_labels.markers[i].text = szLabel;
+              object_labels.markers[i].ns = object_label_ns;
+
+              if (vehicleIsInPredefinedDir[i] == false)
+              {
+                  object_labels.markers[i].scale.z = 0.00;
+              }
+          }
+
+
+      }
 
       /* object box center is the reference ...
        * */
@@ -283,6 +474,7 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
           break;
         case 1:
           object_boxes.markers[idx].type = visualization_msgs::Marker::ARROW;
+
           break;
       }
 
@@ -300,6 +492,32 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
           if (object_boxes.markers[idx].scale.z == 0.0)
           {
             object_boxes.markers[idx].scale.z = 0.01;
+          }
+
+          if (vehicleIsInPredefinedDir[i] == false) {
+              object_boxes.markers[idx].scale.x = 0.0;
+              object_boxes.markers[idx].scale.y = 0.0;
+              object_boxes.markers[idx].scale.z = 0.0;
+              object_boxes.markers[idx].lifetime = ros::Duration(0.001);
+          } else{
+
+
+              if (vehicleIsInPredefinedDir[i] == true)
+              {
+                  float theta = vehiclePredefinedDir[i];
+
+
+                  // Falls wir eine Zwangsrichtung einpraegen wollen, dann muessen wir es am besten hier tun.
+
+              // (n_x, n_y, n_z) = (0, 0, 1), so (x, y, z, w) = (0, 0, sin(theta/2), cos(theta/2)).
+              // see https://answers.ros.org/question/9772/quaternions-orientation-representation/
+                  float theta2 = 0.5  * theta;
+                  object_boxes.markers[idx].pose.orientation.z = sin(theta2);
+                  object_boxes.markers[idx].pose.orientation.w = cos(theta2);
+
+              }
+
+
           }
           break;
         case 1:
@@ -329,10 +547,18 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
           quaternion[2] = oa->objects[i].object_box_center.pose.orientation.z;
           quaternion[3] = oa->objects[i].object_box_center.pose.orientation.w;
 
+
+          // Falls wir eine Zwangsrichtung einpraegen wollen, dann muessen wir es am besten hier tun.
+
           // (n_x, n_y, n_z) = (0, 0, 1), so (x, y, z, w) = (0, 0, sin(theta/2), cos(theta/2)).
           // see https://answers.ros.org/question/9772/quaternions-orientation-representation/
           float theta2 = atan2(quaternion[2], quaternion[3]);
           float theta = 2.0f * theta2;
+          if (vehicleIsInPredefinedDir[i] == true)
+          {
+                theta = vehiclePredefinedDir[i];
+          }
+
           float cosVal = cos(theta);
           float sinVal = sin(theta);
           xTmp += cosVal * vehLen * 0.5;
@@ -372,9 +598,16 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
             lengthOfArrow = -objectArrowScale;  // if scale is negative take its absolute value as length of arrow in [m]
           }
           // lengthOfArrow = 5.0;
+
+          if (vehicleIsInPredefinedDir[i] == false) {
+              object_boxes.markers[idx].lifetime = ros::Duration(0.001);
+              lengthOfArrow = 0.0;
+          }
           object_boxes.markers[idx].points[1].x = 0.0 + lengthOfArrow * cosVal;
           object_boxes.markers[idx].points[1].y = 0.0 + lengthOfArrow * sinVal;
           object_boxes.markers[idx].points[1].z = 0.0;
+          // pub.publish(object_boxes);
+
         }
           break;
       }
@@ -383,13 +616,14 @@ void callback(const sick_scan::RadarScan::ConstPtr &oa)
     }
   }
   pub.publish(object_boxes);
-#endif
+  pub.publish(object_labels);
+
   }
 
 
   int main(int argc, char **argv)
-    {
-
+  {
+    // checkForAngleIntervalTestbed();
     ROS_INFO("radar_object_marker, compiled at [%s] [%s]", __DATE__, __TIME__);
     RadarObjectMarkerCfg *cfgPtr = &boost::serialization::singleton<RadarObjectMarkerCfg>::get_mutable_instance();
     ros::init(argc, argv, "radar_object_marker");

@@ -1,7 +1,23 @@
 ####################################################
 # CMakeLists.txt for project sick_scan
+#
+#
 ####################################################
 cmake_minimum_required(VERSION 2.8.3)
+
+
+macro(use_cxx11)
+	if (CMAKE_VERSION VERSION_LESS "3.1")
+		if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+			set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+		endif ()
+	else ()
+		set (CMAKE_CXX_STANDARD 11)
+	endif ()
+endmacro(use_cxx11)
+
+use_cxx11()
+
 project(sick_scan)
 
 # By uncommenting the following lines you can list all variable names ...
@@ -17,6 +33,12 @@ project(sick_scan)
 # the devel space instead of the build space
 # see: https://answers.ros.org/question/67244/qtcreator-with-catkin/
 
+
+
+# message(${CMAKE_BINARY_DIR})
+
+# set(CATKIN_DEVEL_PREFIX "${CMAKE_BINARY_DIR}/devel")
+# set(CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/devel;/opt/ros/melodic")
 
 
 find_package(catkin REQUIRED
@@ -39,16 +61,21 @@ find_package(PkgConfig REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS system)
 
-generate_dynamic_reconfigure_options(cfg/SickScan.cfg)
+generate_dynamic_reconfigure_options(
+		cfg/SickScan.cfg
+		cfg/tf_dyn.cfg
+)
 
 add_message_files(
+
 		FILES
+		SickImu.msg
 		RadarObject.msg
 		RadarPreHeaderDeviceBlock.msg
 		RadarPreHeaderMeasurementParam1Block.msg
 		RadarPreHeaderStatusBlock.msg
 		RadarPreHeaderEncoderBlock.msg
-        RadarPreHeader.msg
+		RadarPreHeader.msg
 		RadarScan.msg
 )
 
@@ -65,8 +92,7 @@ catkin_package(
         LIBRARIES sick_scan_lib
         INCLUDE_DIRS include )
 
-
-include_directories(include include/tinyxml ${catkin_INCLUDE_DIRS} )
+include_directories(include include/tinyxml ${catkin_INCLUDE_DIRS} include/sick_scan)
 
 add_library(sick_scan_lib
     driver/src/sick_scan_common.cpp
@@ -82,10 +108,17 @@ add_library(sick_scan_lib
 	driver/src/binScanf.cpp
 	driver/src/sick_scan_common_tcp.cpp
 	driver/src/sick_generic_radar.cpp
+	driver/src/sick_generic_imu.cpp
 	driver/src/sick_generic_parser.cpp
-	driver/src/sick_scan_common_nw.cpp)
+	driver/src/sick_scan_common_nw.cpp
+		include/sick_scan/sick_scan_config.h
+		driver/src/sick_scan_config.cpp
+		include/sick_scan/softwarePLL.h
+		driver/src/softwarePLL.cpp
+		)
 
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
 target_link_libraries(sick_scan_lib
     ${catkin_LIBRARIES})
 
@@ -105,6 +138,7 @@ target_link_libraries(radar_object_marker sick_scan_lib)
 #
 #
 #
+
 
 
 add_executable(pcl_converter tools/pcl_converter/src/pcl_converter.cpp tools/pcl_converter/src/gnuplotPaletteReader.cpp)
@@ -128,7 +162,26 @@ add_executable(sick_scan_test
 	driver/src/tinyxml/tinyxmlerror.cpp
 	driver/src/tinyxml/tinyxmlparser.cpp
 	)
-target_link_libraries(sick_scan_test sick_scan_lib)
+target_link_libraries(sick_scan_test
+        ${catkin_LIBRARIES}
+        ${roslib_LIBRARIES}
+        sick_scan_lib)
+
+#
+#  Sensor alignment tool
+#
+add_executable(sensor_alignment
+		tools/sensor_alignment/sensor_alignment_tf_dyn.cpp
+		)
+
+target_link_libraries(sensor_alignment
+		${catkin_LIBRARIES}
+		)
+add_dependencies(sensor_alignment ${PROJECT_NAME}_gencfg)
+
+# target_link_libraries(${PROJECT_NAME}_pointcloud2_refresh
+#		${catkin_LIBRARIES}
+#	)
 
 
 # Destinations:
