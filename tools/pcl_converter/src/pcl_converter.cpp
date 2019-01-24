@@ -311,7 +311,7 @@ cloud2image_cb(const sensor_msgs::PointCloud2ConstPtr &cloud)
             intensity = 0.0;
           }
           unsigned char r, g, b;
-          unsigned char grey;
+          unsigned char grey = 0;
           if (encodeIdx == 0)
           {
             grey = (unsigned char) intensity;

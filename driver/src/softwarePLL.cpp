@@ -322,6 +322,10 @@ bool SoftwarePLL::getDemoFileData(std::string fileName, std::vector<uint32_t>& t
 		}
     	lineCnt++;
     }
+    if (lineCnt <= 1)
+        return false;
+    else
+        return true;
 }
 
 void SoftwarePLL::testbed()
@@ -423,7 +427,7 @@ add_definitions(-D${PROJECT_NAME}_MAINTEST)
 MESSAGE( STATUS "CMKAKE for " ${PROJECT_NAME} )
 
 include_directories( inc)
-file( GLOB LIB_SOURCES src/*.cpp )
+file( GLOB LIB_SOURCES src/ *.cpp )
 
 if(WIN32)
 else()
