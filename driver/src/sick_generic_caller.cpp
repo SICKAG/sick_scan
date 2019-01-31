@@ -96,10 +96,11 @@
 // 001.002.009: Application setting modified for MRS1104
 // 001.002.010: First version of IMU parser
 // 001.002.011: Ip Address change added, bugfixing
+// 001.003.000: Jan 2019  relase 0.0.14
 
 #define SICK_GENERIC_MAJOR_VER "001"
-#define SICK_GENERIC_MINOR_VER "002"
-#define SICK_GENERIC_PATCH_LEVEL "011"
+#define SICK_GENERIC_MINOR_VER "003"
+#define SICK_GENERIC_PATCH_LEVEL "000"
 
 #include <algorithm> // for std::min
 
