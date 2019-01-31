@@ -63,7 +63,6 @@
 #endif
 
 #include <tf/tf.h>
-#include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose2D.h>
 
 #include "sensor_msgs/Imu.h"

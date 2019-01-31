@@ -8,11 +8,6 @@ If you are using a different IP address configuration on your host pc you have t
 ```ifconfig``` shows the broadcast adress for every network adapter.
 #Change IP addresses
 The IP addresses of the devices can be changed with a customized launch file.
-
-Changing the IP address currently has the following limitations and is only temporary:
- * a) It is only available in ASCII mode.
- * b) For security reasons, writing to the EEprom has not yet been activated. 
-
 The following launch sequence is an example:
  
 ```roslaunch sick_scan sick_new_ip.launch hostname:=192.168.0.1 new_IP:=192.168.0.100```

@@ -3,8 +3,8 @@
 * \brief Laser Scanner communication main routine
 *
 * Copyright (C) 2013, Osnabrück University
-* Copyright (C) 2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
-* Copyright (C) 2017, SICK AG, Waldkirch
+* Copyright (C) 2017-2019, Ing.-Buero Dr. Michael Lehning, Hildesheim
+* Copyright (C) 2017-2019, SICK AG, Waldkirch
 *
 * All rights reserved.
 *
@@ -108,6 +108,26 @@ void swap_endian(unsigned char *ptr, int numBytes)
   }
 }
 
+
+/*!
+ * <todo> doku.
+\brief Universal swapping function
+\param ptr: Pointer to datablock
+\param numBytes : size of variable in bytes
+*/
+
+std::vector<unsigned char> stringToVector(std::string s)
+{
+  std::vector<unsigned char> result;
+  for (int j = 0; j < s.length(); j++)
+  {
+    result.push_back(s[j]);
+  }
+  return result;
+
+}
+
+
 /*!
 \brief return diagnostic error code (small helper function)
 	   This small helper function was introduced to allow the compiling under Visual c++.
@@ -169,30 +189,135 @@ namespace sick_scan
   \param s: ASCII-Sopas command including 0x02 and 0x03
   \return Human readable string 0x02 and 0x02 are converted to "<STX>" and "<ETX>"
   */
-  std::string stripControl(std::string s)
+  std::string stripControl(std::vector<unsigned char> s)
   {
-    std::string dest;
-    for (int i = 0; i < s.length(); i++)
-    {
+    bool isParamBinary = false;
+    int spaceCnt = 0x00;
+    int  cnt0x02 = 0;
 
-      if (s[i] >= ' ')
+    for (int i = 0; i < s.size(); i++)
+    {
+      if (s[i] != 0x02)
       {
-        dest += s[i];
+        isParamBinary = false;
+
       }
       else
       {
-        switch (s[i])
+        cnt0x02++;
+      }
+      if (i > 4)
+      {
+        break;
+      }
+    }
+    if (4 == cnt0x02)
+    {
+      isParamBinary = true;
+    }
+    std::string dest;
+    if (isParamBinary == true)
+    {
+       int parseState = 0;
+
+       unsigned long lenId = 0x00;
+       char szDummy[255] = {0};
+       for (int i = 0; i < s.size(); i++)
+       {
+          switch(parseState)
+          {
+            case 0:
+              if (s[i] == 0x02)
+              {
+                dest += "<STX>";
+              }
+              else
+              {
+                dest += "?????";
+              }
+              if (i == 3)
+              {
+                parseState = 1;
+              }
+              break;
+            case 1:
+              lenId |= s[i] << (8 * (i-4));
+              if (i == 7)
+              {
+                sprintf(szDummy,"<Len=0x%04lu>", lenId);
+                dest += szDummy;
+                parseState = 2;
+              }
+              break;
+            case 2:
+            {
+              if (s[i] == ' ')
+              {
+                spaceCnt++;
+              }
+              if (spaceCnt == 2)
+              {
+                parseState = 3;
+              }
+              dest += s[i];
+              break;
+            }
+
+            case 3:
+            {
+              sprintf(szDummy, "0x%02x", s[i]);
+              dest += szDummy;
+
+              unsigned long dataProcessed = i - 8;
+              if (dataProcessed >= lenId)
+              {
+                parseState = 4;
+              }
+              break;
+            }
+            case 4:
+            {
+              if (s[i] == 0x03)
+                dest += "<ETX>";
+              else
+                dest += "???";
+              parseState = 5;
+              break;
+              case 5:
+                sprintf(szDummy, "CRC<0x%02x>", s[i]);
+              dest += szDummy;
+              break;
+            }
+
+          }
+       }
+    }
+    else
+    {
+      for (int i = 0; i < s.size(); i++)
+      {
+
+        if (s[i] >= ' ')
         {
-          case 0x02:
-            dest += "<STX>";
-            break;
-          case 0x03:
-            dest += "<ETX>";
-            break;
+          // <todo> >= 0x80
+          dest += s[i];
+        }
+        else
+        {
+          switch (s[i])
+          {
+            case 0x02:
+              dest += "<STX>";
+              break;
+            case 0x03:
+              dest += "<ETX>";
+              break;
+          }
         }
       }
     }
-    return (dest);
+
+    return(dest);
   }
 
   /*!
@@ -573,7 +698,7 @@ namespace sick_scan
     std::string errString;
     if (cmdId == -1)
     {
-      errString = "Error unexpected Sopas Answer for request " + stripControl(cmdStr);
+      errString = "Error unexpected Sopas Answer for request " + stripControl(requestStr);
     }
     else
     {
@@ -585,12 +710,13 @@ namespace sick_scan
     // send sopas cmd
 
     std::string reqStr = replyToString(requestStr);
-
-    ROS_INFO("Sending  : %s", stripControl(reqStr).c_str());
+    ROS_INFO("Sending  : %s", stripControl(requestStr).c_str());
     result = sendSOPASCommand(cmdStr.c_str(), reply, cmdLen);
     std::string replyStr = replyToString(*reply);
+    std::vector<unsigned char> replyVec;
     replyStr = "<STX>" + replyStr + "<ETX>";
-    ROS_INFO("Receiving: %s", stripControl(replyStr).c_str());
+    replyVec=stringToVector(replyStr);
+    ROS_INFO("Receiving: %s", stripControl(replyVec).c_str());
 
     if (result != 0)
     {
@@ -1000,7 +1126,13 @@ namespace sick_scan
       std::string sopasCmd = sopasCmdVec[cmdId];
       std::vector<unsigned char> replyDummy;
       std::vector<unsigned char> reqBinary;
-      ROS_DEBUG("Command: %s", stripControl(sopasCmd).c_str());
+
+      std::vector<unsigned char> sopasCmdVec;
+      for (int j = 0; j < sopasCmd.length(); j++)
+      {
+        sopasCmdVec.push_back(sopasCmd[j]);
+      }
+      ROS_DEBUG("Command: %s", stripControl(sopasCmdVec).c_str());
 
       // switch to either binary or ascii after switching the command mode
       // via ... command
@@ -1872,7 +2004,9 @@ namespace sick_scan
       std::string sopasCmd = sopasCmdVec[cmdId];
       std::vector<unsigned char> replyDummy;
       std::vector<unsigned char> reqBinary;
-      ROS_DEBUG("Command: %s", stripControl(sopasCmd).c_str());
+      std::vector<unsigned char> sopasVec;
+      sopasVec=stringToVector(sopasCmd);
+      ROS_DEBUG("Command: %s", stripControl(sopasVec).c_str());
       if (useBinaryCmd)
       {
         this->convertAscii2BinaryCmd(sopasCmd.c_str(), &reqBinary);
@@ -1940,7 +2074,9 @@ namespace sick_scan
             int deviceState = 0;
 
             std::vector<unsigned char> reqBinary;
-            ROS_DEBUG("Command: %s", stripControl(sopasCmd).c_str());
+            std::vector<unsigned char> sopasVec;
+            sopasVec=stringToVector(sopasCmd);
+            ROS_DEBUG("Command: %s", stripControl(sopasVec).c_str());
             if (useBinaryCmd)
             {
               this->convertAscii2BinaryCmd(sopasCmd.c_str(), &reqBinary);
@@ -3365,6 +3501,7 @@ namespace sick_scan
 
   bool SickScanCommon::setNewIpAddress(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd)
   {
+    int eepwritetTimeOut =1;
     char szCmd[255];
     bool result = false;
     std::array<unsigned char, 4> ipbytearray;
@@ -3374,19 +3511,34 @@ namespace sick_scan
     sprintf(ipcommand, pcCmdMask, ipbytearray[0], ipbytearray[1], ipbytearray[2], ipbytearray[3]);
     if (useBinaryCmd)
     {
-      //sopasCmdMaskVec[CMD_SET_IP_ADDR] = "\x02sWN EIIpAddr %02X %02X %02X %02X\x03";
       std::vector<unsigned char> reqBinary;
       this->convertAscii2BinaryCmd(ipcommand, &reqBinary);
       result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_IP_ADDR]);
-      this->convertAscii2BinaryCmd(ipcommand, &reqBinary);
-      result &= sendSopasAndCheckAnswer(sopasCmdMaskVec[CMD_REBOOT].c_str(), &sopasReplyBinVec[CMD_REBOOT]);
+      reqBinary={};
+      this->convertAscii2BinaryCmd(sopasCmdVec[CMD_WRITE_EEPROM].c_str(), &reqBinary);
+      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_WRITE_EEPROM]);
+      reqBinary={};
+      this->convertAscii2BinaryCmd(sopasCmdVec[CMD_RUN].c_str(), &reqBinary);
+      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_RUN]);
+      reqBinary={};
+      this->convertAscii2BinaryCmd(sopasCmdVec[CMD_SET_ACCESS_MODE_3].c_str(), &reqBinary);
+      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_ACCESS_MODE_3]);
+      reqBinary={};
+      this->convertAscii2BinaryCmd(sopasCmdVec[CMD_REBOOT].c_str(), &reqBinary);
+      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_REBOOT]);
     }
     else
     {
       std::vector<unsigned char> ipcomandReply;
       std::vector<unsigned char> resetReply;
+      std::string runCmd = sopasCmdVec[CMD_RUN];
       std::string restartCmd = sopasCmdVec[CMD_REBOOT];
+      std::string EEPCmd = sopasCmdVec[CMD_WRITE_EEPROM];
+      std::string UserLvlCmd = sopasCmdVec[CMD_SET_ACCESS_MODE_3];
       result = sendSopasAndCheckAnswer(ipcommand, &ipcomandReply);
+      result &= sendSopasAndCheckAnswer(EEPCmd, &resetReply);
+      result &= sendSopasAndCheckAnswer(runCmd, &resetReply);
+      result &= sendSopasAndCheckAnswer(UserLvlCmd, &resetReply);
       result &= sendSopasAndCheckAnswer(restartCmd, &resetReply);
     }
     return (result);
