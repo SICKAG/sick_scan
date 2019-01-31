@@ -26,10 +26,11 @@ void SickScanConfig::setValue(std::string key, bool val)
   }
 
 std::string SickScanConfig::getValue(std::string key)
-  {
-    std::string tmp;
-    tmp = storedConfig[key];
-  }
+{
+  std::string tmp;
+  tmp = storedConfig[key];
+  return tmp;
+}
 
 bool SickScanConfig::getBoolValue(std::string key)
 {

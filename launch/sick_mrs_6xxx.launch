@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- EXPERIMENTAL - brand new driver -->
 <launch>
-  <arg name="hostname" default="192.168.0.1"/>
+  <arg name="hostname" default="192.168.0.1" />
     <!-- robot_description and robot_state_publisher will be published here -->
   <node name="sick_mrs_6xxx" pkg="sick_scan" type="sick_generic_caller" respawn="false" output="screen">
     <!-- default values: -->

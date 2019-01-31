@@ -106,6 +106,7 @@ bool checkForAngleInterval(float orgAngle, float* dstAngle, float mainAngle, flo
 
 bool checkForAngleIntervalTestbed()
 {
+    bool bRet = false;
     double testAngleArrDeg[] = {-161.0, -10.0, -20.0, -30.0, 330.0, 10.0, 20.0, 30.0, -160.0};
 
     std::vector<double> testAngleArr;
@@ -123,12 +124,11 @@ bool checkForAngleIntervalTestbed()
     {
         float angle = testAngleArr[i];
         float dstAngle;
-        bool bRet = checkForAngleInterval(angle, &dstAngle, mainAngle, mainAngleTol);
+        bRet = checkForAngleInterval(angle, &dstAngle, mainAngle, mainAngleTol);
 
         printf("Ergebnis: %2d %6.2lf %6.2lf %s\n", i, angle, dstAngle, bRet ? "JA" : "NEIN");
     }
-
-
+    return bRet;
 }
 
 
