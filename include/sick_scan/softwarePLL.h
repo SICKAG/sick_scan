@@ -47,13 +47,13 @@ private:
 	static const int fifoSize = 7;
 	static const double MaxAllowedTimeDeviation;
 	static const uint32_t  MaxExtrapolationCounter;
-	uint32_t tickFifo[fifoSize] = { 0 };
+	uint32_t tickFifo[fifoSize]; //  = { 0 };
 	double clockFifo[fifoSize];
 	double lastValidTimeStamp;
-	uint32_t lastValidTick = 0;
-	bool isInitialized = false;
-	double dTAvgFeedback = 0.0;
-	double dClockDiffFeedBack = 0.0;
+	uint32_t lastValidTick; // = 0;
+	bool isInitialized; // = false;
+	double dTAvgFeedback; // = 0.0;
+	double dClockDiffFeedBack; //  = 0.0;
 	double firstTimeStamp;
 	double allowedTimeDeviation;
 	uint64_t firstTick;

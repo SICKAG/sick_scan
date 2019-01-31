@@ -3528,16 +3528,16 @@ namespace sick_scan
       std::vector<unsigned char> reqBinary;
       this->convertAscii2BinaryCmd(ipcommand, &reqBinary);
       result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_IP_ADDR]);
-      reqBinary={};
+      reqBinary.clear();
       this->convertAscii2BinaryCmd(sopasCmdVec[CMD_WRITE_EEPROM].c_str(), &reqBinary);
       result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_WRITE_EEPROM]);
-      reqBinary={};
+      reqBinary.clear();
       this->convertAscii2BinaryCmd(sopasCmdVec[CMD_RUN].c_str(), &reqBinary);
       result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_RUN]);
-      reqBinary={};
+      reqBinary.clear();
       this->convertAscii2BinaryCmd(sopasCmdVec[CMD_SET_ACCESS_MODE_3].c_str(), &reqBinary);
       result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_ACCESS_MODE_3]);
-      reqBinary={};
+      reqBinary.clear();
       this->convertAscii2BinaryCmd(sopasCmdVec[CMD_REBOOT].c_str(), &reqBinary);
       result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_REBOOT]);
     }
