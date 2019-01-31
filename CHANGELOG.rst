@@ -25,8 +25,8 @@ Changelog for package sick_scan
 * support of radar simulation
 * radar support RMS3xx in sick_scan
 
-Forthcoming
------------
+0.0.14 (2019-01-31)
+-------------------
 * Merge branch 'devel'
 * ip address setting support, improved Debug MSG
 * Updated MRS6xxx launchfile
