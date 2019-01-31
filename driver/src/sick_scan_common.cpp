@@ -3504,8 +3504,22 @@ namespace sick_scan
     int eepwritetTimeOut =1;
     char szCmd[255];
     bool result = false;
-    std::array<unsigned char, 4> ipbytearray;
-    ipbytearray = ipNewIPAddr.to_bytes();
+
+
+    unsigned long adrBytesLong[4];
+    std::string s = ipNewIPAddr.to_string();  // convert to string, to_bytes not applicable for older linux version
+    const char *ptr = s.c_str(); // char * to address
+    // decompose pattern like aaa.bbb.ccc.ddd
+    sscanf(ptr,"%lu.%lu.%lu.%lu", &(adrBytesLong[0]), &(adrBytesLong[1]), &(adrBytesLong[2]), &(adrBytesLong[3]));
+
+    // convert into byte array
+    unsigned char ipbytearray[4];
+    for (int i = 0; i < 4; i++)
+    {
+      ipbytearray[i] = adrBytesLong[i] & 0xFF;
+    }
+
+
     char ipcommand[255];
     const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_IP_ADDR].c_str();
     sprintf(ipcommand, pcCmdMask, ipbytearray[0], ipbytearray[1], ipbytearray[2], ipbytearray[3]);
