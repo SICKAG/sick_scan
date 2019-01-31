@@ -3,18 +3,12 @@ Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 0.0.xx (2018-07-19)
-* ipconfig.md documentation added
 * Radar Simulation optimized
 * RMS3xx documentation
 * Radar preheader parsing
 * Radar datagram explanation
-* Typo in MRS6124 configuration fixed
 * Profiling software
 * radar visualization optimized
-* Added description for slam example
-* setup script for slam test
-* CMakeLists.txt opimized
-* Change ip address in launch files to default ip address
 * SLAM-Support documentation
 * hector slam support tested
 * radar documentation added
@@ -24,20 +18,79 @@ Changelog for package sick_scan
 * PCL converter ignores missing intensity values
 * point cloud2image filter added, timestamping optimized
 * Device Identiier handling opimized for MRS1xxx and LMS1xxx
-* omitting of laserscan frameid fixed
-* debug messages removed from test script
-* generation of test launch file without starting the test can be controlled by using setting flag entry launch_only to true.
-* Switching of radar properties improved
-* Bugfixing of binary scanf to avoid wrong memory access
 * Tracking method and output selection for radar
 * Test application for using min/max-interval checking and added more test parameter
-* readme.md updated
-* Copyright added
 * licensed under apache 2.0
 * patches for ubuntu
 * support of radar simulation
 * radar support RMS3xx in sick_scan
-* Merge remote-tracking branch 'SICKAG/master' into devel
+
+Forthcoming
+-----------
+* Merge branch 'devel'
+* ip address setting support, improved Debug MSG
+* Updated MRS6xxx launchfile
+* getting diagrams otimized for MRS6124
+* Warning option as comment added
+* compilation fixes for uninitialized variables and no return functions
+* writing ip address to eeprom prepared
+* improved imu support
+* added Python script to detect scanners
+* Added first implementation of imu support
+* IMU message handling prepared
+* added Ip arg name
+* Updated meshes
+* Sample file for launching and rviz-config files
+* Added lms1 and lms5 meshes and urdfs for them.  The gazebo sensors might still need work
+* Lookup Table for multi echo fixed
+* Test tool integrated into CMakeLists.txt
+* Build receipt for sensor_alighment
+* Fix for startup procedure to enable automatic  SOPAS ascii to SOPAS bin.
+* stopScanData introduced, init flag introduced, signal handler introduced
+  change start process to state machine
+* radar_object_marker launch file updated
+* Radar Simulation optimized
+* Parsing of  PreHeader fixed and simulation optimized
+  Raw target added for simulatoin
+* RMS3xx documentation
+* Preheading Parsing optimized
+* Radar preheader parsing extended
+* Radar datagram explanation
+* Only first echo for MRS6124 as default to reduct data volume
+* radar visualization optimized
+* marker optimized
+* clean of of radar_object_marker
+* Patch level: 001.002.003 (support hector slam)
+* SLAM-Support documentation
+* hector slam support
+* initial radar documentation added
+* cleanup test program
+* test launch file added to show pointcloud2 AND scans for the MRS1xxx
+* timestamp of radar msg. improved, pointcloud2 debug messages for raw target and object targets added
+* launch file for rosbag testing added
+* Launch file for combination of laser scanner and radar added
+* PCL converter ignores missing intensity values
+* point cloud2image filter added, timestamping optimized
+* Device Identiier handling opimized for MRS1xxx and LMS1xxx
+* test files added
+* omitting of laserscan frameid fixed
+* debug messages removed from test script
+* generation of test launch file without starting the test can be controlled by
+  using setting flag entry launch_only to true.
+* Switching of radar properties improved
+* Tracking method and output selection for radar
+* Test application for using min/max-interval checking
+  and added more test parameter
+* support for rms3xx prepared
+* Copyright added
+* licensed under apache 2.0
+* file based simulation based on file name pattern added and evaluated.
+* patches for ubuntu
+* pointcloud2 prepared
+* Parsing and test driven development optimized
+* Simulation for objects added
+* support of radar simulation
+* Contributors: Dave Niewinski, Michael Lehning, Sai Kishor Kothakota, Unknown, unknown
 
 0.0.13 (2018-05-02)
 -------------------
