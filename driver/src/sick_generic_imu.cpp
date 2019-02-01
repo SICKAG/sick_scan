@@ -62,7 +62,7 @@
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
 
-#include <tf/tf.h>
+// #include <tf/tf.h>
 #include <geometry_msgs/Pose2D.h>
 
 #include "sensor_msgs/Imu.h"
@@ -479,6 +479,8 @@ namespace sick_scan
                                    bool useBinaryProtocol)
     {
         int exitCode = ExitSuccess;
+#if 0 // disabled for trusty <todo> enable again
+
         SickScanImuValue imuValue;
         sensor_msgs::Imu imuMsg_;
         static int cnt = 0;
@@ -651,8 +653,7 @@ namespace sick_scan
 
         if (true == bRet)
             this->commonPtr->imuScan_pub_.publish(imuMsg_);
-
-
+#endif
         return (exitCode);
 
     }

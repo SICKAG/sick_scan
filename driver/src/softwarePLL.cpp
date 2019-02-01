@@ -5,8 +5,8 @@ File: softwarePLL.cpp
 */
 #include "softwarePLL.h"
 #include <iostream>
-#include <chrono>
-#include <thread>
+// #include <chrono>
+// #include <thread>
 #include <math.h>
 #include <iterator>
 #include <iostream>
@@ -300,7 +300,7 @@ bool SoftwarePLL::updateInterpolationSlope() // fifo already updated
 	return(retVal);
 }
 
-
+#if 0
 bool SoftwarePLL::getDemoFileData(std::string fileName, std::vector<uint32_t>& tickVec,std::vector<uint32_t>& secVec, std::vector<uint32_t>& nanoSecVec )
 {
     std::ifstream file(fileName);
@@ -327,7 +327,7 @@ bool SoftwarePLL::getDemoFileData(std::string fileName, std::vector<uint32_t>& t
     else
         return true;
 }
-
+#endif
 void SoftwarePLL::testbed()
 {
     std::cout << "Running testbed for SofwarePLL" << std::endl;
@@ -349,7 +349,7 @@ void SoftwarePLL::testbed()
     bool testWithDataFile = true;
     if (testWithDataFile)
 	{
-		bRet = testPll.getDemoFileData("/home/rosuser/dumpimu3.csv", tickVec, secVec, nanoSecVec);
+		// commented for trusty bRet = testPll.getDemoFileData("/home/rosuser/dumpimu3.csv", tickVec, secVec, nanoSecVec);
 		maxLoop = tickVec.size();
 	}
 

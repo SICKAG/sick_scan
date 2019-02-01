@@ -16,6 +16,8 @@ macro(use_cxx11)
 	endif ()
 endmacro(use_cxx11)
 
+# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++03")
+
 # Switch on, if you use c11-specific commands
 # use_cxx11()
 
