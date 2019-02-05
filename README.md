@@ -72,6 +72,18 @@ roslaunch sick_scan sick_lms_5xx.launch
 For RMS3xx-family:
 roslaunch sick_scan sick_rms_3xx.launch (under development)
 
+### Starting scanner with specific ip address
+To start the scanner with a specific IP address, the launch command can be used for most launch files as follows.
+The hostname is the ip-address of the scanner:
+
+```bash
+roslaunch <launch-file> hostname:=<ip-address>
+```
+e.g.
+```bash
+roslaunch sick_scan sick_tim_5xx.launch hostname:=192.168.0.71 
+```
+
 
 ### Start multiple Nodes
 
@@ -105,19 +117,6 @@ Overview of the tools:
   The tools will output the IP addresses of the connected scanners and some more information about the scanner.  
 * Setting new IP address: With the help of the parameter "new_IP" a new IP address can be assigned when calling the node sick_scan. 
   The launch file sick_new_ip.launch in the launch directory shows an example of how to use this parameter.
-  ### Setting ip address for scanner
-
-  To start the scanner with a specific IP address, the launch command can be used for most launch files as follows.
-  The hostname is the ip-address of the scanner:
-
-```bash
-roslaunch <launch-file> hostname:=<ip-address>
-```
-e.g.
-```bash
-roslaunch sick_scan sick_tim_5xx.launch hostname:=192.168.0.71 
-```
-
 * Converting of pointclouds to images: With the tool pcl_converter.cpp one can convert pointcloud2-data
   to image. That is especial convenient for 24-layers scanners like the MRS6124.
 * Setting up a brand new scanner: To set up a brand new scanner, 
