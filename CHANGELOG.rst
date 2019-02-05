@@ -25,8 +25,8 @@ Changelog for package sick_scan
 * support of radar simulation
 * radar support RMS3xx in sick_scan
 
-Forthcoming
------------
+0.0.15 (2019-02-05)
+-------------------
 * Update README.md
 * Support for Ubuntu Trusty `#001 <https://github.com/SICKAG/sick_scan/issues/001>`_
 * ip v4 parsing changed due to support of older linux version
