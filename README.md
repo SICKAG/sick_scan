@@ -4,8 +4,8 @@
 - [Supported Hardware](#supported-hardware)
 - [Start node](#start-node)
 - [Bugs and feature requests](#bugs-and-feature-requests)
-- [Tools]
-- [Troubleshooting]
+- [Tools](#tools)
+- [Troubleshooting](#troubleshooting)
 - [SLAM-Support](doc/slam.md)
 - [Radar](doc/radar.md)
 - [Testing](#testing)
@@ -72,18 +72,6 @@ roslaunch sick_scan sick_lms_5xx.launch
 For RMS3xx-family:
 roslaunch sick_scan sick_rms_3xx.launch (under development)
 
-### Setting ip adresse for scanner
-
-To start the scanner with a specific IP address, the launch command can be used for most launch files as follows.
-The hostname is the ip-address of the scanner:
-
-```bash
-roslaunch <launch-file> hostname:=<ip-address>
-```
-e.g.
-```bash
-roslaunch sick_scan sick_tim_5xx.launch hostname:=192.168.0.71 
-```
 
 ### Start multiple Nodes
 
@@ -106,6 +94,36 @@ There are two ways to prevent this:
 -- All scanners: COLA-B (Binary)
 - Software should be further tested, documented and beautified
 - Setting of "topic" should not be hardcoded to /cloud in the future. This allows the simultaneous operation of several scanners. Each point cloud can then be converted using its own TF transformation.
+
+## Tools
+
+Various tools exist in the repository to improve the operation of the scanners. It is also recommended to read the following section "Troubleshooting".
+Overview of the tools:
+
+* Search for scanner in the network:
+  Use the Python tool "sick_generic_device_finder.py" in the tools/sick_generic_device_finder directory.
+  The tools will output the IP addresses of the connected scanners and some more information about the scanner.  
+* Setting new IP address: With the help of the parameter "new_IP" a new IP address can be assigned when calling the node sick_scan. 
+  The launch file sick_new_ip.launch in the launch directory shows an example of how to use this parameter.
+  ### Setting ip address for scanner
+
+  To start the scanner with a specific IP address, the launch command can be used for most launch files as follows.
+  The hostname is the ip-address of the scanner:
+
+```bash
+roslaunch <launch-file> hostname:=<ip-address>
+```
+e.g.
+```bash
+roslaunch sick_scan sick_tim_5xx.launch hostname:=192.168.0.71 
+```
+
+* Converting of pointclouds to images: With the tool pcl_converter.cpp one can convert pointcloud2-data
+  to image. That is especial convenient for 24-layers scanners like the MRS6124.
+* Setting up a brand new scanner: To set up a brand new scanner, 
+  it is recommended to use the two tools "sick_generic_device_finder.py" to find the scanner in the network 
+  and the launch file sick_new_ip.launch to set a new IP address. If further settings are to be saved that cannot be made via ROS   parameters, we recommend using the Windows tool "Sopas ET" from SICK.
+
 
 ## Troubleshooting 
 
