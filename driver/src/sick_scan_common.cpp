@@ -241,16 +241,17 @@ namespace sick_scan
               }
               break;
             case 1:
-              lenId |= s[i] << (8 * (i-4));
+              lenId |= s[i] << (8 * (7 - i));
               if (i == 7)
               {
-                sprintf(szDummy,"<Len=0x%04lu>", lenId);
+                sprintf(szDummy, "<Len=%04lu>", lenId);
                 dest += szDummy;
                 parseState = 2;
               }
               break;
             case 2:
             {
+              unsigned long dataProcessed = i - 8;
               if (s[i] == ' ')
               {
                 spaceCnt++;
@@ -260,16 +261,26 @@ namespace sick_scan
                 parseState = 3;
               }
               dest += s[i];
+              if (dataProcessed >= (lenId - 1))
+              {
+                parseState = 4;
+              }
+
               break;
             }
 
             case 3:
             {
+              char ch = dest[dest.length()-1];
+              if (ch != ' ')
+              {
+                dest += ' ';
+              }
               sprintf(szDummy, "0x%02x", s[i]);
               dest += szDummy;
 
               unsigned long dataProcessed = i - 8;
-              if (dataProcessed >= lenId)
+              if (dataProcessed >= (lenId -1))
               {
                 parseState = 4;
               }
@@ -277,18 +288,12 @@ namespace sick_scan
             }
             case 4:
             {
-              if (s[i] == 0x03)
-                dest += "<ETX>";
-              else
-                dest += "???";
-              parseState = 5;
-              break;
-              case 5:
-                sprintf(szDummy, "CRC<0x%02x>", s[i]);
+              sprintf(szDummy, " CRC:<0x%02x>", s[i]);
               dest += szDummy;
               break;
             }
-
+            default:
+              break;
           }
        }
     }
