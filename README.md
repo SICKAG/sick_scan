@@ -113,8 +113,12 @@ Various tools exist in the repository to improve the operation of the scanners. 
 Overview of the tools:
 
 * Search for scanner in the network:
-  Use the Python tool "sick_generic_device_finder.py" in the tools/sick_generic_device_finder directory.
+  Use the Python3 tool "sick_generic_device_finder.py" in the tools/sick_generic_device_finder directory.
   The tools will output the IP addresses of the connected scanners and some more information about the scanner.  
+  Call it with python3, i.e.
+  ``
+  python3 sick_generic_device_finder.py
+  ``
 * Setting new IP address: With the help of the parameter "new_IP" a new IP address can be assigned when calling the node sick_scan. 
   The launch file sick_new_ip.launch in the launch directory shows an example of how to use this parameter.
 * Converting of pointclouds to images: With the tool pcl_converter.cpp one can convert pointcloud2-data
