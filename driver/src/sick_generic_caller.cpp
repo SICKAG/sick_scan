@@ -98,11 +98,11 @@
 // 001.002.011: Ip Address change added, bugfixing
 // 001.003.000: Jan 2019  release 0.0.14
 // 001.003.001: Jan 2019  release 0.0.14 address handling for ip v4 parsing fixed
-
+// 001.003.002: Feb 2019 Fixing and optimizing console output
 
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "003"
-#define SICK_GENERIC_PATCH_LEVEL "001"
+#define SICK_GENERIC_PATCH_LEVEL "002"
 
 #include <algorithm> // for std::min
 
