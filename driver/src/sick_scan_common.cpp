@@ -3120,7 +3120,17 @@ namespace sick_scan
                     idx_num
                   };
                   long adroff = i * (numChannels * (int) sizeof(float));
+                  if (fireEveryLayer)
+                  {
 
+                  }
+                  else
+                  {
+                    adroff += (layer - baseLayer) * cloud_.row_step;
+                  }
+                  adroff += iEcho * cloud_.row_step * numTmpLayer;
+
+                  unsigned char *ptr = cloudDataPtr + adroff;
                   float  *fptr = (float *)(cloudDataPtr + adroff);
 
                   geometry_msgs::Point32 point;
@@ -3158,20 +3168,6 @@ namespace sick_scan
                   fptr[idx_x] = rangeCos * cos(phi);  // copy x value in pointcloud
                   fptr[idx_y] = rangeCos * sin(phi);  // copy y value in pointcloud
                   fptr[idx_z] = range_meter * sinAlphaTablePtr[i];// copy z value in pointcloud
-
-                  //	cloud_.points[(layer - baseLayer) * msg.ranges.size() + i] = point;
-
-                  if (fireEveryLayer)
-                  {
-
-                  }
-                  else
-                  {
-                    adroff += (layer - baseLayer) * cloud_.row_step;
-                  }
-                  adroff += iEcho * cloud_.row_step * numTmpLayer;
-
-                  unsigned char *ptr = cloudDataPtr + adroff;
 
                   fptr[idx_intensity] = 0.0;
                   if (config_.intensity)
