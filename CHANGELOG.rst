@@ -2,7 +2,7 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.3.16 (forthcoming)
+0.0.16 (forthcoming)
 * Update README.md
 * Improved performance
 
