@@ -31,10 +31,11 @@ or in the program menu if your system installed it here. Then, you have to open 
 
 The first view present a list of all the profiled functions. You can see the inclusive 
 and the self cost of each function and the location of each one.
-![image](![image](![image](profile_001.png)))
+
+![profile_001](profile_001.png)
 
 Once you click on a function, the other views are filled with information. The view in uppper right part of the window gives some information about the selected function.
-![image](![image](![image](profile_002.png)))
+![profile_001](profile_002.png)
 
 The view have several tabs presenting different information:
 
@@ -45,7 +46,7 @@ Callee Map : A map of the callee, personally, I do not really understand this vi
 Source code : The source code of the function if the application has been compiled with the debug symbol
 And finally, you have another view with data about the selected function.
 
-![image](![image](![image](profile_003.png)))
+![profile_003](profile_003.png)
 
 Again, several tabs:
 
