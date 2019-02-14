@@ -1025,6 +1025,7 @@ namespace sick_scan
     bool rssiResolutionIs16Bit = true; //True=16 bit Flase=8bit
     int activeEchos = 0;
     ros::NodeHandle pn("~");
+
     pn.getParam("intensity", rssiFlag);
     pn.getParam("intensity_resolution_16bit", rssiResolutionIs16Bit);
 
@@ -1920,6 +1921,7 @@ namespace sick_scan
       tmpParam.getParam("transmit_objects", transmitObjects);
       tmpParam.getParam("tracking_mode", trackingMode);
 
+
       if ((trackingMode < 0) || (trackingMode >= numTrackingModes))
       {
         ROS_WARN("tracking mode id invalid. Switch to tracking mode 0");
@@ -2327,6 +2329,22 @@ namespace sick_scan
     const int maxNumAllowedPacketsToProcess = 25; // maximum number of packets, which will be processed in this loop.
 
     int numPacketsProcessed = 0; // count number of processed datagrams
+
+    static bool firstTimeCalled = true;
+    static bool dumpData = false;
+    static int verboseLevel = 0;
+    static bool slamBundle = false;
+    static std::string echoForSlam = "";
+    if (firstTimeCalled == true)
+    {
+
+    /* Dump Binary Protocol */
+    ros::NodeHandle tmpParam("~");
+    tmpParam.getParam("slam_echo", echoForSlam);
+    tmpParam.getParam("slam_bundle", slamBundle);
+    tmpParam.getParam("verboseLevel", verboseLevel);
+      firstTimeCalled = false;
+    }
     do
     {
 
@@ -2357,17 +2375,7 @@ namespace sick_scan
         datagram_pub_.publish(datagram_msg);
       }
 
-      /* Dump Binary Protocol */
-      ros::NodeHandle tmpParam("~");
 
-
-      std::string echoForSlam = "";
-      bool slamBundle = false;
-      tmpParam.getParam("slam_echo", echoForSlam);
-      tmpParam.getParam("slam_bundle", slamBundle);
-      bool dumpData = false;
-      int verboseLevel = 0;
-      tmpParam.getParam("verboseLevel", verboseLevel);
       if (verboseLevel > 0)
       {
         dumpDatagramForDebugging(receiveBuffer, actual_length);
@@ -2729,10 +2737,11 @@ namespace sick_scan
                               {
                                 rangePtr = &msg.ranges[0];
                               }
+                              float scaleFactor_001= 0.001F * scaleFactor;// to avoid repeated multiplication
                               for (int i = 0; i < numberOfItems; i++)
                               {
                                 idx = i + numberOfItems * (distChannelCnt - 1);
-                                rangePtr[idx] = (float) data[i] * 0.001 * scaleFactor + scaleFactorOffset;
+                                rangePtr[idx] = (float) data[i] *  scaleFactor_001 + scaleFactorOffset;
                               }
                             }
                               break;
@@ -3102,6 +3111,18 @@ namespace sick_scan
                 float *rangeTmpPtr = &rangeTmp[0];
                 for (size_t i = 0; i < rangeNum; i++)
                 {
+                  enum enum_index_descr
+                  {
+                    idx_x,
+                    idx_y,
+                    idx_z,
+                    idx_intensity,
+                    idx_num
+                  };
+                  long adroff = i * (numChannels * (int) sizeof(float));
+
+                  float  *fptr = (float *)(cloudDataPtr + adroff);
+
                   geometry_msgs::Point32 point;
                   float range_meter = rangeTmpPtr[iEcho * rangeNum + i];
                   float phi = angle; // azimuth angle
@@ -3133,13 +3154,13 @@ namespace sick_scan
                     // Just for Debugging: printf("%3d %8.3lf %8.3lf\n", (int)i, cosAlphaTablePtr[i], sinAlphaTablePtr[i]);
                   }
                   // Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
-                  point.x = range_meter * cosAlphaTablePtr[i] * cos(phi);
-                  point.y = range_meter * cosAlphaTablePtr[i] * sin(phi);
-                  point.z = range_meter * sinAlphaTablePtr[i];
+                  float rangeCos=range_meter * cosAlphaTablePtr[i];
+                  fptr[idx_x] = rangeCos * cos(phi);  // copy x value in pointcloud
+                  fptr[idx_y] = rangeCos * sin(phi);  // copy y value in pointcloud
+                  fptr[idx_z] = range_meter * sinAlphaTablePtr[i];// copy z value in pointcloud
 
                   //	cloud_.points[(layer - baseLayer) * msg.ranges.size() + i] = point;
 
-                  long adroff = i * (numChannels * (int) sizeof(float));
                   if (fireEveryLayer)
                   {
 
@@ -3152,23 +3173,16 @@ namespace sick_scan
 
                   unsigned char *ptr = cloudDataPtr + adroff;
 
-                  float intensity = 0.0;
+                  fptr[idx_intensity] = 0.0;
                   if (config_.intensity)
                   {
                     int intensityIndex = aiValidEchoIdx[iEcho] * rangeNum + i;
                     // intensity values available??
                     if (intensityIndex < intensityTmpNum)
                     {
-                      intensity = intensityTmpPtr[intensityIndex];
+                      fptr[idx_intensity] = intensityTmpPtr[intensityIndex]; // copy intensity value in pointcloud
                     }
                   }
-                  float dataArr[4];
-                  dataArr[0] = point.x;
-                  dataArr[1] = point.y;
-                  dataArr[2] = point.z;
-                  dataArr[3] = intensity;
-                  memcpy(ptr + 0, dataArr, 4 * sizeof(float));
-
                   angle += msg.angle_increment;
                 }
                 // Publish
