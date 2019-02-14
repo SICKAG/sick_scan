@@ -35,7 +35,8 @@ and the self cost of each function and the location of each one.
 ![profile_001](profile_001.png)
 
 Once you click on a function, the other views are filled with information. The view in uppper right part of the window gives some information about the selected function.
-![profile_001](profile_002.png)
+
+![profile_002](profile_002.png)
 
 The view have several tabs presenting different information:
 
@@ -59,6 +60,6 @@ You have also several display options and filter features to find exactly what y
 
 The information provided by KCacheGrind can be very useful to find which functions takes too much time or which functions are called too much.
 
-This text is adopted version of https://baptiste-wicht.com/posts/2011/09/profile-c-application-with-callgrind-kcachegrind.html .
+This text is an adopted version of https://baptiste-wicht.com/posts/2011/09/profile-c-application-with-callgrind-kcachegrind.html .
 
 Thanks to Baptiste Wicht.
