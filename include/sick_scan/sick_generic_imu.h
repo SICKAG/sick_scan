@@ -144,8 +144,8 @@ namespace sick_scan
           int parseBinaryDatagram(char* datagram, size_t datagram_length, SickScanImuValue *imValuePtr);
           static void imuParserTest();
           double simpleFmodTwoPi(double angle);
+
       private:
-          SoftwarePLL imuSoftwarePLL;
           SickScanCommon *commonPtr;
           bool emul;
           };

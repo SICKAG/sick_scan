@@ -536,11 +536,7 @@ namespace sick_scan
         timeStampNanoSecBuffer[idx] = timeStamp.nsec;
         imuTimeStamp[idx] = imuValue.TimeStamp();
 */
-        //  bool bRet = imuSoftwarePLL.getCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec,imuValue.TimeStamp());
-
-        // bool bRet = imuSoftwarePLL.getSimpleCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec, imuValue.TimeStamp());
-
-        bool bRet = true; // TODO SoftwarePLL disabled
+          bool bRet = SoftwarePLL::instance().getCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec,(uint32_t)(imuValue.TimeStamp()&0xFFFFFFFF));
         /*
         timeStampSecCorBuffer[idx] = timeStamp.sec;
         timeStampNanoSecCorBuffer[idx] = timeStamp.nsec;

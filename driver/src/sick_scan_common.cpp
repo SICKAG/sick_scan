@@ -2508,10 +2508,16 @@ namespace sick_scan
 
                   memcpy(&SystemCountTransmit, receiveBuffer + 0x2A, 4);
                   swap_endian((unsigned char *) &SystemCountTransmit, 4);
+                  bool bRet = SoftwarePLL::instance().updatePLL(recvTimeStamp.sec, recvTimeStamp.nsec,SystemCountTransmit);
+                  ros::Time tmp_time=recvTimeStamp;
+                  bRet = SoftwarePLL::instance().getCorrectedTimeStamp(recvTimeStamp.sec, recvTimeStamp.nsec,SystemCountScan);
+                  //TODO Handle return values
+                  ros::Duration debug_duration=recvTimeStamp-tmp_time;
 #ifdef DEBUG_DUMP_ENABLED
 
                   DataDumper::instance().pushData((double)SystemCountScan, "LASESCANTIME", SystemCountScan);
                   DataDumper::instance().pushData((double)SystemCountTransmit, "LASERTRANSMITTIME", SystemCountTransmit);
+                  DataDumper::instance().pushData((double)SystemCountScan, "LASERTRANSMITTIME", debug_duration.toSec());
 #endif
 
                   memcpy(&scanFrequencyX100, receiveBuffer + 52, 4);
@@ -3241,7 +3247,7 @@ namespace sick_scan
                 //          Scan message contains 367 measurements
                 //          angle increment is 0.75° (yields 274,5° covery -> OK)
                 // MRS6124: Publish very 24th layer at the layer = 237 , MRS6124 contains no sequence with seq 0
-                ;
+                //BBB
 #ifndef _MSC_VER
                 cloud_pub_.publish(cloud_);
 #else
