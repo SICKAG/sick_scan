@@ -726,7 +726,7 @@ namespace sick_scan
     if (result != 0)
     {
       std::string tmpStr = "SOPAS Communication -" + errString;
-      ROS_ERROR("%s\n", tmpStr.c_str());
+      ROS_INFO("%s\n", tmpStr.c_str());
       diagnostics_.broadcast(getDiagnosticErrorCode(), tmpStr);
     }
     else
@@ -812,7 +812,7 @@ namespace sick_scan
     result = init_scanner();
     if (result != 0)
     {
-      ROS_ERROR("Failed to init scanner Error Code: %d\nWaiting for timeout...\n"
+      ROS_INFO("Failed to init scanner Error Code: %d\nWaiting for timeout...\n"
                 "If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed.\n"
                 "This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. There are two ways to prevent this:\n"
                 "1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.\n"
@@ -953,7 +953,8 @@ namespace sick_scan
     bool tryToStopMeasurement = true;
     if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
     {
-      tryToStopMeasurement = false;
+
+        tryToStopMeasurement = false;
       //XXX
       // do not stop measurement for TiM571 otherwise the scanner would not start after start measurement
       // do not change the application - not supported for TiM5xx
