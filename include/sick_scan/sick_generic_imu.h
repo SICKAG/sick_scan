@@ -74,8 +74,8 @@ namespace sick_scan
       class SickScanImuValue
       {
       public:
-          UINT32 TimeStamp() const { return timeStamp; }
-          void TimeStamp(UINT32 val) { timeStamp = val; }
+          UINT64 TimeStamp() const { return timeStamp; }
+          void TimeStamp(UINT64 val) { timeStamp = val; }
           float QuaternionX() const { return quaternionX; }
           void QuaternionX(float val) { quaternionX = val; }
           float QuaternionY() const { return quaternionY; }

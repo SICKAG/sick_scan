@@ -54,7 +54,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <sick_scan/sick_generic_parser.h>
+#include <sick_scan/sick_scan_common.h>
 #include <ros/ros.h>
 
 #ifdef _MSC_VER
@@ -315,6 +315,7 @@ namespace sick_scan
 		setScannerType(_scanType);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_TIM_5XX_NAME);
+		allowedScannerNames.push_back(SICK_SCANNER_TIM_7XX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_LMS_5XX_NAME);
         allowedScannerNames.push_back(SICK_SCANNER_LMS_1XX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_LMS_1XXX_NAME);
@@ -789,6 +790,8 @@ namespace sick_scan
 		 // 7: Telegram counter (eg. 99)
 		 // 8: Scan counter (eg. 9A)
 		 // 9: Time since startup (eg. 13C8E59)
+
+
 		 // 10: Time of transmission (eg. 13C9CBE)
 		 // 11 + 12: Input status (0 0)
 		 // 13 + 14: Output status (8 0)

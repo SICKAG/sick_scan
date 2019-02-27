@@ -76,6 +76,7 @@
 #include "sick_scan/sick_generic_imu.h"
 #include "sick_scan/binScanf.hpp"
 #include "sick_scan/binPrintf.hpp"
+#include "sick_scan/dataDumper.h"
 
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
@@ -124,6 +125,9 @@ std::string getVersionInfo();
 */
 int main(int argc, char **argv)
 {
+
+
+  DataDumper::instance().writeToFileNameWhenBufferIsFull("/tmp/sickscan_debug.csv");
 	char nameId[] = "__name:=";
 	char nameVal[MAX_NAME_LEN] = { 0 };
 	char **argv_tmp; // argv_tmp[0][0] argv_tmp[0] identisch ist zu (*argv_tmp)

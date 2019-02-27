@@ -68,7 +68,6 @@
 #include "sick_scan/sick_generic_parser.h"
 #include "sick_scan/sick_scan_common_nw.h"
 
-
 void swap_endian(unsigned char *ptr, int numBytes);
 
 namespace sick_scan

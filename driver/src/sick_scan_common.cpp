@@ -954,6 +954,7 @@ namespace sick_scan
     if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
     {
       tryToStopMeasurement = false;
+      //XXX
       // do not stop measurement for TiM571 otherwise the scanner would not start after start measurement
       // do not change the application - not supported for TiM5xx
     }
@@ -2451,7 +2452,9 @@ namespace sick_scan
             // if binary protocol used then parse binary message
             std::vector<unsigned char> receiveBufferVec = std::vector<unsigned char>(receiveBuffer,
                                                                                      receiveBuffer + actual_length);
-
+            #ifdef DEBUG_DUMP_TO_CONSOLE_ENABLED
+            DataDumper::instance().dumpUcharBufferToConsole(receiveBuffer, actual_length);
+            #endif
             if (receiveBufferVec.size() > 8)
             {
               long idVal = 0;
@@ -2490,12 +2493,25 @@ namespace sick_scan
                   long measurementFrequencyDiv100 = 0; // multiply with 100
                   int numberOf16BitChannels = 0;
                   int numberOf8BitChannels = 0;
+                  uint32_t SystemCountScan=0;
+                  uint32_t SystemCountTransmit=0;
 
                   memcpy(&elevAngleX200, receiveBuffer + 50, 2);
                   swap_endian((unsigned char *) &elevAngleX200, 2);
 
                   elevationAngleInRad = -elevAngleX200 / 200.0 * deg2rad_const;
                   msg.header.seq = elevAngleX200; // should be multiple of 0.625° starting with -2638 (corresponding to 13.19°)
+
+                  memcpy(&SystemCountScan, receiveBuffer + 0x26, 4);
+                  swap_endian((unsigned char *) &SystemCountScan, 4);
+
+                  memcpy(&SystemCountTransmit, receiveBuffer + 0x2A, 4);
+                  swap_endian((unsigned char *) &SystemCountTransmit, 4);
+#ifdef DEBUG_DUMP_ENABLED
+
+                  DataDumper::instance().pushData((double)SystemCountScan, "LASESCANTIME", SystemCountScan);
+                  DataDumper::instance().pushData((double)SystemCountTransmit, "LASERTRANSMITTIME", SystemCountTransmit);
+#endif
 
                   memcpy(&scanFrequencyX100, receiveBuffer + 52, 4);
                   swap_endian((unsigned char *) &scanFrequencyX100, 4);
@@ -2505,6 +2521,12 @@ namespace sick_scan
 
 
                   msg.scan_time = 1.0 / (scanFrequencyX100 / 100.0);
+
+                  //due firmware inconsistency
+                  if(measurementFrequencyDiv100>10000)
+                  {
+                    measurementFrequencyDiv100/=100;
+                  }
                   msg.time_increment = 1.0 / (measurementFrequencyDiv100 * 100.0);
 
                   msg.range_min = parser_->get_range_min();
@@ -2742,7 +2764,19 @@ namespace sick_scan
                               {
                                 idx = i + numberOfItems * (distChannelCnt - 1);
                                 rangePtr[idx] = (float) data[i] *  scaleFactor_001 + scaleFactorOffset;
+#ifdef DEBUG_DUMP_ENABLED
+                                if (distChannelCnt == 1)
+                                {
+                                  if (i == floor(numberOfItems / 2))
+                                  {
+                                  double curTimeStamp = SystemCountScan + i * msg.time_increment * 1E6;
+                                  DataDumper::instance().pushData(curTimeStamp, "DIST", rangePtr[idx]);
+                                }
+                                }
+#endif
+                                //XXX
                               }
+
                             }
                               break;
                             case process_rssi:
