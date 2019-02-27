@@ -99,10 +99,12 @@
 // 001.003.000: Jan 2019  release 0.0.14
 // 001.003.001: Jan 2019  release 0.0.14 address handling for ip v4 parsing fixed
 // 001.003.002: Feb 2019 Fixing and optimizing console output
+// 001.003.016: Feb 2019 Profiling+instructions, Caching of Ros-Params
+
 
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "003"
-#define SICK_GENERIC_PATCH_LEVEL "002"
+#define SICK_GENERIC_PATCH_LEVEL "016"
 
 #include <algorithm> // for std::min
 

@@ -8,6 +8,7 @@
 - [Troubleshooting](#troubleshooting)
 - [SLAM-Support](doc/slam.md)
 - [Radar](doc/radar.md)
+- [Profiling](doc/profiling.md)
 - [Testing](#testing)
 - [Creators](#creators)
 

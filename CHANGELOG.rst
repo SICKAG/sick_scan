@@ -2,33 +2,15 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.0.xx (2018-07-19)
-* Radar Simulation optimized
-* RMS3xx documentation
-* Radar preheader parsing
-* Radar datagram explanation
-* Profiling software
-* radar visualization optimized
-* SLAM-Support documentation
-* hector slam support tested
-* radar documentation added
-* timestamp of radar msg. improved
-* launch file for rosbag testing added
-* Launch file for combination of laser scanner and radar added
-* PCL converter ignores missing intensity values
-* point cloud2image filter added, timestamping optimized
-* Device Identiier handling opimized for MRS1xxx and LMS1xxx
-* Tracking method and output selection for radar
-* Test application for using min/max-interval checking and added more test parameter
-* licensed under apache 2.0
-* patches for ubuntu
-* support of radar simulation
-* radar support RMS3xx in sick_scan
+0.0.16 (2019-02-14)
+-------------------
+* Update README.md
+* Improved performance
 
 0.0.15 (2019-02-05)
 -------------------
 * Update README.md
-* Support for Ubuntu Trusty `#001 <https://github.com/SICKAG/sick_scan/issues/001>`_
+* Support for Ubuntu Trusty `#001 <https://github.com/SICKAG/sick_scan/issues/001>`
 * ip v4 parsing changed due to support of older linux version
 * Contributors: Michael Lehning, Unknown
 
@@ -67,7 +49,7 @@ Changelog for package sick_scan
 * radar visualization optimized
 * marker optimized
 * clean of of radar_object_marker
-* Patch level: 001.002.003 (support hector slam)
+* support hector slam
 * SLAM-Support documentation
 * hector slam support
 * initial radar documentation added
