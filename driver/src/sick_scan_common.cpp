@@ -3097,17 +3097,16 @@ namespace sick_scan
             }
 
 
+
             if (publishPointCloud == true)
             {
+
+
+
               const int numChannels = 4; // x y z i (for intensity)
 
-              //BBB
-              bool fireEveryLayer = config_.cartographer_compatibility; // if true, every layer will be fired.fireEveryLayer
               int numTmpLayer = numOfLayers;
-              if (fireEveryLayer)
-              {
-                numTmpLayer = 1; // fire every layer ...
-              }
+
 
               cloud_.header.stamp = recvTimeStamp;
               cloud_.header.frame_id = config_.frame_id;
@@ -3163,14 +3162,9 @@ namespace sick_scan
                     idx_num
                   };
                   long adroff = i * (numChannels * (int) sizeof(float));
-                  if (fireEveryLayer)
-                  {
 
-                  }
-                  else
-                  {
                     adroff += (layer - baseLayer) * cloud_.row_step;
-                  }
+
                   adroff += iEcho * cloud_.row_step * numTmpLayer;
 
                   unsigned char *ptr = cloudDataPtr + adroff;
@@ -3235,64 +3229,130 @@ namespace sick_scan
               {
                 shallIFire = true;
               }
-              if (fireEveryLayer)
-              {
-                if((msg.header.seq == 0)){
-                  shallIFire = true;
-                }
-                else
-                  shallIFire = false;
-                {
 
-                }
+
+              static int layerCnt = 0;
+              static int layerSeq[4];
+
+              if (config_.cartographer_compatibility)
+              {
+
+                  layerSeq[layerCnt % 4] = layer;
+                  if (layerCnt >= 4)  // mind. erst einmal vier Layer zusammensuchen
+                  {
+                     shallIFire = true; // here are at least 4 layers available
+                  }
+                  else
+                  {
+                    shallIFire = false;
+                  }
+
+                  layerCnt++;
               }
 
               if (shallIFire) // shall i fire the signal???
               {
-                // Following cases are interesting:
-                // LMS5xx: seq is always 0 -> publish every scan
-                // MRS1104: Every 4th-Layer is 0 -> publish pointcloud every 4th layer message
-                // LMS1104: Publish every layer. The timing for the LMS1104 seems to be:
-                //          Every 67 ms receiving of a new scan message
-                //          Scan message contains 367 measurements
-                //          angle increment is 0.75° (yields 274,5° covery -> OK)
-                // MRS6124: Publish very 24th layer at the layer = 237 , MRS6124 contains no sequence with seq 0
-                //BBB
-#ifndef _MSC_VER
-                int numTotalShots = cloud_.width;
-                int numPartialShots = 50;
-                for (int i = 0; i  < (numTotalShots-numPartialShots); i += numPartialShots)
+                if (false == config_.cartographer_compatibility)
                 {
-                  sensor_msgs::PointCloud2 partialCloud;
-                  partialCloud = cloud_;
-                  ros::Time partialTimeStamp = cloud_.header.stamp;
-
-                  partialTimeStamp += ros::Duration((i + 0.5*(numPartialShots - 1)) * timeIncrement);
-                  partialCloud.header.stamp = partialTimeStamp;
-                  partialCloud.width = numPartialShots;
-                  partialCloud.height = 1;
-
-                  partialCloud.is_bigendian = false;
-                  partialCloud.is_dense = true;
-                  partialCloud.point_step = numChannels * sizeof(float);
-                  partialCloud.row_step = partialCloud.point_step *partialCloud.width;
-                  partialCloud.fields.resize(numChannels);
-                  for (int ii = 0; ii < numChannels; ii++)
-                  {
-                    std::string channelId[] = {"x", "y", "z", "intensity"};
-                    partialCloud.fields[ii].name = channelId[ii];
-                    partialCloud.fields[ii].offset = ii * sizeof(float);
-                    partialCloud.fields[ii].count = 1;
-                    partialCloud.fields[ii].datatype = sensor_msgs::PointField::FLOAT32;
-                  }
-
-                  partialCloud.data.resize(partialCloud.row_step * partialCloud.height);
-
-                  memcpy(&(partialCloud.data[0]), &(cloud_.data[0]) + i * cloud_.point_step, cloud_.point_step * numPartialShots);
-                  cloud_pub_.publish(partialCloud);
+                   // standard handling of scans
+                  cloud_pub_.publish(cloud_);
 
                 }
-//                cloud_pub_.publish(cloud_);
+                else
+                {
+                  // Following cases are interesting:
+                  // LMS5xx: seq is always 0 -> publish every scan
+                  // MRS1104: Every 4th-Layer is 0 -> publish pointcloud every 4th layer message
+                  // LMS1104: Publish every layer. The timing for the LMS1104 seems to be:
+                  //          Every 67 ms receiving of a new scan message
+                  //          Scan message contains 367 measurements
+                  //          angle increment is 0.75° (yields 274,5° covery -> OK)
+                  // MRS6124: Publish very 24th layer at the layer = 237 , MRS6124 contains no sequence with seq 0
+                  //BBB
+#ifndef _MSC_VER
+                  int numTotalShots = 360; // cloud_.width;
+                  int numPartialShots = 40; // spaeter auf 40 zuruecknehmen
+
+                  for (int i = 0; i < numTotalShots; i += numPartialShots)
+                  {
+                    sensor_msgs::PointCloud2 partialCloud;
+                    partialCloud = cloud_;
+                    ros::Time partialTimeStamp = cloud_.header.stamp;
+
+                    partialTimeStamp += ros::Duration((i + 0.5 * (numPartialShots - 1)) * timeIncrement);
+                    partialTimeStamp += ros::Duration((3 * numTotalShots) * timeIncrement);
+                    partialCloud.header.stamp = partialTimeStamp;
+                    partialCloud.width = numPartialShots * 3;  // die sind sicher in diesem Bereich
+
+                    int diffTo1100 = 1101 - 3 * (360 + i);
+                    if (diffTo1100 > numPartialShots)
+                    {
+                      diffTo1100 = numPartialShots;
+                    }
+                    if (diffTo1100 < 0)
+                    {
+                      diffTo1100 = 0;
+                    }
+                    partialCloud.width += diffTo1100;
+                    // printf("Offset: %4d Breite: %4d\n", i, partialCloud.width);
+                    partialCloud.height = 1;
+
+
+                    partialCloud.is_bigendian = false;
+                    partialCloud.is_dense = true;
+                    partialCloud.point_step = numChannels * sizeof(float);
+                    partialCloud.row_step = partialCloud.point_step * partialCloud.width;
+                    partialCloud.fields.resize(numChannels);
+                    for (int ii = 0; ii < numChannels; ii++)
+                    {
+                      std::string channelId[] = {"x", "y", "z", "intensity"};
+                      partialCloud.fields[ii].name = channelId[ii];
+                      partialCloud.fields[ii].offset = ii * sizeof(float);
+                      partialCloud.fields[ii].count = 1;
+                      partialCloud.fields[ii].datatype = sensor_msgs::PointField::FLOAT32;
+                    }
+
+                    partialCloud.data.resize(partialCloud.row_step);
+
+                    int partOff = 0;
+                    for (int j = 0; j < 4; j++)
+                    {
+                      int layerIdx = (j + (layerCnt)) % 4;  // j = 0 -> oldest
+                      int rowIdx = 1 + layerSeq[layerIdx % 4]; // +1, da es bei -1 beginnt
+                      int colIdx = j * 360 + i;
+                      int maxAvail = 1101 - colIdx; // <todo> exchange magic number 1101 with parsing result+
+                      if (maxAvail < 0)
+                      {
+                        maxAvail = 0;
+                      }
+
+                      if (maxAvail > numPartialShots)
+                      {
+                        maxAvail = numPartialShots;
+                      }
+
+                      // printf("Most recent LayerIdx: %2d RowIdx: %4d ColIdx: %4d\n", layer, rowIdx, colIdx);
+                      if (maxAvail > 0)
+                      {
+                        memcpy(&(partialCloud.data[partOff]),
+                               &(cloud_.data[(rowIdx * 1101 + colIdx + i) * cloud_.point_step]),
+                               cloud_.point_step * maxAvail);
+
+                      }
+
+                      partOff += maxAvail * partialCloud.point_step;
+                    }
+                    assert(partialCloud.data.size()==partialCloud.width*partialCloud.point_step);
+
+
+                    cloud_pub_.publish(partialCloud);
+#if 0
+                    memcpy(&(partialCloud.data[0]), &(cloud_.data[0]) + i * cloud_.point_step, cloud_.point_step * numPartialShots);
+                    cloud_pub_.publish(partialCloud);
+#endif
+                  }
+                }
+                //                cloud_pub_.publish(cloud_);
 
 #else
                 printf("PUBLISH:\n");
