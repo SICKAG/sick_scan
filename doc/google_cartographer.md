@@ -15,12 +15,12 @@ Inbetriebnahme Google Cartographer:
    roslaunch sick_scan sick_tim_5xx.launch cloud_topic:=vertical_laser_3d frame_id:=vertical_vlp16_link hostname:=192.168.0.71
 7. Terminalfenster 5:
 
-   . ros1_start.sh
-   cd ~/ros_cartographer_ws
-   source ./install_isolated/setup.bash
-   catkin_make_isolated
+   * . ros1_start.sh
+   * cd ~/ros_cartographer_ws
+   * source ./install_isolated/setup.bash
+   * catkin_make_isolated
 
-   roslaunch cartographer_ros live_demo_backpack_3d.launch
+   * roslaunch cartographer_ros live_demo_backpack_3d.launch
 
 
 ```
