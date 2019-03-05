@@ -182,7 +182,6 @@ int main(int argc, char **argv)
 		ROS_INFO("Program arguments: %s", argv_tmp[i]);
 	}
 
-
 	int result = mainGenericLaser(argc_tmp, argv_tmp, scannerName);
 	return result;
 

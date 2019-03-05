@@ -2,19 +2,19 @@
 // Created by michael on 10/11/18.
 //
 
-#ifndef SICK_SCAN_SICK_SCAN_CONFIG_H
-#define SICK_SCAN_SICK_SCAN_CONFIG_H
+#ifndef SICK_SCAN_CONFIG_H
+#define SICK_SCAN_CONFIG_H
 
 #include <fstream>
 #include <map>
 #include <string>
 
-class SickScanConfig
+class SickScanConfigInternal
     {
 public:
-    static SickScanConfig& get()
+    static SickScanConfigInternal& get()
       {
-      static SickScanConfig instance;
+      static SickScanConfigInternal instance;
       return instance;
       }
     void setValue(std::string key, std::string val);
@@ -24,9 +24,9 @@ public:
     bool getBoolValue(std::string key);
 
 private:
-    SickScanConfig(){};
-    SickScanConfig(const SickScanConfig&);
-    SickScanConfig& operator=(const SickScanConfig&);
+    SickScanConfigInternal(){};
+    SickScanConfigInternal(const SickScanConfigInternal&);
+    SickScanConfigInternal& operator=(const SickScanConfigInternal&);
     std::map<std::string,std::string> storedConfig;
     };
 #endif //SICK_SCAN_SICK_SCAN_CONFIG_H

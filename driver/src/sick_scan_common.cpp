@@ -60,7 +60,7 @@
 #include <sick_scan/sick_scan_common.h>
 #include <sick_scan/sick_generic_radar.h>
 
-#include <sick_scan/sick_scan_config.h>
+#include <sick_scan/sick_scan_config_internal.h>
 
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
@@ -2336,6 +2336,7 @@ namespace sick_scan
     static bool dumpData = false;
     static int verboseLevel = 0;
     static bool slamBundle = false;
+    float timeIncrement;
     static std::string echoForSlam = "";
     if (firstTimeCalled == true)
     {
@@ -2535,7 +2536,7 @@ namespace sick_scan
                     measurementFrequencyDiv100/=100;
                   }
                   msg.time_increment = 1.0 / (measurementFrequencyDiv100 * 100.0);
-
+                  timeIncrement=msg.time_increment;
                   msg.range_min = parser_->get_range_min();
                   msg.range_max = parser_->get_range_max();
 
@@ -3100,7 +3101,8 @@ namespace sick_scan
             {
               const int numChannels = 4; // x y z i (for intensity)
 
-              bool fireEveryLayer = false; // if true, every layer will be fired.fireEveryLayer
+              //BBB
+              bool fireEveryLayer = config_.cartographer_compatibility; // if true, every layer will be fired.fireEveryLayer
               int numTmpLayer = numOfLayers;
               if (fireEveryLayer)
               {
@@ -3229,14 +3231,22 @@ namespace sick_scan
               }
               // if ( (msg.header.seq == 0) || (layerOff == 0)) // FIXEN!!!!
               bool shallIFire = false;
-              if (fireEveryLayer)
-              {
-                shallIFire = true;
-              }
               if ((msg.header.seq == 0) || (msg.header.seq == 237))
               {
                 shallIFire = true;
               }
+              if (fireEveryLayer)
+              {
+                if((msg.header.seq == 0)){
+                  shallIFire = true;
+                }
+                else
+                  shallIFire = false;
+                {
+
+                }
+              }
+
               if (shallIFire) // shall i fire the signal???
               {
                 // Following cases are interesting:
@@ -3249,7 +3259,41 @@ namespace sick_scan
                 // MRS6124: Publish very 24th layer at the layer = 237 , MRS6124 contains no sequence with seq 0
                 //BBB
 #ifndef _MSC_VER
-                cloud_pub_.publish(cloud_);
+                int numTotalShots = cloud_.width;
+                int numPartialShots = 50;
+                for (int i = 0; i  < (numTotalShots-numPartialShots); i += numPartialShots)
+                {
+                  sensor_msgs::PointCloud2 partialCloud;
+                  partialCloud = cloud_;
+                  ros::Time partialTimeStamp = cloud_.header.stamp;
+
+                  partialTimeStamp += ros::Duration((i + 0.5*(numPartialShots - 1)) * timeIncrement);
+                  partialCloud.header.stamp = partialTimeStamp;
+                  partialCloud.width = numPartialShots;
+                  partialCloud.height = 1;
+
+                  partialCloud.is_bigendian = false;
+                  partialCloud.is_dense = true;
+                  partialCloud.point_step = numChannels * sizeof(float);
+                  partialCloud.row_step = partialCloud.point_step *partialCloud.width;
+                  partialCloud.fields.resize(numChannels);
+                  for (int ii = 0; ii < numChannels; ii++)
+                  {
+                    std::string channelId[] = {"x", "y", "z", "intensity"};
+                    partialCloud.fields[ii].name = channelId[ii];
+                    partialCloud.fields[ii].offset = ii * sizeof(float);
+                    partialCloud.fields[ii].count = 1;
+                    partialCloud.fields[ii].datatype = sensor_msgs::PointField::FLOAT32;
+                  }
+
+                  partialCloud.data.resize(partialCloud.row_step * partialCloud.height);
+
+                  memcpy(&(partialCloud.data[0]), &(cloud_.data[0]) + i * cloud_.point_step, cloud_.point_step * numPartialShots);
+                  cloud_pub_.publish(partialCloud);
+
+                }
+//                cloud_pub_.publish(cloud_);
+
 #else
                 printf("PUBLISH:\n");
 #endif

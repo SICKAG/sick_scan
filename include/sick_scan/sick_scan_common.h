@@ -210,7 +210,8 @@ namespace sick_scan
 				// sensor_msgs::PointCloud cloud_;
 				sensor_msgs::PointCloud2 cloud_;
 		//////
-
+		// Dynamic Reconfigure
+		SickScanConfig config_;
 		protected:
 		virtual int init_device() = 0;
 		virtual int init_scanner();
@@ -267,8 +268,7 @@ namespace sick_scan
 		diagnostic_updater::Updater diagnostics_;
 
 
-		// Dynamic Reconfigure
-		SickScanConfig config_;
+
 
 	private:
 		SopasProtocol m_protocolId;

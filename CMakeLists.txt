@@ -118,8 +118,8 @@ add_library(sick_scan_lib
 	driver/src/sick_generic_imu.cpp
 	driver/src/sick_generic_parser.cpp
 	driver/src/sick_scan_common_nw.cpp
-		include/sick_scan/sick_scan_config.h
-		driver/src/sick_scan_config.cpp
+		include/sick_scan/sick_scan_config_internal.h
+		driver/src/sick_scan_config_internal.cpp
 		include/sick_scan/softwarePLL.h
 		driver/src/softwarePLL.cpp
 		)

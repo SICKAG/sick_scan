@@ -87,6 +87,8 @@ namespace sick_scan
 	  bool useBinaryProtocol;
 	  bool IntensityResolutionIs16Bit;
 	  bool deviceIsRadar;
+
+	  bool CartographerCompatibility;
 	};
 
 
