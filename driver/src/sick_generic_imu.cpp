@@ -566,13 +566,15 @@ namespace sick_scan
         imuMsg_.angular_velocity.x = imuValue.AngularVelocityX();
         imuMsg_.angular_velocity.y = imuValue.AngularVelocityY();
         imuMsg_.angular_velocity.z = imuValue.AngularVelocityZ();
-
+#if 0
         if (firstTime)
         {
             lastTimeStamp = timeStamp;
             firstTime = false;
-        } else
+        }
+        else
         {
+
           #ifdef DEBUG_DUMP_ENABLED
           /*
           float LinearAccelerationX() const { return linearAccelerationX; }
@@ -618,7 +620,7 @@ namespace sick_scan
         lastRoll = roll;
         lastPitch = pitch;
         lastYaw = yaw;
-
+#endif
         imuMsg_.linear_acceleration.x = imuValue.LinearAccelerationX();
         imuMsg_.linear_acceleration.y = imuValue.LinearAccelerationY();
         imuMsg_.linear_acceleration.z = imuValue.LinearAccelerationZ();
