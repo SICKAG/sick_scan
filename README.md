@@ -157,6 +157,8 @@ Overview of the tools:
  3. Sopas file of your scanner configuration.
   The instructions at http://sickusablog.com/create-and-download-a-sopas-file/ show how to create the Sopas file.
 * In case of application support please use [https://supportportal.sick.com ](https://supportportal.sick.com).
+* Issue Handling: Issue, for which no reply was received from the questioner for more than 7 days,						
+  are closed by us because we assume that the user has solved the problem.
 
 
 ## Installation
