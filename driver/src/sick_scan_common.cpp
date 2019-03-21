@@ -2502,6 +2502,7 @@ namespace sick_scan
                   swap_endian((unsigned char *) &elevAngleX200, 2);
 
                   elevationAngleInRad = -elevAngleX200 / 200.0 * deg2rad_const;
+
                   msg.header.seq = elevAngleX200; // should be multiple of 0.625° starting with -2638 (corresponding to 13.19°)
 
                   memcpy(&SystemCountScan, receiveBuffer + 0x26, 4);
@@ -2515,10 +2516,11 @@ namespace sick_scan
                   //TODO Handle return values
                   ros::Duration debug_duration=recvTimeStamp-tmp_time;
 #ifdef DEBUG_DUMP_ENABLED
-
-                  DataDumper::instance().pushData((double)SystemCountScan, "LASESCANTIME", SystemCountScan);
-                  DataDumper::instance().pushData((double)SystemCountTransmit, "LASERTRANSMITTIME", SystemCountTransmit);
-                  DataDumper::instance().pushData((double)SystemCountScan, "LASERTRANSMITTIME", debug_duration.toSec());
+                  double elevationAngleInDeg=elevationAngleInRad = -elevAngleX200 / 200.0;
+                  DataDumper::instance().pushData((double)SystemCountScan, "LAYER", elevationAngleInDeg);
+                  //DataDumper::instance().pushData((double)SystemCountScan, "LASESCANTIME", SystemCountScan);
+                  //DataDumper::instance().pushData((double)SystemCountTransmit, "LASERTRANSMITTIME", SystemCountTransmit);
+                  //DataDumper::instance().pushData((double)SystemCountScan, "LASERTRANSMITDELAY", debug_duration.toSec());
 #endif
 
                   memcpy(&scanFrequencyX100, receiveBuffer + 52, 4);
@@ -2778,7 +2780,7 @@ namespace sick_scan
                                   if (i == floor(numberOfItems / 2))
                                   {
                                   double curTimeStamp = SystemCountScan + i * msg.time_increment * 1E6;
-                                  DataDumper::instance().pushData(curTimeStamp, "DIST", rangePtr[idx]);
+                                  //DataDumper::instance().pushData(curTimeStamp, "DIST", rangePtr[idx]);
                                 }
                                 }
 #endif
@@ -3015,7 +3017,6 @@ namespace sick_scan
                 {
                   msg.intensities.resize(echoPartNum); // fill with zeros
                 }
-                // msg.header.frame_id = ""
                 {
                   // numEchos
                   char szTmp[255] = {0};
@@ -3234,7 +3235,7 @@ namespace sick_scan
               static int layerCnt = 0;
               static int layerSeq[4];
 
-              if (config_.cartographer_compatibility)
+              if (config_.cloud_output_mode>0)
               {
 
                   layerSeq[layerCnt % 4] = layer;
@@ -3252,13 +3253,13 @@ namespace sick_scan
 
               if (shallIFire) // shall i fire the signal???
               {
-                if (false == config_.cartographer_compatibility)
+                if (config_.cloud_output_mode==0)
                 {
                    // standard handling of scans
                   cloud_pub_.publish(cloud_);
 
                 }
-                else
+                else if(config_.cloud_output_mode==2)
                 {
                   // Following cases are interesting:
                   // LMS5xx: seq is always 0 -> publish every scan
@@ -3270,8 +3271,8 @@ namespace sick_scan
                   // MRS6124: Publish very 24th layer at the layer = 237 , MRS6124 contains no sequence with seq 0
                   //BBB
 #ifndef _MSC_VER
-                  int numTotalShots = 360; // cloud_.width;
-                  int numPartialShots = 40; // spaeter auf 40 zuruecknehmen
+                  int numTotalShots = 360; //TODO where is this from ?
+                  int numPartialShots = 40; //
 
                   for (int i = 0; i < numTotalShots; i += numPartialShots)
                   {
@@ -3284,7 +3285,7 @@ namespace sick_scan
                     partialCloud.header.stamp = partialTimeStamp;
                     partialCloud.width = numPartialShots * 3;  // die sind sicher in diesem Bereich
 
-                    int diffTo1100 = 1101 - 3 * (360 + i);
+                    int diffTo1100 = cloud_.width - 3 * (numTotalShots + i);
                     if (diffTo1100 > numPartialShots)
                     {
                       diffTo1100 = numPartialShots;
@@ -3319,8 +3320,8 @@ namespace sick_scan
                     {
                       int layerIdx = (j + (layerCnt)) % 4;  // j = 0 -> oldest
                       int rowIdx = 1 + layerSeq[layerIdx % 4]; // +1, da es bei -1 beginnt
-                      int colIdx = j * 360 + i;
-                      int maxAvail = 1101 - colIdx; // <todo> exchange magic number 1101 with parsing result+
+                      int colIdx = j * numTotalShots + i;
+                      int maxAvail = cloud_.width - colIdx; //
                       if (maxAvail < 0)
                       {
                         maxAvail = 0;
@@ -3335,7 +3336,7 @@ namespace sick_scan
                       if (maxAvail > 0)
                       {
                         memcpy(&(partialCloud.data[partOff]),
-                               &(cloud_.data[(rowIdx * 1101 + colIdx + i) * cloud_.point_step]),
+                               &(cloud_.data[(rowIdx * cloud_.width + colIdx + i) * cloud_.point_step]),
                                cloud_.point_step * maxAvail);
 
                       }

@@ -639,7 +639,7 @@ namespace sick_scan
 
         }
 
-        if(!commonPtr->config_.cartographer_compatibility)
+        if(commonPtr->config_.cloud_output_mode==2)
         {
           imuMsg_.angular_velocity_covariance[0] = 0.02;
           imuMsg_.angular_velocity_covariance[1] = 0;
