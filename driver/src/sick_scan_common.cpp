@@ -3047,6 +3047,7 @@ namespace sick_scan
                 {
 
                   pub_.publish(msg);
+                  diagnosticPub_->publish(msg);
                 }
 #else
                 printf("MSG received...");
