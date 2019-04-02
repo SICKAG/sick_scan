@@ -44,7 +44,7 @@
 
   <node name="sick_mrs_1xxx" pkg="sick_scan" type="sick_generic_caller" respawn="false" output="screen">
     <param name="scanner_type" type="string" value="sick_mrs_1xxx"/>
-    <param name="intensity_resolution_16bit" type="bool" value="False" />
+    <param name="intensity_resolution_16bit_" type="bool" value="False" />
     <param name="hostname" type="string" value="$(arg hostname)" />
     <param name="port" type="string" value="2112" />
   </node>
