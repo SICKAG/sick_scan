@@ -891,13 +891,15 @@ namespace sick_scan
     sopasCmdVec[CMD_APPLICATION_MODE_FIELD_OFF] = "\x02sWN SetActiveApplications 1 FEVL 0\x03"; // <STX>sWN{SPC}SetActiveApplications{SPC}1{SPC}FEVL{SPC}1<ETX>
     sopasCmdVec[CMD_APPLICATION_MODE_RANGING_ON] = "\x02sWN SetActiveApplications 1 RANG 1\x03";
     sopasCmdVec[CMD_SET_TO_COLA_A_PROTOCOL] = "\x02sWN EIHstCola 0\x03";
-    sopasCmdVec[CMD_GET_PARTIAL_SCANDATA_CFG] = "\x02sRN LMDscandatacfg\x03";
+    sopasCmdVec[CMD_GET_PARTIAL_SCANDATA_CFG] = "\x02sRN LMDscandatacfg\x03";//<STX>sMN{SPC}mLMPsetscancfg{SPC } +5000{SPC}+1{SPC}+5000{SPC}-450000{SPC}+2250000<ETX>
+    sopasCmdVec[CMD_GET_PARTIAL_SCAN_CFG] = "\x02sRN LMPscancfg\x03";
     sopasCmdVec[CMD_SET_TO_COLA_B_PROTOCOL] = "\x02sWN EIHstCola 1\x03";
 
     sopasCmdVec[CMD_STOP_IMU_DATA] = "\x02sEN InertialMeasurementUnit 0\x03";
     sopasCmdVec[CMD_START_IMU_DATA] = "\x02sEN InertialMeasurementUnit 1\x03";
 
     // defining cmd mask for cmds with variable input
+    sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %d 1 %d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
     sopasCmdMaskVec[CMD_SET_PARTICLE_FILTER] = "\x02sWN LFPparticle %d %d\x03";
     sopasCmdMaskVec[CMD_SET_MEAN_FILTER] = "\x02sWN LFPmeanfilter %d +%d 1\x03";
     sopasCmdMaskVec[CMD_ALIGNMENT_MODE] = "\x02sWN MMAlignmentMode %d\x03";
@@ -925,6 +927,7 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_SET_OUTPUT_RANGES] = "Error setting angular ranges";
     sopasCmdErrMsg[CMD_GET_OUTPUT_RANGES] = "Error reading angle range";
     sopasCmdErrMsg[CMD_RUN] = "FATAL ERROR unable to start RUN mode!";
+    sopasCmdErrMsg[CMD_SET_PARTIAL_SCANDATA_CFG] = "Error setting Scanconfig";
     sopasCmdErrMsg[CMD_SET_PARTIAL_SCANDATA_CFG] = "Error setting Scandataconfig";
     sopasCmdErrMsg[CMD_STOP_SCANDATA] = "Error stopping scandata output";
     sopasCmdErrMsg[CMD_START_SCANDATA] = "Error starting Scandata output";
@@ -991,6 +994,7 @@ namespace sick_scan
           sopasCmdChain.push_back(CMD_APPLICATION_MODE_FIELD_OFF);
           sopasCmdChain.push_back(CMD_APPLICATION_MODE_RANGING_ON);
           sopasCmdChain.push_back(CMD_DEVICE_IDENT_LEGACY);
+
           sopasCmdChain.push_back(CMD_SERIAL_NUMBER);
           break;
       }
@@ -1809,11 +1813,6 @@ namespace sick_scan
 
       }
 
-
-
-
-
-
       // set scanning angle for tim5xx and for mrs1104
       if ((this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
           || (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)
@@ -1862,7 +1861,56 @@ namespace sick_scan
 
 
       }
+      //BBB
+      // set scanning angle for tim5xx and for mrs1104
+      double scan_freq=0;
+      double ang_res=0;
+      pn.getParam("scan_freq", scan_freq); // filter_echos
+      pn.getParam("ang_res", ang_res); // filter_echos
+      if (scan_freq!=0 || ang_res!=0)
+      {
+        if(scan_freq!=0 && ang_res!=0)
+        {
+          char requestLMDscancfg[MAX_STR_LEN];
+          //    sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %d 1 %d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
+          const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG].c_str();
+          sprintf(requestLMDscancfg, pcCmdMask, (long)(scan_freq*100+1e-9),(long)(ang_res*10000+1e-9));
+          if (useBinaryCmd)
+          {
+            std::vector<unsigned char> reqBinary;
+            this->convertAscii2BinaryCmd(requestLMDscancfg, &reqBinary);
+            result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_PARTIAL_SCAN_CFG]);
+          }
+          else
+          {
+            std::vector<unsigned char> lmdScanCfgReply;
+            result = sendSopasAndCheckAnswer(requestLMDscancfg, &lmdScanCfgReply);
+          }
 
+
+          // check setting
+          char requestLMDscancfgRead[MAX_STR_LEN];
+          // Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+
+          strcpy(requestLMDscancfgRead, sopasCmdVec[CMD_GET_PARTIAL_SCAN_CFG].c_str());
+          if (useBinaryCmd)
+          {
+            std::vector<unsigned char> reqBinary;
+            this->convertAscii2BinaryCmd(requestLMDscancfgRead, &reqBinary);
+            result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_PARTIAL_SCAN_CFG]);
+          }
+          else
+          {
+            std::vector<unsigned char> lmdScanDataCfgReadReply;
+            result = sendSopasAndCheckAnswer(requestLMDscancfgRead, &lmdScanDataCfgReadReply);
+          }
+
+        }
+        else
+        {
+          ROS_ERROR("ang_res and scan_freq have to be set, only one param is set skiping scan_fre/ang_res config");
+        }
+      }
       // CONFIG ECHO-Filter (only for MRS1000 not available for TiM5xx
       if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() >= 4)
       {
@@ -3444,6 +3492,8 @@ namespace sick_scan
     std::string keyWord4 = "sWN SetActiveApplications";
     std::string keyWord5 = "sEN IMUData";
     std::string keyWord6 = "sWN EIIpAddr";
+    std::string keyWord7 = "sMN mLMPsetscancfg";
+    //BBB
 
     std::string cmdAscii = requestAscii;
 
@@ -3557,6 +3607,48 @@ namespace sick_scan
       buffer[2] = (unsigned char) (0xFF & adrPartArr[2]);
       buffer[3] = (unsigned char) (0xFF & adrPartArr[3]);
       bufferLen = 4;
+    }
+    //\x02sMN mLMPsetscancfg %d 1 %d 0 0\x03";
+    //02 02 02 02 00 00 00 25 73 4D 4E 20 6D 4C 4D 50 73 65 74 73 63 61 6E 63 66 67 20
+    // 00 00 13 88 4byte freq
+    // 00 01 2 byte sectors always 1
+    // 00 00 13 88  ang_res
+    // FF F9 22 30 sector start always 0
+    // 00 22 55 10 sector stop  always 0
+    // 21
+    if (cmdAscii.find(keyWord7) != std::string::npos)
+    {
+      bufferLen = 18;
+      for(int i=0;i<bufferLen;i++)
+      {
+        unsigned char uch=0x00;
+        switch (i)
+        {
+          case 5:
+            uch=0x01;break;
+        }
+        buffer[i]=uch;
+      }
+      char tmpStr[1024] = {0};
+      char szApplStr[255] = {0};
+      int keyWord7Len = keyWord7.length();
+      int scanDataStatus = 0;
+      int dummy0, dummy1;
+      strcpy(tmpStr, requestAscii + keyWord7Len + 2);
+      sscanf(tmpStr, "%d 1 %d", &dummy0, &dummy1);
+
+      buffer[0] = (unsigned char)(0xFF & (dummy0 >> 24));
+      buffer[1] = (unsigned char)(0xFF & (dummy0 >> 16));
+      buffer[2] = (unsigned char)(0xFF & (dummy0 >> 8));
+      buffer[3] = (unsigned char)(0xFF & (dummy0 >> 0));
+
+
+      buffer[6] = (unsigned char)(0xFF & (dummy1 >> 24));
+      buffer[7] = (unsigned char)(0xFF & (dummy1 >> 16));
+      buffer[8] = (unsigned char)(0xFF & (dummy1 >> 8));
+      buffer[9] = (unsigned char)(0xFF & (dummy1 >> 0));
+
+
     }
     // copy base command string to buffer
     bool switchDoBinaryData = false;
