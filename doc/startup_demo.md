@@ -3,7 +3,7 @@
 ## Table of contents
 
 - [Introduction](#introduction)
-- [Quick Ckeck of Firmware](#quick-check-of-firmware)
+- [Quick Check of Firmware](#quick-check-of-firmware)
 - [Startup Sequence](#startup-sequence)
 
 ## Introduction
@@ -24,7 +24,7 @@ After a firmware update, the following Quickcheck is performed:
 rostopic hz /cloud
 ```
 
-6. further inspection, if any, by dumping Pointcloud2 data.
+6. Further inspection, if any, by dumping Pointcloud2 data.
 The header is of particular interest here. A typical call can therefore look as follows:
 ```
 rostopic echo /cloud|grep frame -B 7 -A 26
