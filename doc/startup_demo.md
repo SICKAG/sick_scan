@@ -14,12 +14,12 @@ The following ROS boot protocol shows the typical start sequence when starting a
 
 After a firmware update, the following Quickcheck is performed:
 
-1. is the device accessible via ping?
-2. can the device be started with the corresponding generic launch file?
-3. at the end of the launch process, the device switches to receive mode
+1. Is the device accessible via ping?
+2. Can the device be started with the corresponding generic launch file?
+3. At the end of the launch process, the device switches to receive mode
     for scan data? Typically the last command sent is ```<STX>sEA LMDscandata \x01<ETX>```.
-4. check with rviz: Is it possible to display the Pointcloud2 data or similar? Is the display plausible?
-5. check the scan rate with the command
+4. Check with rviz: Is it possible to display the Pointcloud2 data or similar? Is the display plausible?
+5. Check the scan rate with the command
 ```
 rostopic hz /cloud
 ```
