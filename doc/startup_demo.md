@@ -18,7 +18,7 @@ After a firmware update, the following Quickcheck is performed:
 2. Can the device be started with the corresponding generic launch file?
 3. At the end of the launch process, the device switches to receive mode
     for scan data? Typically the last command sent is ```<STX>sEA LMDscandata \x01<ETX>```.
-4. Check with rviz: Is it possible to display the Pointcloud2 data or similar? Is the display plausible?
+4. Check with rviz: Is it possible to see the Pointcloud2 data or similar? Is the shown data reasonable?
 5. Check the scan rate with the command
 ```
 rostopic hz /cloud
