@@ -8,11 +8,11 @@
 
 ## Setup
 
-Setup Google Cartographer:
+Setup Google Cartographer (these steps are for illustration only, you must adapt these lines to your local directory names)
 
 1. Login to Ubuntu.
 2. Open multiple terminals.
-3. Termininal 1:
+3. Terminal 1:
    . ros1_start.sh
    roscore
 4. Terminal 2:
@@ -33,6 +33,10 @@ Setup Google Cartographer:
    * roslaunch cartographer_ros live_demo_backpack_3d.launch
 
 
+## Example output
 
+The following figure shows an example of an outdoor slam result using a MRS1104-scanner:
+
+![slam_example](slam_example.png)
 
 
