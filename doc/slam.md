@@ -6,6 +6,7 @@
 - [Launch Files](#launch-files)
 - [Example Setup](#example-setup)
 - [MRS1104 SLAM Support](#MRS1104-SLAM-Support)
+- [Google Cartographer](#google-cartographer)
 
 ## Introduction
 
@@ -50,7 +51,10 @@ cd <catkin-workspace>/src/sick_scan/tools
 . setup_sick_scan_slam.sh 
 ```
 
+## Google Cartographer
 
+
+The support of Google Cartographer was made possible by a number of extensions to the driver. On the driver side, the MRS1104 is prepared to support the Google Cartographer. The Google Cartographer expects data packets at a high recording density (several hundred packets per second) to perform the SLAM algorithm. For this reason, an option has been introduced that allows the scans to be chopped into small angular ranges. The time stamps for these small ranges were converted accordingly. You can find results and further information [here](./google_cartographer.md)
 
 
 
