@@ -1,12 +1,12 @@
 # IP addresses configuration
-# Detecting SICK devices in the network 
+## Detecting SICK devices in the network 
 The Python script 
 ```sick_scan/tools/sick_generic_device_finder/sick_generic_device_finder.py```
 sends a UDP broadcast to which all available scanners respond with a device description.
 The varibale ```UDP_IP = "192.168.0.255"``` defines the broardcast adress used by the script. 
 If you are using a different IP address configuration on your host pc you have to change this variable according to the brodcast address of your network card.   
 ```ifconfig``` shows the broadcast adress for every network adapter.
-# Change IP addresses
+## Change IP addresses
 The IP addresses of the devices can be changed with a customized launch file.
 The following launch sequence is an example:
  
