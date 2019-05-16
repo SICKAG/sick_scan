@@ -14,3 +14,5 @@ The laser scanner provides additional information (tick timestamp and confidence
 <param name="imu_enable_additional_info" type="bool" value="True" />
 
 ```
+
+IMU messages are only supported in SOPAS binary mode. Due to the high data rate of the IMU messages (100 Hz and more) while sending the standard laser scanner messages at the same time, the ASCII mode is not supported. Please set the scanner to binary mode if you are using the IMU.
