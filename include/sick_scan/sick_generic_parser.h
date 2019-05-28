@@ -39,6 +39,7 @@
 #define SICK_SCANNER_LMS_1XXX_NAME "sick_lms_1xxx"
 #define SICK_SCANNER_MRS_1XXX_NAME "sick_mrs_1xxx"
 #define SICK_SCANNER_TIM_5XX_NAME "sick_tim_5xx"
+#define SICK_SCANNER_TIM_7XX_NAME "sick_tim_7xx"
 #define SICK_SCANNER_LMS_5XX_NAME "sick_lms_5xx"
 #define SICK_SCANNER_LMS_1XX_NAME "sick_lms_1xx"
 #define SICK_SCANNER_MRS_6XXX_NAME "sick_mrs_6xxx"
@@ -46,7 +47,8 @@
 #include "abstract_parser.h"
 
 #include "sensor_msgs/LaserScan.h"
-
+#include "sick_scan/sick_scan_common.h"
+#include "sick_scan/dataDumper.h"
 // namespace sensor_msgs
 namespace sick_scan
 {
@@ -85,6 +87,8 @@ namespace sick_scan
 	  bool useBinaryProtocol;
 	  bool IntensityResolutionIs16Bit;
 	  bool deviceIsRadar;
+
+	  bool CartographerCompatibility;
 	};
 
 

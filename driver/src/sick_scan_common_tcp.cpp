@@ -738,7 +738,7 @@ namespace sick_scan
     {
 		  if (readWithTimeout(getReadTimeOutInMs(), buffer, BUF_SIZE, &bytes_read, 0, cmdIsBinary) == ExitError)
 		  {
-  			ROS_ERROR_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after %d ms",getReadTimeOutInMs());
+  			ROS_INFO_THROTTLE(1.0, "sendSOPASCommand: no full reply available for read after %d ms",getReadTimeOutInMs());
   			diagnostics_.broadcast(getDiagnosticErrorCode(), "sendSOPASCommand: no full reply available for read after timeout.");
   			return ExitError;
 	  	}

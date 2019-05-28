@@ -65,12 +65,6 @@ std::istream& operator>>(std::istream& str, CSVRow& data)
 
 
 
-SoftwarePLL::SoftwarePLL()
-{
-	AllowedTimeDeviation(SoftwarePLL::MaxAllowedTimeDeviation); // 1 ms
-	numberValInFifo = 0;
-}
-
 bool SoftwarePLL::pushIntoFifo(double curTimeStamp, uint32_t curtick)
 // update tick fifo and update clock (timestamp) fifo
 {
@@ -119,108 +113,77 @@ int SoftwarePLL::findDiffInFifo(double diff, double tol)
     return(numFnd);
 }
 
-bool SoftwarePLL::getSimpleCorrectedTimeStamp(uint32_t& sec, uint32_t& nanoSec, uint32_t curtick)
+/*!
+\brief Updates PLL internale State should be called only with network send timestamps
+
+\param sec: System Timetamp from received network packed
+\param nsec: System Timestamp from received network packed
+\param curtick micro Seconds since scanner start from SOPAS Datagram
+\return PLL is in valid state (true)
+*/
+bool SoftwarePLL::updatePLL(uint32_t sec, uint32_t nanoSec, uint32_t curtick)
 {
-    bool bRet = true;
+  double start = sec + nanoSec * 1E-9;
+  bool bRet = true;
 
-    static double loopBack = 0.99;
-    static bool firstTime = true;
-    static bool firstTimeLoopBack = true;
-    static double lpVal = 0.0;
-
-    double timeStamp = sec + nanoSec * 1E-9;
-
-    bRet = false;
-
-    // never use the same timestamp again
-    if ((sec == mostRecentSec) && (nanoSec == mostRecentNanoSec))
+  if (false == IsInitialized())
+  {
+    pushIntoFifo(start, curtick);
+    bool bCheck = this->updateInterpolationSlope();
+    if (bCheck)
     {
-        return(false);
+      IsInitialized(true);
     }
-    else
+  }
+
+  if (IsInitialized() == false)
+  {
+    return(false);
+  }
+
+  double relTimeStamp = extraPolateRelativeTimeStamp(curtick); // evtl. hier wg. Ueberlauf noch einmal pruefen
+  double cmpTimeStamp = start - this->FirstTimeStamp();
+
+  bool timeStampVerified = false;
+  if (nearSameTimeStamp(relTimeStamp, cmpTimeStamp) == true)// if timestamp matches prediction update FIFO
+  {
+    timeStampVerified = true;
+    pushIntoFifo(start, curtick);
+    updateInterpolationSlope();
+    ExtrapolationDivergenceCounter(0);
+  }
+
+  if (timeStampVerified == false)
+  {
+    // BEGIN HANDLING Extrapolation divergence
+    uint32_t tmp = ExtrapolationDivergenceCounter();
+    tmp++;
+    ExtrapolationDivergenceCounter(tmp);
+    if (ExtrapolationDivergenceCounter() >= SoftwarePLL::MaxExtrapolationCounter)
     {
-        double diff = timeStamp - mostRecentTimeStamp;
-        double tol = 0.10; // 0.02 means 2 percent
-        int numSimiliarDiff = this->findDiffInFifo(diff, tol);
-
-        if (numSimiliarDiff >= 2)
-        {
-            bRet = true;
-        }
-        else
-        {
-            static int cnt = 0;
-            cnt++;
-            if (cnt > 5)
-            {
-                // printf("TEST");
-            }
-        }
-        this->pushIntoFifo(timeStamp, curtick);
-
-        mostRecentSec = sec;
-        mostRecentNanoSec = nanoSec;
-        mostRecentTimeStamp = timeStamp;
+      IsInitialized(false); // reset FIFO - maybe happened due to abrupt change of time base
     }
+    // END HANDLING Extrapolation divergence
+  }
 
-    return(bRet);
-
+  return(true);
 }
-
+//TODO Kommentare
 bool SoftwarePLL::getCorrectedTimeStamp(uint32_t& sec, uint32_t& nanoSec, uint32_t curtick)
 {
-	double start = sec + nanoSec * 1E-9;
-	bool bRet = true;
-
-	if (false == IsInitialized())
-	{
-		pushIntoFifo(start, curtick);
-		bool bCheck = this->updateInterpolationSlope();
-		if (bCheck)
-		{
-			IsInitialized(true);
-		}
-	}
-
-	if (IsInitialized() == false)
-	{
-		return(false);
-	}
+  if (IsInitialized() == false)
+  {
+    return(false);
+  }
 
 	double relTimeStamp = extraPolateRelativeTimeStamp(curtick); // evtl. hier wg. Ueberlauf noch einmal pruefen
-	double cmpTimeStamp = start - this->FirstTimeStamp();
-
-	bool timeStampVerified = false;
-
-	if (nearSameTimeStamp(relTimeStamp, cmpTimeStamp) == true)
-	{
-		timeStampVerified = true;
-		pushIntoFifo(start, curtick);
-		updateInterpolationSlope();
-		ExtrapolationDivergenceCounter(0);
-	}
-
-	if (timeStampVerified == false)
-	{
-		// BEGIN HANDLING Extrapolation divergence
-		uint32_t tmp = ExtrapolationDivergenceCounter();
-		tmp++;
-		ExtrapolationDivergenceCounter(tmp);
-		if (ExtrapolationDivergenceCounter() >= SoftwarePLL::MaxExtrapolationCounter)
-		{
-			IsInitialized(false); // reset FIFO - maybe happened due to abrupt change of time base
-		}
-		// END HANDLING Extrapolation divergence
-
-		double corrTime = relTimeStamp + this->FirstTimeStamp();
-		sec = (uint32_t)corrTime;
-
-		double frac = corrTime - sec;
-		nanoSec = (uint32_t)(1E9 * frac);
-	}
-
+	double corrTime = relTimeStamp + this->FirstTimeStamp();
+	sec = (uint32_t)corrTime;
+	double frac = corrTime - sec;
+	nanoSec = (uint32_t)(1E9 * frac);
 	return(true);
 }
+
 bool SoftwarePLL::nearSameTimeStamp(double relTimeStamp1, double relTimeStamp2)
 {
 	double dTAbs = fabs(relTimeStamp1 - relTimeStamp2);
@@ -328,6 +291,8 @@ bool SoftwarePLL::getDemoFileData(std::string fileName, std::vector<uint32_t>& t
         return true;
 }
 #endif
+
+//TODO update testbed
 void SoftwarePLL::testbed()
 {
     std::cout << "Running testbed for SofwarePLL" << std::endl;
@@ -381,9 +346,7 @@ void SoftwarePLL::testbed()
 		uint32_t org_sec = sec;
 		uint32_t org_nanoSec = nanoSec;
 
-        // bool bRet = testPll.getCorrectedTimeStamp(sec, nanoSec, curtick);
-
-        bool bRet = testPll.getSimpleCorrectedTimeStamp(sec, nanoSec, curtick);
+         bool bRet = testPll.getCorrectedTimeStamp(sec, nanoSec, curtick);
 
         bool corrected = false;
         if ((nanoSec != org_nanoSec) || (sec != org_sec))

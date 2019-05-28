@@ -20,7 +20,12 @@
 class SoftwarePLL
 {
 public:
-	SoftwarePLL();
+	static SoftwarePLL& instance()
+	{
+		static SoftwarePLL _instance;
+		return _instance;
+	}
+	~SoftwarePLL() {}
 	bool pushIntoFifo(double curTimeStamp, uint32_t curtick);// update tick fifo and update clock (timestamp) fifo;
 	double extraPolateRelativeTimeStamp(uint32_t tick);
 	bool getCorrectedTimeStamp(uint32_t& sec, uint32_t& nanoSec, uint32_t tick);
@@ -39,8 +44,7 @@ public:
 	void AllowedTimeDeviation(double val) { allowedTimeDeviation = val; }
 	uint32_t ExtrapolationDivergenceCounter() const { return extrapolationDivergenceCounter; }
 	void ExtrapolationDivergenceCounter(uint32_t val) { extrapolationDivergenceCounter = val; }
-	bool getSimpleCorrectedTimeStamp(uint32_t& sec, uint32_t& nanoSec, uint32_t curtick);
-
+  bool updatePLL(uint32_t sec, uint32_t nanoSec, uint32_t curtick);
     int findDiffInFifo(double diff, double tol);
 
 private:
@@ -65,6 +69,16 @@ private:
 	bool nearSameTimeStamp(double relTimeStamp1, double relTimeStamp2);
 	bool updateInterpolationSlope();
 	uint32_t extrapolationDivergenceCounter;
+	SoftwarePLL()
+	{
+		AllowedTimeDeviation(SoftwarePLL::MaxAllowedTimeDeviation); // 1 ms
+		numberValInFifo = 0;
+	}
+	// verhindert, dass ein Objekt von au�erhalb von N erzeugt wird.
+	// protected, wenn man von der Klasse noch erben m�chte
+	SoftwarePLL(const SoftwarePLL&); /* verhindert, dass eine weitere Instanz via
+								   Kopier-Konstruktor erstellt werden kann */
+	SoftwarePLL & operator = (const SoftwarePLL &); //Verhindert weitere Instanz durch Kopie
 };
 
 

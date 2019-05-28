@@ -54,7 +54,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <sick_scan/sick_generic_parser.h>
+#include <sick_scan/sick_scan_common.h>
 #include <ros/ros.h>
 
 #ifdef _MSC_VER
@@ -315,8 +315,9 @@ namespace sick_scan
 		setScannerType(_scanType);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_TIM_5XX_NAME);
+		allowedScannerNames.push_back(SICK_SCANNER_TIM_7XX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_LMS_5XX_NAME);
-        allowedScannerNames.push_back(SICK_SCANNER_LMS_1XX_NAME);
+		allowedScannerNames.push_back(SICK_SCANNER_LMS_1XX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_LMS_1XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_6XXX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_RMS_3XX_NAME); // Radar scanner
@@ -358,6 +359,16 @@ namespace sick_scan
         basicParams[i].setUseBinaryProtocol(true);
 				basicParams[i].setDeviceIsRadar(false); // Default
 			}
+			if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_7XX_NAME) == 0) // TIM_5xx - 1 Layer, max. 811 shots per scan
+			{
+				basicParams[i].setNumberOfMaximumEchos(1);
+				basicParams[i].setNumberOfLayers(1);
+				basicParams[i].setNumberOfShots(811);
+				basicParams[i].setAngularDegreeResolution(0.3333);
+				basicParams[i].setExpectedFrequency(15.0);
+				basicParams[i].setUseBinaryProtocol(true);
+				basicParams[i].setDeviceIsRadar(false); // Default
+			}
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0) // LMS_5xx - 1 Layer
       {
         basicParams[i].setNumberOfMaximumEchos(1);
@@ -372,7 +383,7 @@ namespace sick_scan
       {
         basicParams[i].setNumberOfMaximumEchos(1);
         basicParams[i].setNumberOfLayers(1);
-        basicParams[i].setNumberOfShots(541);
+        basicParams[i].setNumberOfShots(1141);
         basicParams[i].setAngularDegreeResolution(0.5);
         basicParams[i].setExpectedFrequency(25.0);
         basicParams[i].setUseBinaryProtocol(true);
@@ -789,6 +800,8 @@ namespace sick_scan
 		 // 7: Telegram counter (eg. 99)
 		 // 8: Scan counter (eg. 9A)
 		 // 9: Time since startup (eg. 13C8E59)
+
+
 		 // 10: Time of transmission (eg. 13C9CBE)
 		 // 11 + 12: Input status (0 0)
 		 // 13 + 14: Output status (8 0)

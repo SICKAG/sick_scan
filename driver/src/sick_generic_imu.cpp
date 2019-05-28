@@ -62,7 +62,7 @@
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
 
-// #include <tf/tf.h>
+#include <tf/tf.h>
 #include <geometry_msgs/Pose2D.h>
 
 #include "sensor_msgs/Imu.h"
@@ -74,6 +74,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef DEBUG_DUMP_ENABLED
+#include "sick_scan/dataDumper.h"
+#endif
 namespace sick_scan
 {
 
@@ -192,7 +195,7 @@ namespace sick_scan
         cnt++;
         int iRet = 0;
         float tmpArr[13] = {0};
-        uint32_t timeStamp;
+        uint64_t timeStamp;
         unsigned char *receiveBuffer = (unsigned char *) datagram;
         if (false == isImuBinaryDatagram(datagram, datagram_length))
         {
@@ -200,9 +203,11 @@ namespace sick_scan
         }
 
         unsigned char *bufPtr = (unsigned char *) datagram;
-
-        memcpy(&timeStamp, receiveBuffer + 36 + 13 * 4, 4);
-        swap_endian((unsigned char *) &timeStamp, 4);
+#ifdef DEBUG_DUMP_TO_CONSOLE_ENABLED
+        DataDumper::instance().dumpUcharBufferToConsole((unsigned char*)datagram, datagram_length);
+#endif
+        memcpy(&timeStamp, receiveBuffer + 36 + 13 * 4, 8);
+        swap_endian((unsigned char *) &timeStamp, 8);
         int adrOffset = 36;
         for (int i = 0; i < 13; i++)
         {
@@ -210,14 +215,14 @@ namespace sick_scan
             swap_endian((unsigned char *) (&(tmpArr[i])), 4);
             adrOffset += 4;
 
-            if ((cnt % 10) == 0)
-            {
-                if (i == 0)
-                {
-                    printf("===================\n");
-                }
-                printf("%2d: %8.6f\n", i, tmpArr[i]);
-            }
+//            if ((cnt % 10) == 0)
+//           {
+//                if (i == 0)
+//                {
+//                    printf("===================\n");
+//                }
+//                printf("%2d: %8.6f\n", i, tmpArr[i]);
+//            }
         }
 
         imuValue->LinearAccelerationX(tmpArr[0]);
@@ -479,10 +484,17 @@ namespace sick_scan
                                    bool useBinaryProtocol)
     {
         int exitCode = ExitSuccess;
-#if 0 // disabled for trusty <todo> enable again
 
         SickScanImuValue imuValue;
         sensor_msgs::Imu imuMsg_;
+      static ros::Time lastTimeStamp;
+
+      static double lastRoll = 0.0;
+      static double lastPitch = 0.0;
+      static double lastYaw = 0.0;
+
+      static bool firstTime = true;
+        /*
         static int cnt = 0;
         static u_int32_t timeStampSecBuffer[1000];
         static u_int32_t timeStampNanoSecBuffer[1000];
@@ -490,13 +502,7 @@ namespace sick_scan
         static u_int32_t timeStampNanoSecCorBuffer[1000];
         static u_int32_t imuTimeStamp[1000];
         static int timeStampValid[1000];
-        static ros::Time lastTimeStamp;
 
-        static double lastRoll = 0.0;
-        static double lastPitch = 0.0;
-        static double lastYaw = 0.0;
-
-        static bool firstTime = true;
         int idx = cnt % 1000;
         cnt++;
 
@@ -516,6 +522,7 @@ namespace sick_scan
                        timeStampSecCorBuffer[i], timeStampNanoSecCorBuffer[i], tsDoubleCorr, tsDiff, timeStampValid[i]);
             }
         }
+         */
         if (useBinaryProtocol)
         {
             this->parseBinaryDatagram((char *) receiveBuffer, actual_length, &imuValue);
@@ -524,23 +531,20 @@ namespace sick_scan
         {
             this->parseAsciiDatagram((char *) receiveBuffer, actual_length, &imuValue);
         }
-
+        /*
         timeStampSecBuffer[idx] = timeStamp.sec;
         timeStampNanoSecBuffer[idx] = timeStamp.nsec;
         imuTimeStamp[idx] = imuValue.TimeStamp();
-
-        //  bool bRet = imuSoftwarePLL.getCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec,imuValue.TimeStamp());
-
-        // bool bRet = imuSoftwarePLL.getSimpleCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec, imuValue.TimeStamp());
-
-        bool bRet = true; // TODO SoftwarePLL disabled
+*/
+          bool bRet = SoftwarePLL::instance().getCorrectedTimeStamp(timeStamp.sec, timeStamp.nsec,(uint32_t)(imuValue.TimeStamp()&0xFFFFFFFF));
+        /*
         timeStampSecCorBuffer[idx] = timeStamp.sec;
         timeStampNanoSecCorBuffer[idx] = timeStamp.nsec;
         timeStampValid[idx] = bRet ? 1 : 0;
-
+        */
         imuMsg_.header.stamp = timeStamp;
         imuMsg_.header.seq = 0;
-        imuMsg_.header.frame_id = "imu_link"; // todo ...
+        imuMsg_.header.frame_id = commonPtr->config_.imu_frame_id; //
 
 
 
@@ -562,13 +566,28 @@ namespace sick_scan
         imuMsg_.angular_velocity.x = imuValue.AngularVelocityX();
         imuMsg_.angular_velocity.y = imuValue.AngularVelocityY();
         imuMsg_.angular_velocity.z = imuValue.AngularVelocityZ();
-
+#if 0
         if (firstTime)
         {
             lastTimeStamp = timeStamp;
             firstTime = false;
-        } else
+        }
+        else
         {
+
+          #ifdef DEBUG_DUMP_ENABLED
+          /*
+          float LinearAccelerationX() const { return linearAccelerationX; }
+          void LinearAccelerationX(float val) { linearAccelerationX = val; }
+          float LinearAccelerationY() const { return linearAccelerationY; }
+          void LinearAccelerationY(float val) { linearAccelerationY = val; }
+          float LinearAccelerationZ() const { return linearAccelerationZ; }
+          void LinearAccelerationZ(float val) { linearAccelerationZ = val; }
+           */
+          DataDumper::instance().pushData((double)imuValue.TimeStamp(), "ACCX", imuValue.LinearAccelerationX());
+          DataDumper::instance().pushData((double)imuValue.TimeStamp(), "ACCY", imuValue.LinearAccelerationY());
+          DataDumper::instance().pushData((double)imuValue.TimeStamp(), "ACCZ", imuValue.LinearAccelerationZ());
+          #endif
             /*
              * The built-in IMU unit provides three parameter sets:
              * quaternions, angular velocity and linear accelerations.
@@ -601,7 +620,7 @@ namespace sick_scan
         lastRoll = roll;
         lastPitch = pitch;
         lastYaw = yaw;
-
+#endif
         imuMsg_.linear_acceleration.x = imuValue.LinearAccelerationX();
         imuMsg_.linear_acceleration.y = imuValue.LinearAccelerationY();
         imuMsg_.linear_acceleration.z = imuValue.LinearAccelerationZ();
@@ -620,40 +639,77 @@ namespace sick_scan
 
         }
 
+        if(commonPtr->config_.cloud_output_mode==2)
+        {
+          imuMsg_.angular_velocity_covariance[0] = 0.02;
+          imuMsg_.angular_velocity_covariance[1] = 0;
+          imuMsg_.angular_velocity_covariance[2] = 0;
+          imuMsg_.angular_velocity_covariance[3] = 0;
+          imuMsg_.angular_velocity_covariance[4] = 0.02;
+          imuMsg_.angular_velocity_covariance[5] = 0;
+          imuMsg_.angular_velocity_covariance[6] = 0;
+          imuMsg_.angular_velocity_covariance[7] = 0;
+          imuMsg_.angular_velocity_covariance[8] = 0.02;
 
-        imuMsg_.angular_velocity_covariance[0] = 0.02;
-        imuMsg_.angular_velocity_covariance[1] = 0;
-        imuMsg_.angular_velocity_covariance[2] = 0;
-        imuMsg_.angular_velocity_covariance[3] = 0;
-        imuMsg_.angular_velocity_covariance[4] = 0.02;
-        imuMsg_.angular_velocity_covariance[5] = 0;
-        imuMsg_.angular_velocity_covariance[6] = 0;
-        imuMsg_.angular_velocity_covariance[7] = 0;
-        imuMsg_.angular_velocity_covariance[8] = 0.02;
+          imuMsg_.linear_acceleration_covariance[0] = 0.04;
+          imuMsg_.linear_acceleration_covariance[1] = 0;
+          imuMsg_.linear_acceleration_covariance[2] = 0;
+          imuMsg_.linear_acceleration_covariance[3] = 0;
+          imuMsg_.linear_acceleration_covariance[4] = 0.04;
+          imuMsg_.linear_acceleration_covariance[5] = 0;
+          imuMsg_.linear_acceleration_covariance[6] = 0;
+          imuMsg_.linear_acceleration_covariance[7] = 0;
+          imuMsg_.linear_acceleration_covariance[8] = 0.04;
 
-        imuMsg_.linear_acceleration_covariance[0] = 0.04;
-        imuMsg_.linear_acceleration_covariance[1] = 0;
-        imuMsg_.linear_acceleration_covariance[2] = 0;
-        imuMsg_.linear_acceleration_covariance[3] = 0;
-        imuMsg_.linear_acceleration_covariance[4] = 0.04;
-        imuMsg_.linear_acceleration_covariance[5] = 0;
-        imuMsg_.linear_acceleration_covariance[6] = 0;
-        imuMsg_.linear_acceleration_covariance[7] = 0;
-        imuMsg_.linear_acceleration_covariance[8] = 0.04;
+          imuMsg_.orientation_covariance[0] = 0.0025;
+          imuMsg_.orientation_covariance[1] = 0;
+          imuMsg_.orientation_covariance[2] = 0;
+          imuMsg_.orientation_covariance[3] = 0;
+          imuMsg_.orientation_covariance[4] = 0.0025;
+          imuMsg_.orientation_covariance[5] = 0;
+          imuMsg_.orientation_covariance[6] = 0;
+          imuMsg_.orientation_covariance[7] = 0;
+          imuMsg_.orientation_covariance[8] = 0.0025;
+        }
+        else
+        {
+          imuMsg_.angular_velocity_covariance[0] = 0;
+          imuMsg_.angular_velocity_covariance[1] = 0;
+          imuMsg_.angular_velocity_covariance[2] = 0;
+          imuMsg_.angular_velocity_covariance[3] = 0;
+          imuMsg_.angular_velocity_covariance[4] = 0;
+          imuMsg_.angular_velocity_covariance[5] = 0;
+          imuMsg_.angular_velocity_covariance[6] = 0;
+          imuMsg_.angular_velocity_covariance[7] = 0;
+          imuMsg_.angular_velocity_covariance[8] = 0;
 
-        imuMsg_.orientation_covariance[0] = 0.0025;
-        imuMsg_.orientation_covariance[1] = 0;
-        imuMsg_.orientation_covariance[2] = 0;
-        imuMsg_.orientation_covariance[3] = 0;
-        imuMsg_.orientation_covariance[4] = 0.0025;
-        imuMsg_.orientation_covariance[5] = 0;
-        imuMsg_.orientation_covariance[6] = 0;
-        imuMsg_.orientation_covariance[7] = 0;
-        imuMsg_.orientation_covariance[8] = 0.0025;
+          imuMsg_.linear_acceleration_covariance[0] = 0;
+          imuMsg_.linear_acceleration_covariance[1] = 0;
+          imuMsg_.linear_acceleration_covariance[2] = 0;
+          imuMsg_.linear_acceleration_covariance[3] = 0;
+          imuMsg_.linear_acceleration_covariance[4] = 0;
+          imuMsg_.linear_acceleration_covariance[5] = 0;
+          imuMsg_.linear_acceleration_covariance[6] = 0;
+          imuMsg_.linear_acceleration_covariance[7] = 0;
+          imuMsg_.linear_acceleration_covariance[8] = 0;
 
+          imuMsg_.orientation_covariance[0] = -1;
+          imuMsg_.orientation_covariance[1] = 0;
+          imuMsg_.orientation_covariance[2] = 0;
+          imuMsg_.orientation_covariance[3] = 0;
+          imuMsg_.orientation_covariance[4] = 0;
+          imuMsg_.orientation_covariance[5] = 0;
+          imuMsg_.orientation_covariance[6] = 0;
+          imuMsg_.orientation_covariance[7] = 0;
+          imuMsg_.orientation_covariance[8] = 0;
+
+          imuMsg_.orientation.x = 0;
+          imuMsg_.orientation.y = 0;
+          imuMsg_.orientation.z = 0;
+          imuMsg_.orientation.w = 0;
+        }
         if (true == bRet)
             this->commonPtr->imuScan_pub_.publish(imuMsg_);
-#endif
         return (exitCode);
 
     }

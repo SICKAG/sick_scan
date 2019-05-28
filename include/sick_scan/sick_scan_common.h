@@ -68,7 +68,6 @@
 #include "sick_scan/sick_generic_parser.h"
 #include "sick_scan/sick_scan_common_nw.h"
 
-
 void swap_endian(unsigned char *ptr, int numBytes);
 
 namespace sick_scan
@@ -101,11 +100,15 @@ namespace sick_scan
 			CMD_SET_OUTPUT_RANGES,
 			CMD_GET_OUTPUT_RANGES,
 			CMD_RUN,
+			CMD_SET_PARTIAL_SCAN_CFG,
+			CMD_GET_PARTIAL_SCAN_CFG,
 			CMD_GET_PARTIAL_SCANDATA_CFG,
 			CMD_SET_PARTIAL_SCANDATA_CFG,
 			CMD_STOP_SCANDATA,
 			CMD_START_SCANDATA,
 			CMD_START_RADARDATA,
+      CMD_ACTIVATE_NTP_CLIENT,
+			CMD_SET_NTP_INTERFACE_ETH,
 
       CMD_START_IMU_DATA, // start of IMU data
       CMD_STOP_IMU_DATA, // start of IMU data
@@ -127,8 +130,11 @@ namespace sick_scan
 			CMD_START_MEASUREMENT,
 			CMD_STOP_MEASUREMENT,
 			CMD_SET_ECHO_FILTER,
+      CMD_SET_NTP_UPDATETIME,
+			CMD_SET_NTP_TIMEZONE,
             CMD_SET_IP_ADDR,
             CMD_SET_GATEWAY,
+			CMD_SET_NTP_SERVER_IP_ADDR,
 			CMD_SET_TO_COLA_A_PROTOCOL,  //		sWN EIHstCola 1  // Cola B 	sWN EIHstCola 0  // Cola A 
 			CMD_SET_TO_COLA_B_PROTOCOL,  // 
 			// ML: Add above new CMD-Identifier
@@ -211,7 +217,8 @@ namespace sick_scan
 				// sensor_msgs::PointCloud cloud_;
 				sensor_msgs::PointCloud2 cloud_;
 		//////
-
+		// Dynamic Reconfigure
+		SickScanConfig config_;
 		protected:
 		virtual int init_device() = 0;
 		virtual int init_scanner();
@@ -268,8 +275,7 @@ namespace sick_scan
 		diagnostic_updater::Updater diagnostics_;
 
 
-		// Dynamic Reconfigure
-		SickScanConfig config_;
+
 
 	private:
 		SopasProtocol m_protocolId;
@@ -302,7 +308,8 @@ namespace sick_scan
 		bool checkForProtocolChangeAndMaybeReconnect(bool& useBinaryCmdNow);
 		void setSensorIsRadar(bool _isRadar);
 		bool getSensorIsRadar(void);
-        bool setNewIpAddress(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd);
+		bool setNewIpAddress(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd);
+		bool setNTPServerAndStart(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd);
 
         int readTimeOutInMs;
 private:

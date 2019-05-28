@@ -76,6 +76,7 @@
 #include "sick_scan/sick_generic_imu.h"
 #include "sick_scan/binScanf.hpp"
 #include "sick_scan/binPrintf.hpp"
+#include "sick_scan/dataDumper.h"
 
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
@@ -100,11 +101,12 @@
 // 001.003.001: Jan 2019  release 0.0.14 address handling for ip v4 parsing fixed
 // 001.003.002: Feb 2019 Fixing and optimizing console output
 // 001.003.016: Feb 2019 Profiling+instructions, Caching of Ros-Params
-
+// 001.003.017: May 2019 stability issues, scan rate and angular resolution settings added
+// 001.003.018: May 2019 LMS1000 Min/Max angel settings added and tested
 
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "003"
-#define SICK_GENERIC_PATCH_LEVEL "016"
+#define SICK_GENERIC_PATCH_LEVEL "018"
 
 #include <algorithm> // for std::min
 
@@ -124,6 +126,9 @@ std::string getVersionInfo();
 */
 int main(int argc, char **argv)
 {
+
+
+  DataDumper::instance().writeToFileNameWhenBufferIsFull("/tmp/sickscan_debug.csv");
 	char nameId[] = "__name:=";
 	char nameVal[MAX_NAME_LEN] = { 0 };
 	char **argv_tmp; // argv_tmp[0][0] argv_tmp[0] identisch ist zu (*argv_tmp)
@@ -177,7 +182,6 @@ int main(int argc, char **argv)
 		}
 		ROS_INFO("Program arguments: %s", argv_tmp[i]);
 	}
-
 
 	int result = mainGenericLaser(argc_tmp, argv_tmp, scannerName);
 	return result;

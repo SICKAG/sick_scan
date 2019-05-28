@@ -2,15 +2,17 @@
 // Created by michael on 10/11/18.
 //
 
-#include "sick_scan/sick_scan_config.h"
+#include "sick_scan/sick_scan_config_internal.h"
 #include <string>
 #include <map>
-void SickScanConfig::setValue(std::string key, std::string val)
+void SickScanConfigInternal::setValue(std::string key, std::string val)
 {
       storedConfig[key] = val;
 
 }
-void SickScanConfig::setValue(std::string key, bool val)
+
+
+void SickScanConfigInternal::setValue(std::string key, bool val)
   {
   std::string valStr;
   if (val == true)
@@ -25,14 +27,14 @@ void SickScanConfig::setValue(std::string key, bool val)
 
   }
 
-std::string SickScanConfig::getValue(std::string key)
+std::string SickScanConfigInternal::getValue(std::string key)
 {
   std::string tmp;
   tmp = storedConfig[key];
   return tmp;
 }
 
-bool SickScanConfig::getBoolValue(std::string key)
+bool SickScanConfigInternal::getBoolValue(std::string key)
 {
   bool retVal = false;
   std::string tmp;

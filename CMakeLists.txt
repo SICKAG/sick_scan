@@ -19,7 +19,7 @@ endmacro(use_cxx11)
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++03")
 
 # Switch on, if you use c11-specific commands
-# use_cxx11()
+use_cxx11()
 
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
@@ -101,6 +101,7 @@ catkin_package(
 include_directories(include include/tinyxml ${catkin_INCLUDE_DIRS} include/sick_scan)
 
 add_library(sick_scan_lib
+		driver/src/dataDumper.cpp
     driver/src/sick_scan_common.cpp
     driver/src/abstract_parser.cpp
 	driver/src/tcp/tcp.cpp
@@ -117,8 +118,8 @@ add_library(sick_scan_lib
 	driver/src/sick_generic_imu.cpp
 	driver/src/sick_generic_parser.cpp
 	driver/src/sick_scan_common_nw.cpp
-		include/sick_scan/sick_scan_config.h
-		driver/src/sick_scan_config.cpp
+		include/sick_scan/sick_scan_config_internal.h
+		driver/src/sick_scan_config_internal.cpp
 		include/sick_scan/softwarePLL.h
 		driver/src/softwarePLL.cpp
 		)
