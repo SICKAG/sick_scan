@@ -107,6 +107,8 @@ namespace sick_scan
 			CMD_STOP_SCANDATA,
 			CMD_START_SCANDATA,
 			CMD_START_RADARDATA,
+      CMD_ACTIVATE_NTP_CLIENT,
+			CMD_SET_NTP_INTERFACE_ETH,
 
       CMD_START_IMU_DATA, // start of IMU data
       CMD_STOP_IMU_DATA, // start of IMU data
@@ -128,8 +130,11 @@ namespace sick_scan
 			CMD_START_MEASUREMENT,
 			CMD_STOP_MEASUREMENT,
 			CMD_SET_ECHO_FILTER,
+      CMD_SET_NTP_UPDATETIME,
+			CMD_SET_NTP_TIMEZONE,
             CMD_SET_IP_ADDR,
             CMD_SET_GATEWAY,
+			CMD_SET_NTP_SERVER_IP_ADDR,
 			CMD_SET_TO_COLA_A_PROTOCOL,  //		sWN EIHstCola 1  // Cola B 	sWN EIHstCola 0  // Cola A 
 			CMD_SET_TO_COLA_B_PROTOCOL,  // 
 			// ML: Add above new CMD-Identifier
@@ -303,7 +308,8 @@ namespace sick_scan
 		bool checkForProtocolChangeAndMaybeReconnect(bool& useBinaryCmdNow);
 		void setSensorIsRadar(bool _isRadar);
 		bool getSensorIsRadar(void);
-        bool setNewIpAddress(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd);
+		bool setNewIpAddress(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd);
+		bool setNTPServerAndStart(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd);
 
         int readTimeOutInMs;
 private:

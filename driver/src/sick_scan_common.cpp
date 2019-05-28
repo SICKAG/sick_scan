@@ -865,8 +865,9 @@ namespace sick_scan
     sopasCmdVec[CMD_RUN] = "\x02sMN Run\x03\0";
     sopasCmdVec[CMD_STOP_SCANDATA] = "\x02sEN LMDscandata 0\x03";
     sopasCmdVec[CMD_START_SCANDATA] = "\x02sEN LMDscandata 1\x03";
-
     sopasCmdVec[CMD_START_RADARDATA] = "\x02sEN LMDradardata 1\x03";
+    sopasCmdVec[CMD_ACTIVATE_NTP_CLIENT] ="\x02sWN TSCRole 1\x03";
+    sopasCmdVec[CMD_SET_NTP_INTERFACE_ETH]= "\x02sWN TSCTCInterface 0\x03";
 
     /*
      * Radar specific commands
@@ -905,9 +906,12 @@ namespace sick_scan
     sopasCmdMaskVec[CMD_ALIGNMENT_MODE] = "\x02sWN MMAlignmentMode %d\x03";
     sopasCmdMaskVec[CMD_APPLICATION_MODE] = "\x02sWN SetActiveApplications 1 %s %d\x03";
     sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES] = "\x02sWN LMPoutputRange 1 %X %X %X\x03";
-    sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 0 00 00 0 0 0 0 1\x03";
+    sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 0 00 00 0 0 0 1 1\x03";
     sopasCmdMaskVec[CMD_SET_ECHO_FILTER] = "\x02sWN FREchoFilter %d\x03";
+    sopasCmdMaskVec[CMD_SET_NTP_UPDATETIME] = "\x02sWN TSCTCupdatetime %d\x03";
+    sopasCmdMaskVec[CMD_SET_NTP_TIMEZONE]= "sWN TSCTCtimezone %d";
     sopasCmdMaskVec[CMD_SET_IP_ADDR] = "\x02sWN EIIpAddr %02X %02X %02X %02X\x03";
+    sopasCmdMaskVec[CMD_SET_NTP_SERVER_IP_ADDR] = "\x02sWN TSCTCSrvAddr %02X %02X %02X %02X\x03";
     sopasCmdMaskVec[CMD_SET_GATEWAY] = "\x02sWN EIgate %02X %02X %02X %02X\x03";
     //error Messages
     sopasCmdErrMsg[CMD_DEVICE_IDENT_LEGACY] = "Error reading device ident";
@@ -927,7 +931,6 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_SET_OUTPUT_RANGES] = "Error setting angular ranges";
     sopasCmdErrMsg[CMD_GET_OUTPUT_RANGES] = "Error reading angle range";
     sopasCmdErrMsg[CMD_RUN] = "FATAL ERROR unable to start RUN mode!";
-    sopasCmdErrMsg[CMD_SET_PARTIAL_SCANDATA_CFG] = "Error setting Scanconfig";
     sopasCmdErrMsg[CMD_SET_PARTIAL_SCANDATA_CFG] = "Error setting Scandataconfig";
     sopasCmdErrMsg[CMD_STOP_SCANDATA] = "Error stopping scandata output";
     sopasCmdErrMsg[CMD_START_SCANDATA] = "Error starting Scandata output";
@@ -935,6 +938,11 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_SET_GATEWAY] = "Error setting gateway";
     sopasCmdErrMsg[CMD_REBOOT] = "Error rebooting the device";
     sopasCmdErrMsg[CMD_WRITE_EEPROM] = "Error writing data to EEPRom";
+    sopasCmdErrMsg[CMD_ACTIVATE_NTP_CLIENT] ="Error activating NTP client";
+    sopasCmdErrMsg[CMD_SET_NTP_INTERFACE_ETH] ="Error setting NTP interface to ETH";
+    sopasCmdErrMsg[CMD_SET_NTP_SERVER_IP_ADDR] ="Error setting NTP server Adress";
+    sopasCmdErrMsg[CMD_SET_NTP_UPDATETIME] = "Error setting NTP update time";
+    sopasCmdErrMsg[CMD_SET_NTP_TIMEZONE] = "Error setting NTP timezone";
 
     // ML: Add hier more useful cmd and mask entries
 
@@ -1055,6 +1063,20 @@ namespace sick_scan
         ROS_ERROR("ERROR: IP ADDRESS could not be parsed Boost Error %s:%d", ec.category().name(), ec.value());;
       }
 
+    }
+    std::string sNTPIpAdress = "";
+    boost::asio::ip::address_v4 NTPIpAdress;
+    bool setUseNTP=false;
+    setUseNTP = pn.getParam("ntp_server_address", sNTPIpAdress);
+    if (setUseNTP)
+    {
+      boost::system::error_code ec;
+      NTPIpAdress = boost::asio::ip::address_v4::from_string(sNTPIpAdress, ec);
+      if (ec != 0)
+      {
+        setUseNTP = false;
+        ROS_ERROR("ERROR: NTP Server IP ADDRESS could not be parsed Boost Error %s:%d", ec.category().name(), ec.value());;
+      }
     }
 
     this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
@@ -1501,6 +1523,12 @@ namespace sick_scan
       exit(0);//stopping node hard to avoide further IP-Communication
     }
 
+    if (setUseNTP)
+    {
+
+      setNTPServerAndStart(NTPIpAdress, useBinaryCmd);
+    }
+
     if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
     {
       //=====================================================
@@ -1607,18 +1635,7 @@ namespace sick_scan
       angleEnd10000th = (int) (boost::math::round(10000.0 * maxAngSopas));
 
       char requestOutputAngularRange[MAX_STR_LEN];
-      // special for LMS1000
-      if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)
-      {
-        ROS_WARN("Angular settings for LMS 1000 not reliable.\n");
-        double askAngleStart = -137.0;
-        double askAngleEnd = +137.0;
 
-        this->config_.min_ang = askAngleStart / 180.0 * M_PI;
-        this->config_.max_ang = askAngleEnd / 180.0 * M_PI;
-      }
-      else
-      {
         std::vector<unsigned char> outputAngularRangeReply;
         const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES].c_str();
         sprintf(requestOutputAngularRange, pcCmdMask, angleRes10000th, angleStart10000th, angleEnd10000th);
@@ -1657,7 +1674,6 @@ namespace sick_scan
         {
           result = sendSopasAndCheckAnswer(requestOutputAngularRange, &outputAngularRangeReply);
         }
-      }
 
       //-----------------------------------------------------------------
       //
@@ -2044,9 +2060,17 @@ namespace sick_scan
         tmp.getParam("imu_enable", imu_enable);
         if (imu_enable)
         {
-          ROS_INFO("Enable IMU data transfer");
-          // TODO Flag to decide between IMU on or off
-          startProtocolSequence.push_back(CMD_START_IMU_DATA);
+          if(useBinaryCmdNow==true)
+          {
+            ROS_INFO("Enable IMU data transfer");
+            // TODO Flag to decide between IMU on or off
+            startProtocolSequence.push_back(CMD_START_IMU_DATA);
+          }
+          else{
+            ROS_FATAL("IMU USAGE NOT POSSIBLE IN ASCII COMMUNICATION MODE.\nTo use the IMU the communication with the scanner must be set to binary mode.\n This can be done by inserting the line:\n<param name=\"use_binary_protocol\" type=\"bool\" value=\"True\" />\n into the launchfile.\n See also https://github.com/SICKAG/sick_scan/blob/master/doc/IMU.md");
+            exit(0);
+          }
+
         }
       }
     }
@@ -2502,7 +2526,13 @@ namespace sick_scan
             // if binary protocol used then parse binary message
             std::vector<unsigned char> receiveBufferVec = std::vector<unsigned char>(receiveBuffer,
                                                                                      receiveBuffer + actual_length);
-            #ifdef DEBUG_DUMP_TO_CONSOLE_ENABLED
+#ifdef DEBUG_DUMP_TO_CONSOLE_ENABLED
+            if (actual_length > 1000)
+            {
+              DataDumper::instance().dumpUcharBufferToConsole(receiveBuffer, actual_length);
+
+            }
+
             DataDumper::instance().dumpUcharBufferToConsole(receiveBuffer, actual_length);
             #endif
             if (receiveBufferVec.size() > 8)
@@ -2565,7 +2595,7 @@ namespace sick_scan
                   ros::Duration debug_duration=recvTimeStamp-tmp_time;
 #ifdef DEBUG_DUMP_ENABLED
                   double elevationAngleInDeg=elevationAngleInRad = -elevAngleX200 / 200.0;
-                  DataDumper::instance().pushData((double)SystemCountScan, "LAYER", elevationAngleInDeg);
+                  // DataDumper::instance().pushData((double)SystemCountScan, "LAYER", elevationAngleInDeg);
                   //DataDumper::instance().pushData((double)SystemCountScan, "LASESCANTIME", SystemCountScan);
                   //DataDumper::instance().pushData((double)SystemCountTransmit, "LASERTRANSMITTIME", SystemCountTransmit);
                   //DataDumper::instance().pushData((double)SystemCountScan, "LASERTRANSMITDELAY", debug_duration.toSec());
@@ -3493,6 +3523,8 @@ namespace sick_scan
     std::string keyWord5 = "sEN IMUData";
     std::string keyWord6 = "sWN EIIpAddr";
     std::string keyWord7 = "sMN mLMPsetscancfg";
+    std::string keyWord8 = "sWN TSCTCupdatetime";
+    std::string keyWord9 = "sWN TSCTCSrvAddr";
     //BBB
 
     std::string cmdAscii = requestAscii;
@@ -3559,6 +3591,7 @@ namespace sick_scan
         buffer[1] = 0x00;
         buffer[2] = (unsigned char) (0xFF & dummyArr[2]);  // Remission
         buffer[3] = (unsigned char) (0xFF & dummyArr[3]);  // Remission data format 0=8 bit 1= 16 bit
+        buffer[10]= (unsigned char) (0xFF & dummyArr[10]);  // Enable timestamp
         buffer[12] = (unsigned char) (0xFF & (dummyArr[11]));  // nth-Scan
 
         bufferLen = 13;
@@ -3649,6 +3682,30 @@ namespace sick_scan
       buffer[9] = (unsigned char)(0xFF & (dummy1 >> 0));
 
 
+    }
+    if (cmdAscii.find(keyWord8) != std::string::npos)
+    {
+      uint32_t updatetime = 0;
+      int keyWord8Len = keyWord8.length();
+      sscanf(requestAscii + keyWord8Len + 1, " %d", &updatetime);
+      buffer[0] = (unsigned char)(0xFF & (updatetime >> 24));
+      buffer[1] = (unsigned char)(0xFF & (updatetime >> 16));
+      buffer[2] = (unsigned char)(0xFF & (updatetime >> 8));
+      buffer[3] = (unsigned char)(0xFF & (updatetime >> 0));
+      bufferLen = 4;
+    }
+    if (cmdAscii.find(keyWord9) != std::string::npos)
+    {
+      int adrPartArr[4];
+      int imuSetStatus = 0;
+      int keyWord9Len = keyWord9.length();
+      sscanf(requestAscii + keyWord9Len + 1, " %x %x %x %x", &(adrPartArr[0]), &(adrPartArr[1]), &(adrPartArr[2]),
+             &(adrPartArr[3]));
+      buffer[0] = (unsigned char) (0xFF & adrPartArr[0]);
+      buffer[1] = (unsigned char) (0xFF & adrPartArr[1]);
+      buffer[2] = (unsigned char) (0xFF & adrPartArr[2]);
+      buffer[3] = (unsigned char) (0xFF & adrPartArr[3]);
+      bufferLen = 4;
     }
     // copy base command string to buffer
     bool switchDoBinaryData = false;
@@ -3811,6 +3868,65 @@ namespace sick_scan
     return (result);
   }
 
+  bool SickScanCommon::setNTPServerAndStart(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd)
+  {
+    char szCmd[255];
+    bool result = false;
+
+
+    unsigned long adrBytesLong[4];
+    std::string s = ipNewIPAddr.to_string();  // convert to string, to_bytes not applicable for older linux version
+    const char *ptr = s.c_str(); // char * to address
+    // decompose pattern like aaa.bbb.ccc.ddd
+    sscanf(ptr,"%lu.%lu.%lu.%lu", &(adrBytesLong[0]), &(adrBytesLong[1]), &(adrBytesLong[2]), &(adrBytesLong[3]));
+
+    // convert into byte array
+    unsigned char ipbytearray[4];
+    for (int i = 0; i < 4; i++)
+    {
+      ipbytearray[i] = adrBytesLong[i] & 0xFF;
+    }
+
+
+    char ntpipcommand[255];
+    char ntpupdatetimecommand[255];
+    const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_NTP_SERVER_IP_ADDR].c_str();
+    sprintf(ntpipcommand, pcCmdMask, ipbytearray[0], ipbytearray[1], ipbytearray[2], ipbytearray[3]);
+
+    const char *pcCmdMaskUpdatetime = sopasCmdMaskVec[CMD_SET_NTP_UPDATETIME].c_str();
+    sprintf(ntpupdatetimecommand, pcCmdMaskUpdatetime, 5);
+    std::vector<unsigned char> outputFilterntpupdatetimecommand;
+    //
+    if (useBinaryCmd)
+    {
+      std::vector<unsigned char> reqBinary;
+      this->convertAscii2BinaryCmd(sopasCmdVec[CMD_SET_NTP_INTERFACE_ETH].c_str(), &reqBinary);
+      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_NTP_INTERFACE_ETH]);
+      reqBinary.clear();
+      this->convertAscii2BinaryCmd(ntpipcommand, &reqBinary);
+      result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_NTP_SERVER_IP_ADDR]);
+      reqBinary.clear();
+      this->convertAscii2BinaryCmd(ntpupdatetimecommand, &reqBinary);
+      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_NTP_UPDATETIME]);
+      reqBinary.clear();
+      this->convertAscii2BinaryCmd(sopasCmdVec[CMD_ACTIVATE_NTP_CLIENT].c_str(), &reqBinary);
+      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_ACTIVATE_NTP_CLIENT]);
+      reqBinary.clear();
+
+    }
+    else
+    {
+      std::vector<unsigned char> ipcomandReply;
+      std::vector<unsigned char> resetReply;
+      std::string ntpInterFaceETHCmd = sopasCmdVec[CMD_SET_NTP_INTERFACE_ETH];
+      std::string activateNTPCmd = sopasCmdVec[CMD_ACTIVATE_NTP_CLIENT];
+      result &= sendSopasAndCheckAnswer(ntpInterFaceETHCmd , &resetReply);
+      result = sendSopasAndCheckAnswer(ntpipcommand, &ipcomandReply);
+      result &= sendSopasAndCheckAnswer(activateNTPCmd, &resetReply);
+      result &= sendSopasAndCheckAnswer(ntpupdatetimecommand, &outputFilterntpupdatetimecommand);
+    }
+    return (result);
+  }
 
   void SickScanCommon::setSensorIsRadar(bool _isRadar)
   {
