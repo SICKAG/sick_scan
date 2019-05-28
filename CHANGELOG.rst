@@ -2,6 +2,27 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* IMU Support, scan freq. and angle. resolution settings added
+* TiM7xx integrated
+* typical startup sequence
+* added lms1xx hires mode
+* added support for high ang. resolution for LMS 1xx
+* added pointcloud chopping
+* Update README.md
+* Issue resolve handling added
+* Pointcloud splitting prepared
+* added timing documentation
+* cartographer support improved
+* improved IMU support
+* Updated README.md with TiM7 info
+* Update README.md
+* Update google_cartographer.md
+* added Networktiming PLL
+* improved performance, start of tim7xx integration
+* Contributors: Michael Lehning
+
 0.0.16 (2019-02-14)
 -------------------
 * Update README.md
