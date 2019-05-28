@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Introduction](#introduction)
+- [Quick Check of Firmware](#quick-check-of-firmware)
 - [Startup Sequence](#startup-sequence)
 
 ## Introduction
@@ -13,25 +14,26 @@ The following ROS boot protocol shows the typical start sequence when starting a
 
 After a firmware update, the following Quickcheck is performed:
 
-1. is the device accessible via ping?
-2. can the device be started with the corresponding generic launch file?
-3. at the end of the launch process, the device switches to receive mode
-    for scan data? Typically the last command sent is '''<STX>sEA LMDscandata \x01<ETX>'''.
-4. check with rviz: Is it possible to display the Pointcloud2 data or similar? Is the display plausible?
-5. check the scan rate with the command
-'''
+1. Is the device accessible via ping?
+2. Can the device be started with the corresponding generic launch file?
+3. At the end of the launch process, the device switches to receive mode
+    for scan data? Typically the last command sent is ```<STX>sEA LMDscandata \x01<ETX>```.
+4. Check with rviz: Is it possible to see the Pointcloud2 data or similar? Is the shown data reasonable?
+5. Check the scan rate with the command
+```
 rostopic hz /cloud
-'''
-6. further inspection, if any, by dumping Pointcloud2 data.
+```
+
+6. Further inspection, if any, by dumping Pointcloud2 data.
 The header is of particular interest here. A typical call can therefore look as follows:
-'''
+```
 rostopic echo /cloud|grep frame -B 7 -A 26
-'''
+```
 
 
-Translated with www.DeepL.com/Translator
 ## Startup Sequence
-'''
+```
+
 roslaunch sick_scan sick_mrs_6xxx.launch hostname:=192.168.0.25
 ... logging to /home/rosuser/.ros/log/75631922-6109-11e9-b76f-54e1ad2921b6/roslaunch-ROS-NB-10680.log
 Checking log directory for disk usage. This may take awhile.
@@ -121,4 +123,4 @@ process[sick_mrs_6xxx-2]: started with pid [10708]
 [ INFO] [1555502889.965558914]: Receiving: <STX>sAN Run \x01<ETX>
 [ INFO] [1555502889.965813465]: Sending  : <STX><STX><STX><STX><Len=0017>sEN LMDscandata 0x01 CRC:<0x33>
 [ INFO] [1555502889.967297195]: Receiving: <STX>sEA LMDscandata \x01<ETX>
-'''
+```
