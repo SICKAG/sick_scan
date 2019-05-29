@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>sick_scan</name>
-  <version>1.3.20</version>
+  <version>1.3.21</version>
   <description>
     A ROS driver for the SICK TiM and SICK MRS series of laser scanners.
     This package is based on the original sick_tim-repository of Martin Günther et al.
