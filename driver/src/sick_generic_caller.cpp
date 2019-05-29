@@ -50,7 +50,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 21st Aug 2018
+*  Last modified: 29 May 2019
 *
 *      Authors:
 *         Michael Lehning <michael.lehning@lehning.de>
@@ -61,8 +61,8 @@
 *
 *
 *
-*  Copyright 2018 SICK AG
-*  Copyright 2018 Ing.-Büro Dr. Michael Lehning
+*  Copyright 2018/2019 SICK AG
+*  Copyright 2018/2019 Ing.-Büro Dr. Michael Lehning
 
 
 
@@ -103,10 +103,10 @@
 // 001.003.016: Feb 2019 Profiling+instructions, Caching of Ros-Params
 // 001.003.017: May 2019 stability issues, scan rate and angular resolution settings added
 // 001.003.018: May 2019 LMS1000 Min/Max angel settings added and tested
-
+// 001.003.020: May 2019 Bloom process prepared
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "003"
-#define SICK_GENERIC_PATCH_LEVEL "018"
+#define SICK_GENERIC_PATCH_LEVEL "020"
 
 #include <algorithm> // for std::min
 
