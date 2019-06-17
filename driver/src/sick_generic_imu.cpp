@@ -240,7 +240,7 @@ namespace sick_scan
 
         imuValue->QuaternionW(tmpArr[9]);  // w is first element
         imuValue->QuaternionX(tmpArr[10]);
-        imuValue->QuaternionY(tmpArr[12]);
+        imuValue->QuaternionY(tmpArr[11]);
         imuValue->QuaternionZ(tmpArr[12]);
 
         imuValue->QuaternionAccuracy(0.0); // not used tmpArr[4]);
