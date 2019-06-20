@@ -1,5 +1,5 @@
 # sick_scan
-## Table of contents
+## Table of Contents
 
 - [Supported Hardware](#supported-hardware)
 - [Start node](#start-node)
@@ -93,12 +93,12 @@ roslaunch sick_scan sick_tim_5xx.launch hostname:=192.168.0.71
 ```
 
 
-### Start multiple Nodes
+### Start Multiple Nodes
 
 Take the launchfile "sick_tim_5xx_twin.launch" as an example.
 Rempping the scan and cloud topics is essential to distinguish the scanndata and provide TF information.
 
-## Sopas mode
+## Sopas Mode
 This driver supports both COLA-B (binary) and COLA-A (ASCII) communication with the laser scanner. Binary mode is activated by default. Since this mode generates less network traffic.
 If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed. This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds.
 There are two ways to prevent this:
@@ -107,7 +107,7 @@ There are two ways to prevent this:
 3. Setting "use_binary_protocol" to "False" activates COLA-A and disables COLA-B (default)
 
 
-## Bugs and feature requests
+## Bugs and Feature Requests
 
 - Stability issues: Driver is experimental for the RMS3xx
 - Sopas protocol mapping:
@@ -156,7 +156,7 @@ Overview of the tools:
    * Try to ping scanner ip address (used in launch file)
 9. If the driver stops during init phase please stop the driver with ctrl-c and restart (could be caused due to protocol ASCII/Binary cola-dialect).
 
-## SUPPORT
+## Support
 
 * In case of technical support please open a new issue. For optimal support, add the following information to your request:
  1. Scanner model name,
@@ -172,13 +172,13 @@ Overview of the tools:
 
 In the following instructions, replace `<rosdistro>` with the name of your ROS distro (e.g., `indigo`).
 
-### From binaries
+### From Binaries
 
 The driver is released at longer intervals as a binary package and can therefore be installed via the package manager. To be able to use all new functions of the driver, the driver should be built from the sources published in this reposity:
 
 `sudo apt-get install ros-<rosdistro>-sick_scan`
 
-### From source
+### From Source
 
 ```bash
 source /opt/ros/<rosdistro>/setup.bash
