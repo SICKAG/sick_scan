@@ -14,13 +14,13 @@
 
 This stack provides a ROS driver for the SICK laser and radar sensors mentioned in the following list.
 The SICK MRS6124 is a multi-layer, multi-echo 3D laser scanner that is geared
-towards rough outdoor environments. 
+towards rough outdoor environments.
 
 ## Supported Hardware
 
 This driver should work with all of the following products.
 
-ROS Device Driver for SICK laser and radar sensors - supported scanner types: 
+ROS Device Driver for SICK laser and radar sensors - supported scanner types:
 
 
 
@@ -50,7 +50,7 @@ ROS Device Driver for SICK laser and radar sensors - supported scanner types:
 |                    |                                                                                                   | Opening angle: +/- 50 [deg]   |                 |
 
 ## IMU Support
-Devices of the MRS6xxx and MRS1xxx series will in future (2019) be available with an optionally built-in IMU. 
+Devices of the MRS6xxx and MRS1xxx series will in future (2019) be available with an optionally built-in IMU.
 Further information on the implementation and use of the experimental Imu support can be found on the [Imu page](doc/IMU.md).
 ##  Start Node
 
@@ -65,8 +65,11 @@ roslaunch sick_scan sick_mrs_1xxx.launch
 For LMS1104:
 roslaunch sick_scan sick_lms_1xxx.launch
 
-For TiM551, TiM561, TiM571:
+For TiM5xx-family:
 roslaunch sick_scan sick_tim_5xx.launch
+
+For TiM7xx-family:
+roslaunch sick_scan sick_tim_7xx.launch
 
 For LMS1xx-family:
 roslaunch sick_scan sick_lms_1xx.launch
@@ -86,7 +89,7 @@ roslaunch <launch-file> hostname:=<ip-address>
 ```
 e.g.
 ```bash
-roslaunch sick_scan sick_tim_5xx.launch hostname:=192.168.0.71 
+roslaunch sick_scan sick_tim_5xx.launch hostname:=192.168.0.71
 ```
 
 
@@ -97,7 +100,7 @@ Rempping the scan and cloud topics is essential to distinguish the scanndata and
 
 ## Sopas mode
 This driver supports both COLA-B (binary) and COLA-A (ASCII) communication with the laser scanner. Binary mode is activated by default. Since this mode generates less network traffic.
-If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed. This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds. 
+If the communication mode set in the scanner memory is different from that used by the driver, the scanner's communication mode is changed. This requires a restart of the TCP-IP connection, which can extend the start time by up to 30 seconds.
 There are two ways to prevent this:
 1. [Recommended] Set the communication mode with the SOPAS ET software to binary and save this setting in the scanner's EEPROM.
 2. Use the parameter "use_binary_protocol" to overwrite the default settings of the driver.
@@ -106,7 +109,7 @@ There are two ways to prevent this:
 
 ## Bugs and feature requests
 
-- Stability issues: Driver is experimental for the RMS3xx 
+- Stability issues: Driver is experimental for the RMS3xx
 - Sopas protocol mapping:
 -- All scanners: COLA-B (Binary)
 - Software should be further tested, documented and beautified
@@ -124,25 +127,25 @@ Overview of the tools:
   ``
   python3 sick_generic_device_finder.py
   ``
-* Setting new IP address: With the help of the parameter "new_IP" a new IP address can be assigned when calling the node sick_scan. 
+* Setting new IP address: With the help of the parameter "new_IP" a new IP address can be assigned when calling the node sick_scan.
   The launch file sick_new_ip.launch in the launch directory shows an example of how to use this parameter.
 * Converting of pointclouds to images: With the tool pcl_converter.cpp one can convert pointcloud2-data
   to image. That is especial convenient for 24-layers scanners like the MRS6124.
-* Setting up a brand new scanner: To set up a brand new scanner, 
-  it is recommended to use the two tools "sick_generic_device_finder.py" to find the scanner in the network 
+* Setting up a brand new scanner: To set up a brand new scanner,
+  it is recommended to use the two tools "sick_generic_device_finder.py" to find the scanner in the network
   and the launch file sick_new_ip.launch to set a new IP address. If further settings are to be saved that cannot be made via ROS   parameters, we recommend using the Windows tool "Sopas ET" from SICK.
 
 
-## Troubleshooting 
+## Troubleshooting
 
-1. Check Scanner IP in the launch file. 
+1. Check Scanner IP in the launch file.
 2. Check Ethernet connection to scanner with netcat e.g. ```nc -z -v -w5 $SCANNERIPADDRESS 2112```.
-   For further details about setting up the correct ip settings see [IP configuration](doc/ipconfig/ipconfig.md) 
-3. View node startup output wether the IP connection could be established 
+   For further details about setting up the correct ip settings see [IP configuration](doc/ipconfig/ipconfig.md)
+3. View node startup output wether the IP connection could be established
 4. Check the scanner status using the LEDs on the device. The LED codes are described in the above mentioned operation manuals.
 5. Further testing and troubleshooting informations can found in the file test/readme_testplan.txt
 6. If you stop the scanner in your debugging IDE or by other hard interruption (like Ctrl-C), you must wait until 60 sec. before
-   the scanner is up and running again. During this time the MRS6124 reconnects twice. 
+   the scanner is up and running again. During this time the MRS6124 reconnects twice.
    If you do not wait this waiting time you could see one of the following messages:
    * TCP connection error
    * Error-Message 0x0d
@@ -150,11 +153,11 @@ Overview of the tools:
    Set the min/max-Range of intensity display in the range [0...200] and switch on the intensity flag in the lauch file  
 8. In case of network problems check your own ip address and the ip address of your laser scanner (by using SOPAS ET).
    * List of own IP-addresses: ifconfig|grep "inet addr"
-   * Try to ping scanner ip address (used in launch file) 
+   * Try to ping scanner ip address (used in launch file)
 9. If the driver stops during init phase please stop the driver with ctrl-c and restart (could be caused due to protocol ASCII/Binary cola-dialect).
-   
+
 ## SUPPORT
- 
+
 * In case of technical support please open a new issue. For optimal support, add the following information to your request:
  1. Scanner model name,
  2. Ros node startup log,
@@ -209,29 +212,29 @@ More information about the structure of the individual files in the test run can
 
 ## Keywords
 
-MRS1000 
-MRS1104 
-LMS1000 
-LMS1104 
-MRS6000 
-MRS6124 
-RMS3xx 
-RMS320 
-ROS LiDAR 
-SICK LiDAR 
-SICK Laser 
-SICK Laserscanner 
-SICK Radar 
-LMS1xx 
-MRS1xxx 
-LMS1xxx 
-MRS6xxx 
-TiM5xx 
-TiM551 
-TiM561 
-TiM571 
-LMS5xx 
-LMS511 
+MRS1000
+MRS1104
+LMS1000
+LMS1104
+MRS6000
+MRS6124
+RMS3xx
+RMS320
+ROS LiDAR
+SICK LiDAR
+SICK Laser
+SICK Laserscanner
+SICK Radar
+LMS1xx
+MRS1xxx
+LMS1xxx
+MRS6xxx
+TiM5xx
+TiM551
+TiM561
+TiM571
+LMS5xx
+LMS511
 
 
 ## Creators
@@ -240,7 +243,7 @@ LMS511
 
 - <http://www.lehning.de>
 
-on behalf of SICK AG 
+on behalf of SICK AG
 
 - <http://www.sick.com>
 
@@ -249,5 +252,3 @@ on behalf of SICK AG
 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Logo_SICK_AG_2009.svg/1200px-Logo_SICK_AG_2009.svg.png" width="420">
 
 ![Lehning Logo](http://www.lehning.de/style/banner.jpg "LEHNING Logo")
-
-
