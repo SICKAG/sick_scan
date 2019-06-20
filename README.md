@@ -56,30 +56,45 @@ Further information on the implementation and use of the experimental Imu suppor
 
 Use the following command to start ROS node:
 
-For MRS6124:
+- For MRS6124:
+```bash
 roslaunch sick_scan sick_mrs_6xxx.launch
+```
 
-For MRS1104:
+- For MRS1104:
+```bash
 roslaunch sick_scan sick_mrs_1xxx.launch
+```
 
-For LMS1104:
+- For LMS1104:
+```bash
 roslaunch sick_scan sick_lms_1xxx.launch
+```
 
-For TiM5xx-family:
+- For TiM5xx-family:
+```bash
 roslaunch sick_scan sick_tim_5xx.launch
+```
 
-For TiM7xx-family:
+- For TiM7xx-family:
+```bash
 roslaunch sick_scan sick_tim_7xx.launch
+```
 
-For LMS1xx-family:
+- For LMS1xx-family:
+```bash
 roslaunch sick_scan sick_lms_1xx.launch
+```
 
-For LMS5xx-family:
+- For LMS5xx-family:
+```bash
 roslaunch sick_scan sick_lms_5xx.launch
+```
 
-For RMS3xx-family:
+- For RMS3xx-family:
+```bash
 roslaunch sick_scan sick_rms_3xx.launch (under development)
-
+```
 ### Starting scanner with specific ip address
 To start the scanner with a specific IP address, the launch command can be used for most launch files as follows.
 The hostname is the ip-address of the scanner:
