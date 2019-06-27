@@ -83,7 +83,7 @@ roslaunch sick_scan sick_tim_7xx.launch
 
 - For TiM7xxS-family (safety scanner):
 ```bash
-roslaunch sick_scan sick_tim_7xx.launch
+roslaunch sick_scan sick_tim_7xxS.launch
 ```
 
 - For LMS1xx-family:
