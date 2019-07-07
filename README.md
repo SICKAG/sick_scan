@@ -100,7 +100,7 @@ roslaunch sick_scan sick_lms_5xx.launch
 ```bash
 roslaunch sick_scan sick_rms_3xx.launch (under development)
 ```
-### Starting scanner with specific ip address
+### Starting Scanner with Specific Ip Address
 To start the scanner with a specific IP address, the launch command can be used for most launch files as follows.
 The hostname is the ip-address of the scanner:
 
@@ -170,7 +170,7 @@ Overview of the tools:
    * TCP connection error
    * Error-Message 0x0d
 7. Amplitude values in rviz: If you see only one color in rviz try the following:
-   Set the min/max-Range of intensity display in the range [0...200] and switch on the intensity flag in the lauch file  
+   Set the min/max-Range of intensity display in the range [0...200] and switch on the intensity flag in the launch file  
 8. In case of network problems check your own ip address and the ip address of your laser scanner (by using SOPAS ET).
    * List of own IP-addresses: ifconfig|grep "inet addr"
    * Try to ping scanner ip address (used in launch file)
