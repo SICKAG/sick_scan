@@ -40,6 +40,7 @@
 #define SICK_SCANNER_MRS_1XXX_NAME "sick_mrs_1xxx"
 #define SICK_SCANNER_TIM_5XX_NAME "sick_tim_5xx"
 #define SICK_SCANNER_TIM_7XX_NAME "sick_tim_7xx"
+#define SICK_SCANNER_TIM_7XXS_NAME "sick_tim_7xxS"
 #define SICK_SCANNER_LMS_5XX_NAME "sick_lms_5xx"
 #define SICK_SCANNER_LMS_1XX_NAME "sick_lms_1xx"
 #define SICK_SCANNER_MRS_6XXX_NAME "sick_mrs_6xxx"
@@ -76,6 +77,8 @@ namespace sick_scan
 		bool getIntensityResolutionIs16Bit(void);
       void setExpectedFrequency(double _freq);
 		ScannerBasicParam();
+		void setUseSaftyPasWD(bool _useSaftyPasWD);
+		bool getUseSaftyPasWD();
 	private:
 		std::string scannerName;
 		int numberOfLayers;
@@ -87,7 +90,7 @@ namespace sick_scan
 	  bool useBinaryProtocol;
 	  bool IntensityResolutionIs16Bit;
 	  bool deviceIsRadar;
-
+		bool UseSaftyPasWD;
 	  bool CartographerCompatibility;
 	};
 
