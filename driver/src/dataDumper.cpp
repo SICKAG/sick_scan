@@ -5,6 +5,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 #include "dataDumper.h"
 
 int DataDumper::pushData(double timeStamp, std::string info, double val)

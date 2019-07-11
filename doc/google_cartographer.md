@@ -1,19 +1,29 @@
-Inbetriebnahme Google Cartographer:
+# Google Cartographer
+## Table of contents
 
-1. Einloggen.
-2. Mehrere Terminal-Fenster öffnen.
-3. Terminalfenster 1:
+- [Supported Hardware](#supported-hardware)
+- [Setup](#setup)
+
+## Supported Hardware
+
+## Setup
+
+Setup Google Cartographer (these steps are for illustration only, you must adapt these lines to your local directory names)
+
+1. Login to Ubuntu.
+2. Open multiple terminals.
+3. Terminal 1:
    . ros1_start.sh
    roscore
-4. Terminalfenster 2:
+4. Terminal 2:
   . ros1_start.sh
    cd ~/ros_catkin_ws
    source ./devel/setup.bash
-5. Terminalfenster 3:
+5. Terminal 3:
    roslaunch sick_scan sick_mrs_1xxx_cartographer.launch cloud_topic:=horizontal_laser_3d frame_id:=horizontal_vlp16_link
-6. Terminalfenster 4:
+6. Terminal 4:
    roslaunch sick_scan sick_tim_5xx.launch cloud_topic:=vertical_laser_3d frame_id:=vertical_vlp16_link hostname:=192.168.0.71
-7. Terminalfenster 5:
+7. Terminal 5:
 
    * . ros1_start.sh
    * cd ~/ros_cartographer_ws
@@ -23,28 +33,10 @@ Inbetriebnahme Google Cartographer:
    * roslaunch cartographer_ros live_demo_backpack_3d.launch
 
 
-```
-rosuser@ROS-NB:~/ros_catkin_ws$ rosbag info ~/Downloads/b3-2016-04-05-14-14-00.bag 
-path:         /home/rosuser/Downloads/b3-2016-04-05-14-14-00.bag
-version:      2.0
-duration:     20:21s (1221s)
-start:        Apr 05 2016 16:14:00.74 (1459865640.74)
-end:          Apr 05 2016 16:34:21.97 (1459866861.97)
-size:         9.1 GB
-messages:     3986178
-compression:  lz4 [29683/29683 chunks; 41.66%]
-uncompressed: 21.8 GB @ 18.2 MB/s
-compressed:    9.1 GB @  7.6 MB/s (41.66%)
-types:        sensor_msgs/Imu         [6a62c6daae103f4ff57a132d6f95cec2]
-              sensor_msgs/PointCloud2 [1158d486dd51d683ce2f1be655c3c181]
-topics:       horizontal_laser_3d   1840435 msgs    : sensor_msgs/PointCloud2
-              imu                    305308 msgs    : sensor_msgs/Imu        
-              vertical_laser_3d     1840435 msgs    : sensor_msgs/PointCloud2
-```
+## Example output
 
+The following figure shows an example of an outdoor slam result using a MRS1104-scanner:
 
-
-
-
+![slam_example](slam_example.png)
 
 
