@@ -1,4 +1,9 @@
 # sick_scan
+
+This stack provides a ROS driver for the SICK laser and radar sensors mentioned in the following list.
+The SICK MRS6124 is a multi-layer, multi-echo 3D laser scanner that is geared
+towards rough outdoor environments.
+
 ## Table of Contents
 
 - [Supported Hardware](#supported-hardware)
@@ -11,10 +16,6 @@
 - [Profiling](doc/profiling.md)
 - [Testing](#testing)
 - [Creators](#creators)
-
-This stack provides a ROS driver for the SICK laser and radar sensors mentioned in the following list.
-The SICK MRS6124 is a multi-layer, multi-echo 3D laser scanner that is geared
-towards rough outdoor environments.
 
 ## Supported Hardware
 
