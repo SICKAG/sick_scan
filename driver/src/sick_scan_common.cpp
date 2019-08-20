@@ -2579,6 +2579,7 @@ namespace sick_scan
                   double elevAngle = 0.00;
                   double scanFrequency = 0.0;
                   long measurementFrequencyDiv100 = 0; // multiply with 100
+                  int numOfEncoders = 0;
                   int numberOf16BitChannels = 0;
                   int numberOf8BitChannels = 0;
                   uint32_t SystemCountScan=0;
@@ -2628,10 +2629,14 @@ namespace sick_scan
                   msg.range_min = parser_->get_range_min();
                   msg.range_max = parser_->get_range_max();
 
-                  memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
+                  memcpy(&numOfEncoders, receiveBuffer + 60, 2);
+                  swap_endian((unsigned char *) &numOfEncoders, 2);
+                  int encoderDataOffset=6 * numOfEncoders;
+                  //TODO implement num of encoders offset
+                  memcpy(&numberOf16BitChannels, receiveBuffer + 62+encoderDataOffset, 2);
                   swap_endian((unsigned char *) &numberOf16BitChannels, 2);
 
-                  int parseOff = 64;
+                  int parseOff = 64+encoderDataOffset;
 
 
                   char szChannel[255] = {0};
@@ -2660,7 +2665,7 @@ namespace sick_scan
                   memcpy(&numberOf8BitChannels, receiveBuffer + parseOff, 2);
                   swap_endian((unsigned char *) &numberOf8BitChannels, 2);
 
-                  parseOff = 64;
+                  parseOff = 64+encoderDataOffset;
                   enum datagram_parse_task
                   {
                     process_dist,
@@ -2668,16 +2673,20 @@ namespace sick_scan
                     process_rssi,
                     process_idle
                   };
+                  int rssiCnt = 0;
+                  int vangleCnt = 0;
+                  int distChannelCnt = 0;
+
                   for (int processLoop = 0; processLoop < 2; processLoop++)
                   {
                     int totalChannelCnt = 0;
-                    int distChannelCnt;
-                    int rssiCnt;
+
+
                     bool bCont = true;
-                    int vangleCnt;
+
                     datagram_parse_task task = process_idle;
                     bool parsePacket = true;
-                    parseOff = 64;
+                    parseOff = 64+encoderDataOffset;
                     bool processData = false;
 
                     if (processLoop == 0)
