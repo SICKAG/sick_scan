@@ -99,6 +99,11 @@ roslaunch sick_scan sick_lms_1xx.launch
 roslaunch sick_scan sick_lms_5xx.launch
 ```
 
+- For LMS4xxx-family:
+```bash
+roslaunch sick_scan sick_lms_4xxx.launch
+```
+
 - For RMS3xx-family:
 ```bash
 roslaunch sick_scan sick_rms_3xx.launch (under development)
