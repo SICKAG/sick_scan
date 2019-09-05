@@ -16,6 +16,7 @@ macro(use_cxx11)
 	endif ()
 endmacro(use_cxx11)
 
+#set(CMAKE_BUILD_TYPE Debug) #uncomment to activate debug mode for lib_sick as well
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++03")
 
 # Switch on, if you use c11-specific commands
@@ -102,26 +103,26 @@ include_directories(include include/tinyxml ${catkin_INCLUDE_DIRS} include/sick_
 
 add_library(sick_scan_lib
 		driver/src/dataDumper.cpp
-    driver/src/sick_scan_common.cpp
-    driver/src/abstract_parser.cpp
-	driver/src/tcp/tcp.cpp
-	driver/src/tcp/Mutex.cpp
-	driver/src/tcp/SickThread.cpp
-    driver/src/tcp/errorhandler.cpp
-    driver/src/tcp/toolbox.cpp
-    driver/src/tcp/Time.cpp
-    driver/src/tcp/colaa.cpp
-    driver/src/tcp/colab.cpp
-	driver/src/binScanf.cpp
-	driver/src/sick_scan_common_tcp.cpp
-	driver/src/sick_generic_radar.cpp
-	driver/src/sick_generic_imu.cpp
-	driver/src/sick_generic_parser.cpp
-	driver/src/sick_scan_common_nw.cpp
+        driver/src/sick_scan_common.cpp
+        driver/src/abstract_parser.cpp
+	    driver/src/tcp/tcp.cpp
+	    driver/src/tcp/Mutex.cpp
+	    driver/src/tcp/SickThread.cpp
+        driver/src/tcp/errorhandler.cpp
+        driver/src/tcp/toolbox.cpp
+        driver/src/tcp/Time.cpp
+        driver/src/tcp/colaa.cpp
+        driver/src/tcp/colab.cpp
+	    driver/src/binScanf.cpp
+        driver/src/sick_scan_common_tcp.cpp
+	    driver/src/sick_generic_radar.cpp
+	    driver/src/sick_generic_imu.cpp
+	    driver/src/sick_generic_parser.cpp
+	    driver/src/sick_scan_common_nw.cpp
 		include/sick_scan/sick_scan_config_internal.h
 		driver/src/sick_scan_config_internal.cpp
 		include/sick_scan/softwarePLL.h
-		driver/src/softwarePLL.cpp
+        driver/src/softwarePLL.cpp
 		)
 
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
@@ -132,7 +133,7 @@ target_link_libraries(sick_scan_lib
 add_executable(sick_generic_caller
     driver/src/sick_generic_laser.cpp
     driver/src/sick_generic_caller.cpp
-	)
+        )
 
 #
 #  radar_object_marker (receives radar msg. and publishes marker array for rviz or similar

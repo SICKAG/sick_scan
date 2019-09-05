@@ -861,6 +861,7 @@ namespace sick_scan
     sopasCmdVec[CMD_LOCATION_NAME] = "\x02sRN LocationName\x03\0";
     sopasCmdVec[CMD_ACTIVATE_STANDBY] = "\x02sMN LMCstandby\x03";
     sopasCmdVec[CMD_SET_ACCESS_MODE_3] = "\x02sMN SetAccessMode 3 F4724744\x03\0";
+    sopasCmdVec[CMD_SET_ACCESS_MODE_3_SAFTY_SCANNER] = "\x02sMN SetAccessMode 3 6FD62C05\x03\0";
     sopasCmdVec[CMD_GET_OUTPUT_RANGES] = "\x02sRN LMPoutputRange\x03";
     sopasCmdVec[CMD_RUN] = "\x02sMN Run\x03\0";
     sopasCmdVec[CMD_STOP_SCANDATA] = "\x02sEN LMDscandata 0\x03";
@@ -928,6 +929,7 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_ALIGNMENT_MODE] = "Error setting Alignmentmode";
     sopasCmdErrMsg[CMD_APPLICATION_MODE] = "Error setting Meanfilter";
     sopasCmdErrMsg[CMD_SET_ACCESS_MODE_3] = "Error Access Mode";
+    sopasCmdErrMsg[CMD_SET_ACCESS_MODE_3_SAFTY_SCANNER] = "Error Access Mode";
     sopasCmdErrMsg[CMD_SET_OUTPUT_RANGES] = "Error setting angular ranges";
     sopasCmdErrMsg[CMD_GET_OUTPUT_RANGES] = "Error reading angle range";
     sopasCmdErrMsg[CMD_RUN] = "FATAL ERROR unable to start RUN mode!";
@@ -947,9 +949,15 @@ namespace sick_scan
     // ML: Add hier more useful cmd and mask entries
 
     // After definition of command, we specify the command sequence for scanner initalisation
-
-    // try for MRS1104
-    sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3);
+    ;
+    if (parser_->getCurrentParamPtr()->getUseSaftyPasWD())
+    {
+      sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3_SAFTY_SCANNER);
+    }
+    else
+      {
+        sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3);
+      }
 
     if (parser_->getCurrentParamPtr()->getUseBinaryProtocol())
     {
@@ -2571,9 +2579,11 @@ namespace sick_scan
                   double elevAngle = 0.00;
                   double scanFrequency = 0.0;
                   long measurementFrequencyDiv100 = 0; // multiply with 100
+                  int numOfEncoders = 0;
                   int numberOf16BitChannels = 0;
                   int numberOf8BitChannels = 0;
                   uint32_t SystemCountScan=0;
+                  static uint32_t lastSystemCountScan=0;// this variable is used to ensure that only the first time stamp of an multi layer scann is used for PLL updating
                   uint32_t SystemCountTransmit=0;
 
                   memcpy(&elevAngleX200, receiveBuffer + 50, 2);
@@ -2588,11 +2598,21 @@ namespace sick_scan
 
                   memcpy(&SystemCountTransmit, receiveBuffer + 0x2A, 4);
                   swap_endian((unsigned char *) &SystemCountTransmit, 4);
-                  bool bRet = SoftwarePLL::instance().updatePLL(recvTimeStamp.sec, recvTimeStamp.nsec,SystemCountTransmit);
+                  double timestampfloat=recvTimeStamp.sec+recvTimeStamp.nsec*1e-9;
+                  bool bRet;
+                  if(SystemCountScan!=lastSystemCountScan)//MRS 6000 sends 6 packets with same  SystemCountScan we should only update the pll once with this time stamp since the SystemCountTransmit are different and this will only increase jitter of the pll
+                  {
+                    bRet = SoftwarePLL::instance().updatePLL(recvTimeStamp.sec, recvTimeStamp.nsec,
+                                                                  SystemCountTransmit);
+                    lastSystemCountScan = SystemCountScan;
+                  }
                   ros::Time tmp_time=recvTimeStamp;
                   bRet = SoftwarePLL::instance().getCorrectedTimeStamp(recvTimeStamp.sec, recvTimeStamp.nsec,SystemCountScan);
+                  double timestampfloat_coor=recvTimeStamp.sec+recvTimeStamp.nsec*1e-9;
+                  double DeltaTime=timestampfloat-timestampfloat_coor;
+                  //ROS_INFO("%F,%F,%u,%u,%F",timestampfloat,timestampfloat_coor,SystemCountTransmit,SystemCountScan,DeltaTime);
                   //TODO Handle return values
-                  ros::Duration debug_duration=recvTimeStamp-tmp_time;
+
 #ifdef DEBUG_DUMP_ENABLED
                   double elevationAngleInDeg=elevationAngleInRad = -elevAngleX200 / 200.0;
                   // DataDumper::instance().pushData((double)SystemCountScan, "LAYER", elevationAngleInDeg);
@@ -2620,10 +2640,14 @@ namespace sick_scan
                   msg.range_min = parser_->get_range_min();
                   msg.range_max = parser_->get_range_max();
 
-                  memcpy(&numberOf16BitChannels, receiveBuffer + 62, 2);
+                  memcpy(&numOfEncoders, receiveBuffer + 60, 2);
+                  swap_endian((unsigned char *) &numOfEncoders, 2);
+                  int encoderDataOffset=6 * numOfEncoders;
+                  //TODO implement num of encoders offset
+                  memcpy(&numberOf16BitChannels, receiveBuffer + 62+encoderDataOffset, 2);
                   swap_endian((unsigned char *) &numberOf16BitChannels, 2);
 
-                  int parseOff = 64;
+                  int parseOff = 64+encoderDataOffset;
 
 
                   char szChannel[255] = {0};
@@ -2652,7 +2676,7 @@ namespace sick_scan
                   memcpy(&numberOf8BitChannels, receiveBuffer + parseOff, 2);
                   swap_endian((unsigned char *) &numberOf8BitChannels, 2);
 
-                  parseOff = 64;
+                  parseOff = 64+encoderDataOffset;
                   enum datagram_parse_task
                   {
                     process_dist,
@@ -2660,16 +2684,20 @@ namespace sick_scan
                     process_rssi,
                     process_idle
                   };
+                  int rssiCnt = 0;
+                  int vangleCnt = 0;
+                  int distChannelCnt = 0;
+
                   for (int processLoop = 0; processLoop < 2; processLoop++)
                   {
                     int totalChannelCnt = 0;
-                    int distChannelCnt;
-                    int rssiCnt;
+
+
                     bool bCont = true;
-                    int vangleCnt;
+
                     datagram_parse_task task = process_idle;
                     bool parsePacket = true;
-                    parseOff = 64;
+                    parseOff = 64+encoderDataOffset;
                     bool processData = false;
 
                     if (processLoop == 0)
@@ -2927,7 +2955,7 @@ namespace sick_scan
               }
             }
 
-
+            //TODO timing issue posible here
             parser_->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001f);
 
             success = ExitSuccess;
@@ -3168,6 +3196,7 @@ namespace sick_scan
                 {
 
                   pub_.publish(msg);
+
                 }
 #else
                 printf("MSG received...");
@@ -3188,6 +3217,8 @@ namespace sick_scan
 
 
               cloud_.header.stamp = recvTimeStamp;
+
+
               cloud_.header.frame_id = config_.frame_id;
               cloud_.header.seq = 0;
               cloud_.height = numTmpLayer * numValidEchos; // due to multi echo multiplied by num. of layers

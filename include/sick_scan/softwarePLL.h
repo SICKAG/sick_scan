@@ -62,6 +62,7 @@ private:
 	double firstTimeStamp;
 	double allowedTimeDeviation;
 	uint64_t firstTick;
+	uint32_t lastcurtick =0;
 	uint32_t mostRecentSec;
 	uint32_t mostRecentNanoSec;
     double mostRecentTimeStamp;
