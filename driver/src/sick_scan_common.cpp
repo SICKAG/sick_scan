@@ -2583,6 +2583,7 @@ namespace sick_scan
                   int numberOf16BitChannels = 0;
                   int numberOf8BitChannels = 0;
                   uint32_t SystemCountScan=0;
+                  static uint32_t lastSystemCountScan=0;// this variable is used to ensure that only the first time stamp of an multi layer scann is used for PLL updating
                   uint32_t SystemCountTransmit=0;
 
                   memcpy(&elevAngleX200, receiveBuffer + 50, 2);
@@ -2597,11 +2598,21 @@ namespace sick_scan
 
                   memcpy(&SystemCountTransmit, receiveBuffer + 0x2A, 4);
                   swap_endian((unsigned char *) &SystemCountTransmit, 4);
-                  bool bRet = SoftwarePLL::instance().updatePLL(recvTimeStamp.sec, recvTimeStamp.nsec,SystemCountTransmit);
+                  double timestampfloat=recvTimeStamp.sec+recvTimeStamp.nsec*1e-9;
+                  bool bRet;
+                  if(SystemCountScan!=lastSystemCountScan)//MRS 6000 sends 6 packets with same  SystemCountScan we should only update the pll once with this time stamp since the SystemCountTransmit are different and this will only increase jitter of the pll
+                  {
+                    bRet = SoftwarePLL::instance().updatePLL(recvTimeStamp.sec, recvTimeStamp.nsec,
+                                                                  SystemCountTransmit);
+                    lastSystemCountScan = SystemCountScan;
+                  }
                   ros::Time tmp_time=recvTimeStamp;
                   bRet = SoftwarePLL::instance().getCorrectedTimeStamp(recvTimeStamp.sec, recvTimeStamp.nsec,SystemCountScan);
+                  double timestampfloat_coor=recvTimeStamp.sec+recvTimeStamp.nsec*1e-9;
+                  double DeltaTime=timestampfloat-timestampfloat_coor;
+                  //ROS_INFO("%F,%F,%u,%u,%F",timestampfloat,timestampfloat_coor,SystemCountTransmit,SystemCountScan,DeltaTime);
                   //TODO Handle return values
-                  ros::Duration debug_duration=recvTimeStamp-tmp_time;
+
 #ifdef DEBUG_DUMP_ENABLED
                   double elevationAngleInDeg=elevationAngleInRad = -elevAngleX200 / 200.0;
                   // DataDumper::instance().pushData((double)SystemCountScan, "LAYER", elevationAngleInDeg);
@@ -2944,7 +2955,7 @@ namespace sick_scan
               }
             }
 
-
+            //TODO timing issue posible here
             parser_->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001f);
 
             success = ExitSuccess;
@@ -3185,6 +3196,7 @@ namespace sick_scan
                 {
 
                   pub_.publish(msg);
+
                 }
 #else
                 printf("MSG received...");
@@ -3205,6 +3217,8 @@ namespace sick_scan
 
 
               cloud_.header.stamp = recvTimeStamp;
+
+
               cloud_.header.frame_id = config_.frame_id;
               cloud_.header.seq = 0;
               cloud_.height = numTmpLayer * numValidEchos; // due to multi echo multiplied by num. of layers
