@@ -104,9 +104,10 @@
 // 001.003.017: May 2019 stability issues, scan rate and angular resolution settings added
 // 001.003.018: May 2019 LMS1000 Min/Max angel settings added and tested
 // 001.003.020: May 2019 Bloom process prepared
+// 001.003.022: Sep 2019 LMS 4xxx added
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "003"
-#define SICK_GENERIC_PATCH_LEVEL "020"
+#define SICK_GENERIC_PATCH_LEVEL "022"
 
 #include <algorithm> // for std::min
 
