@@ -204,7 +204,7 @@ In the following instructions, replace `<rosdistro>` with the name of your ROS d
 
 The driver is released at longer intervals as a binary package and can therefore be installed via the package manager. To be able to use all new functions of the driver, the driver should be built from the sources published in this reposity:
 
-`sudo apt-get install ros-<rosdistro>-sick_scan`
+`sudo apt-get install ros-<rosdistro>-sick-scan`
 
 ### From Source
 
