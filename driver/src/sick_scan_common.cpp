@@ -865,7 +865,7 @@ namespace sick_scan
     sopasCmdVec[CMD_LOCATION_NAME] = "\x02sRN LocationName\x03\0";
     sopasCmdVec[CMD_ACTIVATE_STANDBY] = "\x02sMN LMCstandby\x03";
     sopasCmdVec[CMD_SET_ACCESS_MODE_3] = "\x02sMN SetAccessMode 3 F4724744\x03\0";
-    sopasCmdVec[CMD_SET_ACCESS_MODE_3_SAFTY_SCANNER] = "\x02sMN SetAccessMode 3 6FD62C05\x03\0";
+    sopasCmdVec[CMD_SET_ACCESS_MODE_3_SAFETY_SCANNER] = "\x02sMN SetAccessMode 3 6FD62C05\x03\0";
     sopasCmdVec[CMD_GET_OUTPUT_RANGES] = "\x02sRN LMPoutputRange\x03";
     sopasCmdVec[CMD_RUN] = "\x02sMN Run\x03\0";
     sopasCmdVec[CMD_STOP_SCANDATA] = "\x02sEN LMDscandata 0\x03";
@@ -937,7 +937,7 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_ALIGNMENT_MODE] = "Error setting Alignmentmode";
     sopasCmdErrMsg[CMD_APPLICATION_MODE] = "Error setting Meanfilter";
     sopasCmdErrMsg[CMD_SET_ACCESS_MODE_3] = "Error Access Mode";
-    sopasCmdErrMsg[CMD_SET_ACCESS_MODE_3_SAFTY_SCANNER] = "Error Access Mode";
+    sopasCmdErrMsg[CMD_SET_ACCESS_MODE_3_SAFETY_SCANNER] = "Error Access Mode";
     sopasCmdErrMsg[CMD_SET_OUTPUT_RANGES] = "Error setting angular ranges";
     sopasCmdErrMsg[CMD_GET_OUTPUT_RANGES] = "Error reading angle range";
     sopasCmdErrMsg[CMD_RUN] = "FATAL ERROR unable to start RUN mode!";
@@ -959,9 +959,9 @@ namespace sick_scan
 
     // After definition of command, we specify the command sequence for scanner initalisation
     ;
-    if (parser_->getCurrentParamPtr()->getUseSaftyPasWD())
+    if (parser_->getCurrentParamPtr()->getUseSafetyPasWD())
     {
-      sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3_SAFTY_SCANNER);
+      sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3_SAFETY_SCANNER);
     }
     else
       {

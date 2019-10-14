@@ -10,7 +10,7 @@ Forthcoming
 * added LMS 4xxx support
 * tim_7xxS dependencys included
 * Adding info for 7xxS-Launch-file
-* safty scanner added
+* safety scanner added
 * added dependency for thrusty
 * added information about TIM 7xx launch
 * Contributors: Michael Lehning, Unknown

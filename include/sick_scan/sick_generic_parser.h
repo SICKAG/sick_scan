@@ -78,8 +78,8 @@ namespace sick_scan
 		bool getIntensityResolutionIs16Bit(void);
 		void setExpectedFrequency(double _freq);
 		ScannerBasicParam();
-		void setUseSaftyPasWD(bool _useSaftyPasWD);
-		bool getUseSaftyPasWD();
+		void setUseSafetyPasWD(bool _useSafetyPasWD);
+		bool getUseSafetyPasWD();
 		void setEncoderMode(int8_t _EncoderMode);
 		int8_t getEncoderMode();
 	private:
@@ -93,7 +93,7 @@ namespace sick_scan
 	  bool useBinaryProtocol;
 	  bool IntensityResolutionIs16Bit;
 	  bool deviceIsRadar;
-		bool UseSaftyPasWD;
+		bool UseSafetyPasWD;
 		int8_t EncoderMode;
 	  bool CartographerCompatibility;
 	};
