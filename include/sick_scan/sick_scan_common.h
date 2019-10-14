@@ -68,6 +68,8 @@
 #include "sick_scan/sick_generic_parser.h"
 #include "sick_scan/sick_scan_common_nw.h"
 
+#include "sick_scan/Encoder.h"
+
 void swap_endian(unsigned char *ptr, int numBytes);
 
 namespace sick_scan
@@ -110,6 +112,11 @@ namespace sick_scan
 			CMD_START_RADARDATA,
       CMD_ACTIVATE_NTP_CLIENT,
 			CMD_SET_NTP_INTERFACE_ETH,
+			CMD_SET_ENCODER_MODE,
+			CMD_SET_ENCODER_MODE_NO,
+			CMD_SET_ENCODER_MODE_SI,
+			CMD_SET_ENCODER_MODE_DP,
+			CMD_SET_ENCODER_MODE_DL,
 
       CMD_START_IMU_DATA, // start of IMU data
       CMD_STOP_IMU_DATA, // start of IMU data
@@ -215,6 +222,7 @@ namespace sick_scan
 				ros::Publisher cloud_radar_track_pub_;
 				ros::Publisher radarScan_pub_;
 				ros::Publisher  imuScan_pub_;
+        ros::Publisher  Encoder_pub;
 				// sensor_msgs::PointCloud cloud_;
 				sensor_msgs::PointCloud2 cloud_;
 		//////

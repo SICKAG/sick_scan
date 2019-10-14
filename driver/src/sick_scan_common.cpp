@@ -70,6 +70,7 @@
 // if there is a missing RadarScan.h, try to run catkin_make in der workspace-root
 #include <sick_scan/RadarScan.h>
 
+#include "sick_scan/Encoder.h"
 
 #include <cstdio>
 #include <cstring>
@@ -381,6 +382,9 @@ namespace sick_scan
 
     radarScan_pub_ = nh_.advertise<sick_scan::RadarScan>("radar", 100);
     imuScan_pub_ = nh_.advertise<sensor_msgs::Imu>("imu", 100);
+
+
+    Encoder_pub =nh_.advertise<sick_scan::Encoder>("encoder", 100);
     // scan publisher
     pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 1000);
 
@@ -899,6 +903,10 @@ namespace sick_scan
 
     sopasCmdVec[CMD_STOP_IMU_DATA] = "\x02sEN InertialMeasurementUnit 0\x03";
     sopasCmdVec[CMD_START_IMU_DATA] = "\x02sEN InertialMeasurementUnit 1\x03";
+    sopasCmdVec[CMD_SET_ENCODER_MODE_NO] ="\x02sWN LICencset 0\x03";
+    sopasCmdVec[CMD_SET_ENCODER_MODE_SI] ="\x02sWN LICencset 1\x03";
+    sopasCmdVec[CMD_SET_ENCODER_MODE_DP] ="\x02sWN LICencset 2\x03";
+    sopasCmdVec[CMD_SET_ENCODER_MODE_DL] ="\x02sWN LICencset 3\x03";
 
     // defining cmd mask for cmds with variable input
     sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %d 1 %d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
@@ -945,6 +953,7 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_SET_NTP_SERVER_IP_ADDR] ="Error setting NTP server Adress";
     sopasCmdErrMsg[CMD_SET_NTP_UPDATETIME] = "Error setting NTP update time";
     sopasCmdErrMsg[CMD_SET_NTP_TIMEZONE] = "Error setting NTP timezone";
+    sopasCmdErrMsg[CMD_SET_ENCODER_MODE] = "Error activating encoder in single incremnt mode"
 
     // ML: Add hier more useful cmd and mask entries
 
@@ -985,7 +994,6 @@ namespace sick_scan
       tryToStopMeasurement = false;
       // do not stop measurement for RMS320 - the RMS320 does not support the stop command
     }
-
     if (tryToStopMeasurement)
     {
       sopasCmdChain.push_back(CMD_STOP_MEASUREMENT);
@@ -1021,8 +1029,6 @@ namespace sick_scan
     sopasCmdChain.push_back(CMD_OPERATION_HOURS); // read operation hours
     sopasCmdChain.push_back(CMD_POWER_ON_COUNT); // read power on count
     sopasCmdChain.push_back(CMD_LOCATION_NAME); // read location name
-
-
     return (0);
 
   }
@@ -1050,7 +1056,6 @@ namespace sick_scan
 
     pn.getParam("intensity", rssiFlag);
     pn.getParam("intensity_resolution_16bit", rssiResolutionIs16Bit);
-
     //check new ip adress and add cmds to write ip to comand chain
     std::string sNewIPAddr = "";
     boost::asio::ip::address_v4 ipNewIPAddr;
@@ -1126,6 +1131,28 @@ namespace sick_scan
       ROS_WARN("Activate at least one echo.");
     }
 
+    //================== DEFINE ENCODER SETTING ==========================
+    int EncoderSetings= -1; //Do not use encoder commands as default
+    pn.getParam("encoder_mode", EncoderSetings);
+    this->parser_->getCurrentParamPtr()->setEncoderMode((int8_t)EncoderSetings);
+    if (parser_->getCurrentParamPtr()->getEncoderMode()>=0)
+    {
+      switch (parser_->getCurrentParamPtr()->getEncoderMode())
+      {
+        case 0:
+          sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_NO);
+          break;
+        case 1:
+          sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_SI);
+          break;
+        case 2:
+          sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_DP);
+          break;
+        case 3:
+          sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_DL);
+          break;
+      }
+    }
     int result;
     //================== DEFINE ANGULAR SETTING ==========================
     int angleRes10000th = 0;
@@ -1797,7 +1824,15 @@ namespace sick_scan
                  rad2deg(this->config_.max_ang));
       }
 
-
+      //-----------------------------------------------------------------
+      //
+      // Configure the encoder Inputs   BBB
+      //
+      //-----------------------------------------------------------------
+      // Off: 0
+      // Single increment/INC1: 1
+      // Direction recognitio (phase): 2
+      // Direction recognition (level): 3
 
       //-----------------------------------------------------------------
       //
@@ -2505,7 +2540,11 @@ namespace sick_scan
       {
 
         sensor_msgs::LaserScan msg;
-
+        sick_scan::Encoder EncoderMsg;
+        EncoderMsg.header.stamp = recvTimeStamp;
+        //TODO remove this hardcoded variable
+        EncoderMsg.header.frame_id="Encoder";
+        EncoderMsg.header.seq=numPacketsProcessed;
         msg.header.stamp = recvTimeStamp;
         double elevationAngleInRad = 0.0;
         /*
@@ -2590,7 +2629,7 @@ namespace sick_scan
                   swap_endian((unsigned char *) &elevAngleX200, 2);
 
                   elevationAngleInRad = -elevAngleX200 / 200.0 * deg2rad_const;
-
+                  //TODO check this ??
                   msg.header.seq = elevAngleX200; // should be multiple of 0.625° starting with -2638 (corresponding to 13.19°)
 
                   memcpy(&SystemCountScan, receiveBuffer + 0x26, 4);
@@ -2643,7 +2682,21 @@ namespace sick_scan
                   memcpy(&numOfEncoders, receiveBuffer + 60, 2);
                   swap_endian((unsigned char *) &numOfEncoders, 2);
                   int encoderDataOffset=6 * numOfEncoders;
-                  //TODO implement num of encoders offset
+                  uint32_t EncoderPosTicks[4]={0};
+                  uint16_t EncoderSpeed[4]={0};
+
+                  if(numOfEncoders>0&&numOfEncoders<5)
+                  {
+                    for(int  EncoderNum=0;EncoderNum<numOfEncoders;EncoderNum++)
+                    {
+                      memcpy(&EncoderPosTicks[EncoderNum], receiveBuffer + 62+EncoderNum*6, 4);
+                      swap_endian((unsigned char *) &EncoderPosTicks[EncoderNum], 4);
+                      memcpy(&EncoderSpeed[EncoderNum], receiveBuffer + 66+EncoderNum*6, 2);
+                      swap_endian((unsigned char *) &EncoderSpeed[EncoderNum], 2);
+                    }
+                  }
+                  //TODO handle multi encoder with multiple encode msg or different encoder msg definition now using only first encoder
+                  EncoderMsg.enc_count=EncoderPosTicks[0];
                   memcpy(&numberOf16BitChannels, receiveBuffer + 62+encoderDataOffset, 2);
                   swap_endian((unsigned char *) &numberOf16BitChannels, 2);
 
@@ -3187,6 +3240,10 @@ namespace sick_scan
 
                 }
 #ifndef _MSC_VER
+                if (parser_->getCurrentParamPtr()->getEncoderMode()>=0)
+                {
+                Encoder_pub.publish(EncoderMsg);
+                }
                 if (numOfLayers > 4)
                 {
                   sendMsg = false; // too many layers for publish as scan message. Only pointcloud messages will be pub.
@@ -3556,6 +3613,7 @@ namespace sick_scan
     std::string keyWord7 = "sMN mLMPsetscancfg";
     std::string keyWord8 = "sWN TSCTCupdatetime";
     std::string keyWord9 = "sWN TSCTCSrvAddr";
+    std::string keyWord10 = "sWN LICencset";
     //BBB
 
     std::string cmdAscii = requestAscii;
@@ -3737,6 +3795,14 @@ namespace sick_scan
       buffer[2] = (unsigned char) (0xFF & adrPartArr[2]);
       buffer[3] = (unsigned char) (0xFF & adrPartArr[3]);
       bufferLen = 4;
+    }
+    if (cmdAscii.find(keyWord10) != std::string::npos)
+    {
+      int echoCodeNumber = 0;
+      int keyWord10Len = keyWord10.length();
+      sscanf(requestAscii + keyWord10Len + 1, " %u", &echoCodeNumber);
+      buffer[0] = (unsigned char) (0xFF & echoCodeNumber);
+      bufferLen = 1;
     }
     // copy base command string to buffer
     bool switchDoBinaryData = false;
