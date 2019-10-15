@@ -907,6 +907,7 @@ namespace sick_scan
     sopasCmdVec[CMD_SET_ENCODER_MODE_SI] ="\x02sWN LICencset 1\x03";
     sopasCmdVec[CMD_SET_ENCODER_MODE_DP] ="\x02sWN LICencset 2\x03";
     sopasCmdVec[CMD_SET_ENCODER_MODE_DL] ="\x02sWN LICencset 3\x03";
+    sopasCmdVec[CMD_SET_INCREMNTSOURCE_ENC] ="\x02sWN LICsrc 1\x03";
 
     // defining cmd mask for cmds with variable input
     sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %d 1 %d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
@@ -953,7 +954,8 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_SET_NTP_SERVER_IP_ADDR] ="Error setting NTP server Adress";
     sopasCmdErrMsg[CMD_SET_NTP_UPDATETIME] = "Error setting NTP update time";
     sopasCmdErrMsg[CMD_SET_NTP_TIMEZONE] = "Error setting NTP timezone";
-    sopasCmdErrMsg[CMD_SET_ENCODER_MODE] = "Error activating encoder in single incremnt mode"
+    sopasCmdErrMsg[CMD_SET_ENCODER_MODE] = "Error activating encoder in single incremnt mode";
+    sopasCmdErrMsg[CMD_SET_INCREMNTSOURCE_ENC] = "Error seting encoder increment source to Encoder";
 
     // ML: Add hier more useful cmd and mask entries
 
@@ -1140,15 +1142,19 @@ namespace sick_scan
       switch (parser_->getCurrentParamPtr()->getEncoderMode())
       {
         case 0:
+          sopasCmdChain.push_back(CMD_SET_INCREMNTSOURCE_ENC);
           sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_NO);
           break;
         case 1:
+          sopasCmdChain.push_back(CMD_SET_INCREMNTSOURCE_ENC);
           sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_SI);
           break;
         case 2:
+          sopasCmdChain.push_back(CMD_SET_INCREMNTSOURCE_ENC);
           sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_DP);
           break;
         case 3:
+          sopasCmdChain.push_back(CMD_SET_INCREMNTSOURCE_ENC);
           sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_DL);
           break;
       }
@@ -1823,17 +1829,6 @@ namespace sick_scan
         ROS_INFO("MAX_ANG (after command verification): %8.3f [rad] %8.3f [deg]", config_.max_ang,
                  rad2deg(this->config_.max_ang));
       }
-
-      //-----------------------------------------------------------------
-      //
-      // Configure the encoder Inputs   BBB
-      //
-      //-----------------------------------------------------------------
-      // Off: 0
-      // Single increment/INC1: 1
-      // Direction recognitio (phase): 2
-      // Direction recognition (level): 3
-
       //-----------------------------------------------------------------
       //
       // Configure the data content of scan messing regarding to config.
@@ -2543,6 +2538,7 @@ namespace sick_scan
         sick_scan::Encoder EncoderMsg;
         EncoderMsg.header.stamp = recvTimeStamp;
         //TODO remove this hardcoded variable
+        bool FireEncoder=false;
         EncoderMsg.header.frame_id="Encoder";
         EncoderMsg.header.seq=numPacketsProcessed;
         msg.header.stamp = recvTimeStamp;
@@ -2687,6 +2683,7 @@ namespace sick_scan
 
                   if(numOfEncoders>0&&numOfEncoders<5)
                   {
+                    FireEncoder=true;
                     for(int  EncoderNum=0;EncoderNum<numOfEncoders;EncoderNum++)
                     {
                       memcpy(&EncoderPosTicks[EncoderNum], receiveBuffer + 62+EncoderNum*6, 4);
@@ -2696,7 +2693,8 @@ namespace sick_scan
                     }
                   }
                   //TODO handle multi encoder with multiple encode msg or different encoder msg definition now using only first encoder
-                  EncoderMsg.enc_count=EncoderPosTicks[0];
+                  EncoderMsg.enc_position=EncoderPosTicks[0];
+                  EncoderMsg.enc_speed=EncoderSpeed[0];
                   memcpy(&numberOf16BitChannels, receiveBuffer + 62+encoderDataOffset, 2);
                   swap_endian((unsigned char *) &numberOf16BitChannels, 2);
 
@@ -3240,7 +3238,7 @@ namespace sick_scan
 
                 }
 #ifndef _MSC_VER
-                if (parser_->getCurrentParamPtr()->getEncoderMode()>=0)
+                if (parser_->getCurrentParamPtr()->getEncoderMode()>=0&& FireEncoder==true)//
                 {
                 Encoder_pub.publish(EncoderMsg);
                 }

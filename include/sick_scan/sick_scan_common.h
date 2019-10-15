@@ -117,6 +117,7 @@ namespace sick_scan
 			CMD_SET_ENCODER_MODE_SI,
 			CMD_SET_ENCODER_MODE_DP,
 			CMD_SET_ENCODER_MODE_DL,
+      CMD_SET_INCREMNTSOURCE_ENC,
 
       CMD_START_IMU_DATA, // start of IMU data
       CMD_STOP_IMU_DATA, // start of IMU data
