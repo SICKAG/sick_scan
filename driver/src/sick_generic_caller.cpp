@@ -50,7 +50,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 29 May 2019
+*  Last modified: 05th Nov. 2019
 *
 *      Authors:
 *         Michael Lehning <michael.lehning@lehning.de>
@@ -105,9 +105,10 @@
 // 001.003.018: May 2019 LMS1000 Min/Max angel settings added and tested
 // 001.003.020: May 2019 Bloom process prepared
 // 001.003.022: Sep 2019 LMS 4xxx added
+// 001.004.000: Nov 2019 ENCODER Support added
 #define SICK_GENERIC_MAJOR_VER "001"
-#define SICK_GENERIC_MINOR_VER "003"
-#define SICK_GENERIC_PATCH_LEVEL "022"
+#define SICK_GENERIC_MINOR_VER "004"
+#define SICK_GENERIC_PATCH_LEVEL "000"
 
 #include <algorithm> // for std::min
 

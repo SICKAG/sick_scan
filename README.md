@@ -1,6 +1,6 @@
 # sick_scan
 
-This stack provides a ROS driver for the SICK laser and radar sensors mentioned in the following list.
+This stack provides a ROS driver for the SICK lidar and radar sensors mentioned in the following list.
 The SICK MRS6124 is a multi-layer, multi-echo 3D laser scanner that is geared
 towards rough outdoor environments.
 
@@ -21,7 +21,7 @@ towards rough outdoor environments.
 
 This driver should work with all of the following products.
 
-ROS Device Driver for SICK laser and radar sensors - supported scanner types:
+ROS Device Driver for SICK lidar and radar sensors - supported scanner types:
 
 
 
@@ -261,6 +261,8 @@ TiM5xx
 TiM551
 TiM561
 TiM571
+TiM781
+TiM781S
 LMS5xx
 LMS511
 

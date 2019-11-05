@@ -89,12 +89,12 @@ namespace sick_scan
 		int numberOfMaximumEchos;
 		double elevationDegreeResolution;
 		double angleDegressResolution;
-      double expectedFrequency;
+    double expectedFrequency;
 	  bool useBinaryProtocol;
 	  bool IntensityResolutionIs16Bit;
 	  bool deviceIsRadar;
-		bool UseSafetyPasWD;
-		int8_t EncoderMode;
+	  bool useSafetyPasWD;
+	  int8_t encoderMode;
 	  bool CartographerCompatibility;
 	};
 

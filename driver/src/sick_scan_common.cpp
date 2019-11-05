@@ -907,7 +907,10 @@ namespace sick_scan
     sopasCmdVec[CMD_SET_ENCODER_MODE_SI] ="\x02sWN LICencset 1\x03";
     sopasCmdVec[CMD_SET_ENCODER_MODE_DP] ="\x02sWN LICencset 2\x03";
     sopasCmdVec[CMD_SET_ENCODER_MODE_DL] ="\x02sWN LICencset 3\x03";
-    sopasCmdVec[CMD_SET_INCREMNTSOURCE_ENC] ="\x02sWN LICsrc 1\x03";
+    sopasCmdVec[CMD_SET_INCREMENTSOURCE_ENC] ="\x02sWN LICsrc 1\x03";
+    sopasCmdVec[CMD_SET_3_4_TO_ENCODER]="\x02sWN DO3And4Fnc 1\x03";
+    //TODO remove this and add param
+    sopasCmdVec[CMD_SET_ENOCDER_RES_1] ="\x02sWN LICencres 1\x03";
 
     // defining cmd mask for cmds with variable input
     sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %d 1 %d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
@@ -916,13 +919,15 @@ namespace sick_scan
     sopasCmdMaskVec[CMD_ALIGNMENT_MODE] = "\x02sWN MMAlignmentMode %d\x03";
     sopasCmdMaskVec[CMD_APPLICATION_MODE] = "\x02sWN SetActiveApplications 1 %s %d\x03";
     sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES] = "\x02sWN LMPoutputRange 1 %X %X %X\x03";
-    sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 0 00 00 0 0 0 1 1\x03";
+    sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d 00 %d %d 00 0 0 0 1 1\x03";
     sopasCmdMaskVec[CMD_SET_ECHO_FILTER] = "\x02sWN FREchoFilter %d\x03";
     sopasCmdMaskVec[CMD_SET_NTP_UPDATETIME] = "\x02sWN TSCTCupdatetime %d\x03";
     sopasCmdMaskVec[CMD_SET_NTP_TIMEZONE]= "sWN TSCTCtimezone %d";
     sopasCmdMaskVec[CMD_SET_IP_ADDR] = "\x02sWN EIIpAddr %02X %02X %02X %02X\x03";
     sopasCmdMaskVec[CMD_SET_NTP_SERVER_IP_ADDR] = "\x02sWN TSCTCSrvAddr %02X %02X %02X %02X\x03";
     sopasCmdMaskVec[CMD_SET_GATEWAY] = "\x02sWN EIgate %02X %02X %02X %02X\x03";
+    sopasCmdMaskVec[CMD_SET_ENCODER_RES] = "\x02sWN LICencres %f\x03";
+
     //error Messages
     sopasCmdErrMsg[CMD_DEVICE_IDENT_LEGACY] = "Error reading device ident";
     sopasCmdErrMsg[CMD_DEVICE_IDENT] = "Error reading device ident for MRS-family";
@@ -955,7 +960,7 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_SET_NTP_UPDATETIME] = "Error setting NTP update time";
     sopasCmdErrMsg[CMD_SET_NTP_TIMEZONE] = "Error setting NTP timezone";
     sopasCmdErrMsg[CMD_SET_ENCODER_MODE] = "Error activating encoder in single incremnt mode";
-    sopasCmdErrMsg[CMD_SET_INCREMNTSOURCE_ENC] = "Error seting encoder increment source to Encoder";
+    sopasCmdErrMsg[CMD_SET_INCREMENTSOURCE_ENC] = "Error seting encoder increment source to Encoder";
 
     // ML: Add hier more useful cmd and mask entries
 
@@ -980,17 +985,15 @@ namespace sick_scan
       sopasCmdChain.push_back(CMD_SET_TO_COLA_A_PROTOCOL);
     }
 
-    bool tryToStopMeasurement = true;
-    if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
-    {
-
-        tryToStopMeasurement = false;
-      //XXX
-      // do not stop measurement for TiM571 otherwise the scanner would not start after start measurement
-      // do not change the application - not supported for TiM5xx
-    }
-    if (parser_->getCurrentParamPtr()->getDeviceIsRadar() == true)
-    {
+	bool tryToStopMeasurement = true;
+	if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
+	{
+	   tryToStopMeasurement = false;
+	   // do not stop measurement for TiM571 otherwise the scanner would not start after start measurement
+	   // do not change the application - not supported for TiM5xx
+	}
+	if (parser_->getCurrentParamPtr()->getDeviceIsRadar() == true)
+	{
       sopasCmdChain.push_back(CMD_LOAD_APPLICATION_DEFAULT); // load application default for radar
 
       tryToStopMeasurement = false;
@@ -1142,20 +1145,28 @@ namespace sick_scan
       switch (parser_->getCurrentParamPtr()->getEncoderMode())
       {
         case 0:
-          sopasCmdChain.push_back(CMD_SET_INCREMNTSOURCE_ENC);
+          sopasCmdChain.push_back(CMD_SET_3_4_TO_ENCODER);
+          sopasCmdChain.push_back(CMD_SET_INCREMENTSOURCE_ENC);
           sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_NO);
+          sopasCmdChain.push_back(CMD_SET_ENOCDER_RES_1);
           break;
         case 1:
-          sopasCmdChain.push_back(CMD_SET_INCREMNTSOURCE_ENC);
+          sopasCmdChain.push_back(CMD_SET_3_4_TO_ENCODER);
+          sopasCmdChain.push_back(CMD_SET_INCREMENTSOURCE_ENC);
           sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_SI);
+          sopasCmdChain.push_back(CMD_SET_ENOCDER_RES_1);
           break;
         case 2:
-          sopasCmdChain.push_back(CMD_SET_INCREMNTSOURCE_ENC);
+          sopasCmdChain.push_back(CMD_SET_3_4_TO_ENCODER);
+          sopasCmdChain.push_back(CMD_SET_INCREMENTSOURCE_ENC);
           sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_DP);
+          sopasCmdChain.push_back(CMD_SET_ENOCDER_RES_1);
           break;
         case 3:
-          sopasCmdChain.push_back(CMD_SET_INCREMNTSOURCE_ENC);
+          sopasCmdChain.push_back(CMD_SET_3_4_TO_ENCODER);
+          sopasCmdChain.push_back(CMD_SET_INCREMENTSOURCE_ENC);
           sopasCmdChain.push_back(CMD_SET_ENCODER_MODE_DL);
+          sopasCmdChain.push_back(CMD_SET_ENOCDER_RES_1);
           break;
       }
     }
@@ -1875,9 +1886,9 @@ namespace sick_scan
       {
         char requestLMDscandatacfg[MAX_STR_LEN];
         // Uses sprintf-Mask to set bitencoded echos and rssi enable flag
-        // CMD_SET_PARTIAL_SCANDATA_CFG = "\x02sWN LMDscandatacfg %02d 00 %d 0 0 00 00 0 0 0 0 1\x03";
+        // sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 00 %d 00 0 0 0 1 1\x03";
         const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
-        sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0, rssiResolutionIs16Bit ? 1 : 0);
+        sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0, rssiResolutionIs16Bit ? 1 : 0,EncoderSetings ? 1 : 0);
         if (useBinaryCmd)
         {
           std::vector<unsigned char> reqBinary;
@@ -2678,8 +2689,8 @@ namespace sick_scan
                   memcpy(&numOfEncoders, receiveBuffer + 60, 2);
                   swap_endian((unsigned char *) &numOfEncoders, 2);
                   int encoderDataOffset=6 * numOfEncoders;
-                  uint32_t EncoderPosTicks[4]={0};
-                  uint16_t EncoderSpeed[4]={0};
+                  int32_t EncoderPosTicks[4]={0};
+                  int16_t EncoderSpeed[4]={0};
 
                   if(numOfEncoders>0&&numOfEncoders<5)
                   {
@@ -3611,7 +3622,7 @@ namespace sick_scan
     std::string keyWord7 = "sMN mLMPsetscancfg";
     std::string keyWord8 = "sWN TSCTCupdatetime";
     std::string keyWord9 = "sWN TSCTCSrvAddr";
-    std::string keyWord10 = "sWN LICencset";
+    std::string keyWord10 = "sWN LICencres";
     //BBB
 
     std::string cmdAscii = requestAscii;
@@ -3674,10 +3685,12 @@ namespace sick_scan
         {
           buffer[i] = 0x00;
         }
-        buffer[0] = (unsigned char) (0xFF & (dummyArr[0]));
-        buffer[1] = 0x00;
+        buffer[0] = (unsigned char) (0xFF & dummyArr[0]);
+        buffer[1] = (unsigned char) (0xFF & dummyArr[1]);
         buffer[2] = (unsigned char) (0xFF & dummyArr[2]);  // Remission
         buffer[3] = (unsigned char) (0xFF & dummyArr[3]);  // Remission data format 0=8 bit 1= 16 bit
+        buffer[5] = (unsigned char) (0xFF & dummyArr[5]);  //encoder Setings
+        buffer[6] = (unsigned char) (0xFF & dummyArr[6]);  //encoder Setings
         buffer[10]= (unsigned char) (0xFF & dummyArr[10]);  // Enable timestamp
         buffer[12] = (unsigned char) (0xFF & (dummyArr[11]));  // nth-Scan
 
@@ -3796,11 +3809,13 @@ namespace sick_scan
     }
     if (cmdAscii.find(keyWord10) != std::string::npos)
     {
-      int echoCodeNumber = 0;
+      float EncResolution = 0;
+      bufferLen = 4;
       int keyWord10Len = keyWord10.length();
-      sscanf(requestAscii + keyWord10Len + 1, " %u", &echoCodeNumber);
-      buffer[0] = (unsigned char) (0xFF & echoCodeNumber);
-      bufferLen = 1;
+      sscanf(requestAscii + keyWord10Len + 1, " %f", &EncResolution);
+      memcpy(buffer,&EncResolution,bufferLen);
+      swap_endian(buffer,bufferLen);
+
     }
     // copy base command string to buffer
     bool switchDoBinaryData = false;
