@@ -105,10 +105,11 @@
 // 001.003.018: May 2019 LMS1000 Min/Max angel settings added and tested
 // 001.003.020: May 2019 Bloom process prepared
 // 001.003.022: Sep 2019 LMS 4xxx added
-// 001.004.000: Nov 2019 ENCODER Support added
+// 001.004.000: Oct 2019 ENCODER Support added
+// 001.004.001: Nov 2019 IMU Timestamp Fix
 #define SICK_GENERIC_MAJOR_VER "001"
 #define SICK_GENERIC_MINOR_VER "004"
-#define SICK_GENERIC_PATCH_LEVEL "000"
+#define SICK_GENERIC_PATCH_LEVEL "001"
 
 #include <algorithm> // for std::min
 
