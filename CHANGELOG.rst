@@ -2,8 +2,8 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.4.2 (2019-11-14)
+------------------
 
 * fixed timing issues with MRS6124
 * added launch info for lms4xxx
