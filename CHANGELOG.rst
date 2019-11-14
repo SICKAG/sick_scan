@@ -13,15 +13,12 @@ Forthcoming
 * safety scanner added
 * added dependency for thrusty
 * added information about TIM 7xx launch
-* Contributors: Michael Lehning, Unknown
-
 * IMU Support, scan freq. and angle. resolution settings added
 * TiM7xx integrated
 * typical startup sequence
 * added lms1xx hires mode
 * added support for high ang. resolution for LMS 1xx
 * added pointcloud chopping
-* Update README.md
 * Issue resolve handling added
 * Pointcloud splitting prepared
 * added timing documentation
