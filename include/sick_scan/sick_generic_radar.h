@@ -111,6 +111,39 @@ namespace sick_scan
 	};
 
 
+	class SickScanRadarSingleton
+	{
+	private:
+		/* Here will be the instance stored. */
+		static SickScanRadarSingleton* instance;
+
+		/* Private constructor to prevent instancing. */
+		SickScanRadarSingleton();
+		void simulateAsciiDatagramFromFile(unsigned char *receiveBuffer, int *actual_length, std::string filePattern);
+		bool emul;
+
+    ros::NodeHandle nh_;
+    ros::Publisher cloud_radar_rawtarget_pub_;
+    ros::Publisher cloud_radar_track_pub_;
+    ros::Publisher radarScan_pub_;
+
+    ros::Publisher chatter_pub;
+
+  public:
+		/* Static access method. */
+		static SickScanRadarSingleton* getInstance();
+
+		void setEmulation(bool _emul);
+		bool getEmulation(void);
+		int parseDatagram(ros::Time timeStamp, unsigned char *receiveBuffer, int actual_length, bool useBinaryProtocol);
+		int parseAsciiDatagram(char* datagram, size_t datagram_length, sick_scan::RadarScan *msgPtr, std::vector<SickScanRadarObject> &objectList, std::vector<SickScanRadarRawTarget> &rawTargetList); /* , SickScanConfig &config, */ // sensor_msgs::LaserScan &msg, int &numEchos, int &echoMask);
+		void simulateAsciiDatagram(unsigned char * receiveBuffer, int* actual_length);
+	};
+
+
+
+
+#if 0
 	class SickScanRadar
 	{
 	public:
@@ -124,10 +157,11 @@ namespace sick_scan
 		int parseAsciiDatagram(char* datagram, size_t datagram_length, sick_scan::RadarScan *msgPtr, std::vector<SickScanRadarObject> &objectList, std::vector<SickScanRadarRawTarget> &rawTargetList); /* , SickScanConfig &config, */ // sensor_msgs::LaserScan &msg, int &numEchos, int &echoMask);
 		void simulateAsciiDatagram(unsigned char * receiveBuffer, int* actual_length);
 	private:
-		SickScanCommon *commonPtr;
+//		SickScanCommon *commonPtr;
 		void simulateAsciiDatagramFromFile(unsigned char *receiveBuffer, int *actual_length, std::string filePattern);
 		bool emul;
 	};
+#endif
 
 } /* namespace sick_scan */
 #endif // SICK_GENERIC_RADAR_H_

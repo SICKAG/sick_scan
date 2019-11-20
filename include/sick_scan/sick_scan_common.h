@@ -223,9 +223,6 @@ namespace sick_scan
 				// Should we publish laser or point cloud?
 				// ros::Publisher cloud_pub_;
 				ros::Publisher cloud_pub_;
-				ros::Publisher cloud_radar_rawtarget_pub_;
-				ros::Publisher cloud_radar_track_pub_;
-				ros::Publisher radarScan_pub_;
 				ros::Publisher  imuScan_pub_;
         ros::Publisher  Encoder_pub;
 				// sensor_msgs::PointCloud cloud_;

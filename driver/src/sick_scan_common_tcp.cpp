@@ -776,9 +776,10 @@ namespace sick_scan
       double waitTimeUntilNextTime10Hz = 1/10.0 * (1.0 - (waitTime10Hz - waitTime));
 
       ros::Duration(waitTimeUntilNextTime10Hz).sleep();
-      SickScanRadar radar(this);
-			radar.setEmulation(true);
-      radar.simulateAsciiDatagram(receiveBuffer, actual_length);
+
+			SickScanRadarSingleton *radar = SickScanRadarSingleton::getInstance();
+      radar->setEmulation(true);
+      radar->simulateAsciiDatagram(receiveBuffer, actual_length);
       recvTimeStamp = ros::Time::now();
     }
     else

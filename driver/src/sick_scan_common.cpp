@@ -376,11 +376,6 @@ namespace sick_scan
     ROS_INFO("Publishing laserscan-pointcloud2 to %s", cloud_topic_val.c_str());
     cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(cloud_topic_val, 100);
 
-    // just for debugging, but very helpful for the start
-    cloud_radar_rawtarget_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_radar_rawtarget", 100);
-    cloud_radar_track_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_radar_track", 100);
-
-    radarScan_pub_ = nh_.advertise<sick_scan::RadarScan>("radar", 100);
     imuScan_pub_ = nh_.advertise<sensor_msgs::Imu>("imu", 100);
 
 
@@ -2515,10 +2510,10 @@ namespace sick_scan
 
       if (true == deviceIsRadar)
       {
-        SickScanRadar radar(this);
+        SickScanRadarSingleton *radar = SickScanRadarSingleton::getInstance();
         int errorCode = ExitSuccess;
         // parse radar telegram and send pointcloud2-debug messages
-        errorCode = radar.parseDatagram(recvTimeStamp, (unsigned char *) receiveBuffer, actual_length,
+        errorCode = radar->parseDatagram(recvTimeStamp, (unsigned char *) receiveBuffer, actual_length,
                                         useBinaryProtocol);
         return errorCode; // return success to continue looping
       }

@@ -107,9 +107,10 @@
 // 001.003.022: Sep 2019 LMS 4xxx added
 // 001.004.000: Oct 2019 ENCODER Support added
 // 001.004.001: Nov 2019 IMU Timestamp Fix
-#define SICK_GENERIC_MAJOR_VER "001"
-#define SICK_GENERIC_MINOR_VER "004"
-#define SICK_GENERIC_PATCH_LEVEL "001"
+// 1.5.0: 2019-11-20: Radar implementation moved to a singleton
+#define SICK_GENERIC_MAJOR_VER "1"
+#define SICK_GENERIC_MINOR_VER "5"
+#define SICK_GENERIC_PATCH_LEVEL "0"
 
 #include <algorithm> // for std::min
 
