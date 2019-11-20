@@ -270,7 +270,7 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
   bool use_binary_protocol = true;
   if (true == nhPriv.getParam("emul_sensor", emulSensor))
   {
-    ROS_INFO("Found emul_sensor overwriting default settings. Emulation: %s\n", emulSensor ? "True" : "False");
+    ROS_INFO("Found emul_sensor overwriting default settings. Emulation: %s", emulSensor ? "True" : "False");
   }
   if (true == nhPriv.getParam("use_binary_protocol", use_binary_protocol))
   {
