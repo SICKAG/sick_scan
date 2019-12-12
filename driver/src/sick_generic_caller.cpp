@@ -50,7 +50,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 29 May 2019
+*  Last modified: 05th Nov. 2019
 *
 *      Authors:
 *         Michael Lehning <michael.lehning@lehning.de>
@@ -104,9 +104,13 @@
 // 001.003.017: May 2019 stability issues, scan rate and angular resolution settings added
 // 001.003.018: May 2019 LMS1000 Min/Max angel settings added and tested
 // 001.003.020: May 2019 Bloom process prepared
-#define SICK_GENERIC_MAJOR_VER "001"
-#define SICK_GENERIC_MINOR_VER "003"
-#define SICK_GENERIC_PATCH_LEVEL "020"
+// 001.003.022: Sep 2019 LMS 4xxx added
+// 001.004.000: Oct 2019 ENCODER Support added
+// 001.004.001: Nov 2019 IMU Timestamp Fix
+// 1.5.0: 2019-11-20: Radar implementation moved to a singleton
+#define SICK_GENERIC_MAJOR_VER "1"
+#define SICK_GENERIC_MINOR_VER "5"
+#define SICK_GENERIC_PATCH_LEVEL "0"
 
 #include <algorithm> // for std::min
 

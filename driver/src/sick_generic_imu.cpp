@@ -206,8 +206,8 @@ namespace sick_scan
 #ifdef DEBUG_DUMP_TO_CONSOLE_ENABLED
         DataDumper::instance().dumpUcharBufferToConsole((unsigned char*)datagram, datagram_length);
 #endif
-        memcpy(&timeStamp, receiveBuffer + 36 + 13 * 4, 8);
-        swap_endian((unsigned char *) &timeStamp, 8);
+        memcpy(&timeStamp, receiveBuffer + 36 + 13 * 4, 4);
+        swap_endian((unsigned char *) &timeStamp, 4);
         int adrOffset = 36;
         for (int i = 0; i < 13; i++)
         {
@@ -703,10 +703,6 @@ namespace sick_scan
           imuMsg_.orientation_covariance[7] = 0;
           imuMsg_.orientation_covariance[8] = 0;
 
-          imuMsg_.orientation.x = 0;
-          imuMsg_.orientation.y = 0;
-          imuMsg_.orientation.z = 0;
-          imuMsg_.orientation.w = 0;
         }
         if (true == bRet)
             this->commonPtr->imuScan_pub_.publish(imuMsg_);

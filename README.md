@@ -1,4 +1,9 @@
 # sick_scan
+
+This stack provides a ROS driver for the SICK lidar and radar sensors mentioned in the following list.
+The SICK MRS6124 is a multi-layer, multi-echo 3D laser scanner that is geared
+towards rough outdoor environments.
+
 ## Table of Contents
 
 - [Supported Hardware](#supported-hardware)
@@ -12,40 +17,38 @@
 - [Testing](#testing)
 - [Creators](#creators)
 
-This stack provides a ROS driver for the SICK laser and radar sensors mentioned in the following list.
-The SICK MRS6124 is a multi-layer, multi-echo 3D laser scanner that is geared
-towards rough outdoor environments.
-
 ## Supported Hardware
 
 This driver should work with all of the following products.
 
-ROS Device Driver for SICK laser and radar sensors - supported scanner types:
+ROS Device Driver for SICK lidar and radar sensors - supported scanner types:
 
 
 
 | **device name**    |  **part no.**                                                                                                                | **description**                                | **tested?**     |
 |--------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|:---------------:|
-| MRS6124            | [6065086](https://www.sick.com/de/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs6000/c/g448151)                         | 24 layer max. range: 200m, ang. resol. 0.13 [deg] hor., 0.0625 [deg] ver. | ✔ [stable]|
+| MRS6124            | [6065086](https://www.sick.com/de/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs6000/c/g448151)                         | 24 layer max. range: 200 m, ang. resol. 0.13 [deg] hor., 0.0625 [deg] ver. | ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 10 Hz                       |                 |
-| MRS1104            | [1081208](https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044)         | 4 layer max. range: 64m, ang. resol. 0.25 [deg] hor., 2.50 [deg] ver.                                         | ✔ [stable]|
+| MRS1104            | [1081208](https://www.sick.com/sg/en/detection-and-ranging-solutions/3d-lidar-sensors/mrs1000/mrs1104c-111011/p/p495044)         | 4 layer max. range: 64 m, ang. resol. 0.25 [deg] hor., 2.50 [deg] ver.                                         | ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 50 Hz, 4x12.5 Hz            |                 |
-| LMS1104            | [1092445](https://www.sick.com/ag/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1000/c/g387151)                         | 1 layer max. range: 64m, ang. resol. 0.25 [deg] |  ✔ [stable]|
+| LMS1104            | [1092445](https://www.sick.com/ag/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1000/c/g387151)                         | 1 layer max. range: 64 m, ang. resol. 0.25 [deg] |  ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 150 Hz, 4x37.5 Hz   |                 |
-| TiM551             | [1060445](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim551-2050001/p/p343045)                 | 1 layer max. range: 10m, ang. resol. 1.00[deg] | ✔ [stable]|
+| TiM551             | [1060445](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim551-2050001/p/p343045)                 | 1 layer max. range: 10 m, ang. resol. 1.00[deg] | ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| TiM561             | [1071419](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim561-2050101/p/p369446)                 | 1 layer max. range: 10m, ang. resol. 0.33 [deg]| ✔ [stable]|
+| TiM561             | [1071419](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim561-2050101/p/p369446)                 | 1 layer max. range: 10 m, ang. resol. 0.33 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| TiM571             | [1079742](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim571-2050101/p/p412444)                 | 1 layer max. range: 25m, ang. resol. 0.33 [deg]| ✔ [stable]|
+| TiM571             | [1079742](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim571-2050101/p/p412444)                 | 1 layer max. range: 25 m, ang. resol. 0.33 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| TiM781             | [1096807](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/tim7xx/tim781-2174101/p/p594148)                 | 1 layer max. range: 25m, ang. resol. 0.33 [deg]| ✔ [stable]|
+| TiM781             | [1096807](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/tim7xx/tim781-2174101/p/p594148)                 | 1 layer max. range: 25 m, ang. resol. 0.33 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| TiM781S            | [1096363](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/tim7xx/tim781s-2174104/p/p594149)                 | 1 layer max. range: 25m, ang. resol. 0.33 [deg]| ✔ [stable]|
+| TiM781S            | [1096363](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/tim7xx/tim781s-2174104/p/p594149)                 | 1 layer max. range: 25 m, ang. resol. 0.33 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| LMS511-10100 PRO   | [e.g. 1046135](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/lms5xx/c/g179651)     | 1 layer max. range: 80m, ang. resol. 0.167 [deg]| ✔ [stable]|
+| LMS511-10100 PRO   | [e.g. 1046135](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/lms5xx/c/g179651)     | 1 layer max. range: 80 m, ang. resol. 0.167 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 100 Hz   |                 |
-| LMS1xx-Family      | [e.g. 1041114](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1xx/c/g91901) | 1 layer max. range: 28m, ang. resol. 0.25 [deg]| ✔ [stable]|
+| LMS1xx-Family      | [e.g. 1041114](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1xx/c/g91901) | 1 layer max. range: 28 m, ang. resol. 0.25 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
+| LMS4xxx-Family      | [e.g. 1091423](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/lms4000/lms4111r-13000/p/p578044?ff_data) | 1 layer max. range: 3 m, ang. resol. 0,0833 [deg]| ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 600 Hz   |                 |
 | RMS3xx             | [8021530](https://cdn.sick.com/media/docs/4/04/504/Operating_instructions_RMS3xx_en_IM0075504.PDF)| Radar Sensor | ✔ [stable]|
 |                    |                                                                                                   | Opening angle: +/- 50 [deg]   |                 |
 
@@ -94,6 +97,11 @@ roslaunch sick_scan sick_lms_1xx.launch
 - For LMS5xx-family:
 ```bash
 roslaunch sick_scan sick_lms_5xx.launch
+```
+
+- For LMS4xxx-family:
+```bash
+roslaunch sick_scan sick_lms_4xxx.launch
 ```
 
 - For RMS3xx-family:
@@ -196,7 +204,7 @@ In the following instructions, replace `<rosdistro>` with the name of your ROS d
 
 The driver is released at longer intervals as a binary package and can therefore be installed via the package manager. To be able to use all new functions of the driver, the driver should be built from the sources published in this reposity:
 
-`sudo apt-get install ros-<rosdistro>-sick_scan`
+`sudo apt-get install ros-<rosdistro>-sick-scan`
 
 ### From Source
 
@@ -253,6 +261,8 @@ TiM5xx
 TiM551
 TiM561
 TiM571
+TiM781
+TiM781S
 LMS5xx
 LMS511
 

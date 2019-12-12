@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#define DEBUG_DUMP_ENABLED
+#define DEBUG_DUMP_ENABLED 0
 //#define DEBUG_DUMP_TO_CONSOLE_ENABLED
 
 class DataDumper

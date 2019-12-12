@@ -68,6 +68,8 @@
 #include "sick_scan/sick_generic_parser.h"
 #include "sick_scan/sick_scan_common_nw.h"
 
+#include "sick_scan/Encoder.h"
+
 void swap_endian(unsigned char *ptr, int numBytes);
 
 namespace sick_scan
@@ -93,11 +95,11 @@ namespace sick_scan
 			CMD_SET_MEAN_FILTER,
 			CMD_ALIGNMENT_MODE,
 			CMD_APPLICATION_MODE,
-      CMD_APPLICATION_MODE_FIELD_ON,
+            CMD_APPLICATION_MODE_FIELD_ON,
 			CMD_APPLICATION_MODE_FIELD_OFF,
 			CMD_APPLICATION_MODE_RANGING_ON,
 			CMD_SET_ACCESS_MODE_3,
-      CMD_SET_ACCESS_MODE_3_SAFTY_SCANNER,
+            CMD_SET_ACCESS_MODE_3_SAFETY_SCANNER,
 			CMD_SET_OUTPUT_RANGES,
 			CMD_GET_OUTPUT_RANGES,
 			CMD_RUN,
@@ -108,15 +110,25 @@ namespace sick_scan
 			CMD_STOP_SCANDATA,
 			CMD_START_SCANDATA,
 			CMD_START_RADARDATA,
-      CMD_ACTIVATE_NTP_CLIENT,
+			CMD_ACTIVATE_NTP_CLIENT,
 			CMD_SET_NTP_INTERFACE_ETH,
+			CMD_SET_ENCODER_MODE,
+			CMD_SET_ENCODER_MODE_NO,
+			CMD_SET_ENCODER_MODE_SI,
+			CMD_SET_ENCODER_MODE_DP,
+			CMD_SET_ENCODER_MODE_DL,
+			CMD_SET_INCREMENTSOURCE_ENC,
+			CMD_SET_3_4_TO_ENCODER,
+
+			CMD_SET_ENOCDER_RES_1,
+      CMD_SET_ENCODER_RES,
 
       CMD_START_IMU_DATA, // start of IMU data
       CMD_STOP_IMU_DATA, // start of IMU data
 
-        // start of radar specific commands
+            // start of radar specific commands
 			CMD_SET_TRANSMIT_RAWTARGETS_ON,  // transmit raw target for radar
-  		CMD_SET_TRANSMIT_RAWTARGETS_OFF, // do not transmit raw target for radar
+  	  CMD_SET_TRANSMIT_RAWTARGETS_OFF, // do not transmit raw target for radar
 
       CMD_SET_TRANSMIT_OBJECTS_ON,  // transmit raw target for radar
       CMD_SET_TRANSMIT_OBJECTS_OFF, // do not transmit raw target for radar
@@ -127,14 +139,14 @@ namespace sick_scan
       CMD_LOAD_APPLICATION_DEFAULT, // load application default
       CMD_DEVICE_TYPE,
       CMD_ORDER_NUMBER,
-      // end of radar specific commands
+            // end of radar specific commands
 			CMD_START_MEASUREMENT,
 			CMD_STOP_MEASUREMENT,
 			CMD_SET_ECHO_FILTER,
       CMD_SET_NTP_UPDATETIME,
 			CMD_SET_NTP_TIMEZONE,
-            CMD_SET_IP_ADDR,
-            CMD_SET_GATEWAY,
+      CMD_SET_IP_ADDR,
+      CMD_SET_GATEWAY,
 			CMD_SET_NTP_SERVER_IP_ADDR,
 			CMD_SET_TO_COLA_A_PROTOCOL,  //		sWN EIHstCola 1  // Cola B 	sWN EIHstCola 0  // Cola A 
 			CMD_SET_TO_COLA_B_PROTOCOL,  // 
@@ -211,10 +223,8 @@ namespace sick_scan
 				// Should we publish laser or point cloud?
 				// ros::Publisher cloud_pub_;
 				ros::Publisher cloud_pub_;
-				ros::Publisher cloud_radar_rawtarget_pub_;
-				ros::Publisher cloud_radar_track_pub_;
-				ros::Publisher radarScan_pub_;
 				ros::Publisher  imuScan_pub_;
+        ros::Publisher  Encoder_pub;
 				// sensor_msgs::PointCloud cloud_;
 				sensor_msgs::PointCloud2 cloud_;
 		//////

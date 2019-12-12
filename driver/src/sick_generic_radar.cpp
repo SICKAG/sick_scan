@@ -67,6 +67,34 @@
 
 namespace sick_scan
 {
+
+
+
+/* Null, because instance will be initialized on demand. */
+	SickScanRadarSingleton* SickScanRadarSingleton::instance = 0;
+
+	SickScanRadarSingleton* SickScanRadarSingleton::getInstance()
+	{
+		if (instance == 0)
+		{
+			instance = new SickScanRadarSingleton();
+		}
+
+		return instance;
+	}
+
+	SickScanRadarSingleton::SickScanRadarSingleton()
+	{
+		// just for debugging, but very helpful for the start
+		cloud_radar_rawtarget_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_radar_rawtarget", 100);
+		cloud_radar_track_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_radar_track", 100);
+
+		radarScan_pub_ = nh_.advertise<sick_scan::RadarScan>("radar", 100);
+
+	}
+
+
+
 	int16_t getShortValue(std::string str)
 	{
 		int val = 0;
@@ -129,12 +157,12 @@ namespace sick_scan
 		return(tmpVal);
 	}
 
-  void SickScanRadar::setEmulation(bool _emul)
+  void SickScanRadarSingleton::setEmulation(bool _emul)
   {
     emul = _emul;
   }
 
-  bool SickScanRadar::getEmulation(void)
+  bool SickScanRadarSingleton::getEmulation(void)
   {
     return(emul);
   }
@@ -149,7 +177,7 @@ namespace sick_scan
 	\param echoMask: Mask corresponding to DIST-block-identifier
 	\return set_range_max
 	*/
-	int SickScanRadar::parseAsciiDatagram(char* datagram, size_t datagram_length,
+	int SickScanRadarSingleton::parseAsciiDatagram(char* datagram, size_t datagram_length,
 																				sick_scan::RadarScan *msgPtr,
 																				std::vector<SickScanRadarObject> &objectList,
 																				std::vector<SickScanRadarRawTarget> &rawTargetList)
@@ -636,7 +664,7 @@ namespace sick_scan
 		return(exitCode);
 	}
 
-	void SickScanRadar::simulateAsciiDatagram(unsigned char * receiveBuffer, int* actual_length)
+	void SickScanRadarSingleton::simulateAsciiDatagram(unsigned char * receiveBuffer, int* actual_length)
 	{
     static int callCnt = 0;
 
@@ -916,7 +944,7 @@ namespace sick_scan
 		strcpy((char *)receiveBuffer, resultStr.c_str());
 	}
 
-	void SickScanRadar::simulateAsciiDatagramFromFile(unsigned char *receiveBuffer, int *pActual_length,
+	void SickScanRadarSingleton::simulateAsciiDatagramFromFile(unsigned char *receiveBuffer, int *pActual_length,
                                                       std::string filePattern)
 	{
 		static int callCnt = 0;
@@ -982,7 +1010,7 @@ namespace sick_scan
 		fclose(fin);
 	}
 
-	int SickScanRadar::parseDatagram(ros::Time timeStamp, unsigned char *receiveBuffer, int actual_length, bool useBinaryProtocol)
+	int SickScanRadarSingleton::parseDatagram(ros::Time timeStamp, unsigned char *receiveBuffer, int actual_length, bool useBinaryProtocol)
 	{
 		int exitCode = ExitSuccess;
 
@@ -1140,14 +1168,14 @@ namespace sick_scan
 							off++;
 						}
 #ifndef _MSC_VER
-#if 0 // just for debugging
+#if 1 // just for debugging
 						switch (iLoop)
 						{
 							case RADAR_PROC_RAW_TARGET:
-								this->commonPtr->cloud_radar_rawtarget_pub_.publish(cloud_);
+								cloud_radar_rawtarget_pub_.publish(cloud_);
 								break;
 							case RADAR_PROC_TRACK:
-								this->commonPtr->cloud_radar_track_pub_.publish(cloud_);
+								cloud_radar_track_pub_.publish(cloud_);
 								break;
 						}
 #endif
@@ -1212,7 +1240,10 @@ namespace sick_scan
 
       }
 
-      this->commonPtr->radarScan_pub_.publish(radarMsg_);
+      radarScan_pub_.publish(radarMsg_);
+
+
+
 		}
 		return(exitCode);
 	}

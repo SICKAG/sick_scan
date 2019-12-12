@@ -76,10 +76,12 @@ namespace sick_scan
 		void setDeviceIsRadar(bool _deviceIsRadar);
 		void setIntensityResolutionIs16Bit(bool _IntensityResolutionIs16Bit);
 		bool getIntensityResolutionIs16Bit(void);
-      void setExpectedFrequency(double _freq);
+		void setExpectedFrequency(double _freq);
 		ScannerBasicParam();
-		void setUseSaftyPasWD(bool _useSaftyPasWD);
-		bool getUseSaftyPasWD();
+		void setUseSafetyPasWD(bool _useSafetyPasWD);
+		bool getUseSafetyPasWD();
+		void setEncoderMode(int8_t _EncoderMode);
+		int8_t getEncoderMode();
 	private:
 		std::string scannerName;
 		int numberOfLayers;
@@ -87,14 +89,14 @@ namespace sick_scan
 		int numberOfMaximumEchos;
 		double elevationDegreeResolution;
 		double angleDegressResolution;
-      double expectedFrequency;
+    double expectedFrequency;
 	  bool useBinaryProtocol;
 	  bool IntensityResolutionIs16Bit;
 	  bool deviceIsRadar;
-		bool UseSaftyPasWD;
+	  bool useSafetyPasWD;
+	  int8_t encoderMode;
 	  bool CartographerCompatibility;
 	};
-
 
 
 	class SickGenericParser : public AbstractParser

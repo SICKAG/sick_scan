@@ -2,22 +2,28 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.4.2 (2019-11-14)
+------------------
+
+* fixed timing issues with MRS6124
+* added launch info for lms4xxx
+* added LMS 4xxx support
+* tim_7xxS dependencys included
+* Adding info for 7xxS-Launch-file
+* safety scanner added
+* added dependency for thrusty
+* added information about TIM 7xx launch
 * IMU Support, scan freq. and angle. resolution settings added
 * TiM7xx integrated
 * typical startup sequence
 * added lms1xx hires mode
 * added support for high ang. resolution for LMS 1xx
 * added pointcloud chopping
-* Update README.md
 * Issue resolve handling added
 * Pointcloud splitting prepared
 * added timing documentation
 * cartographer support improved
 * improved IMU support
-* Updated README.md with TiM7 info
-* Update README.md
 * Update google_cartographer.md
 * added Networktiming PLL
 * improved performance, start of tim7xx integration
