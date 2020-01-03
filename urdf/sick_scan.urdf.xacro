@@ -7,18 +7,32 @@
   <xacro:macro name="sick_tim_5xx" params="name ros_topic">
     <xacro:sick_tim name="${name}" ros_topic="${ros_topic}"
       length="0.06" width="0.06" height="0.079" mass="0.150" z_offset="0.05595"
-      min_range="0.05" max_range="4.0"
+      min_range="0.05" max_range="4.0" samples="271"
+      mesh="package://sick_scan/meshes/sick_tim_5xx.stl" />
+  </xacro:macro>
+
+  <xacro:macro name="sick_tim_56x" params="name ros_topic">
+    <xacro:sick_tim name="${name}" ros_topic="${ros_topic}"
+      length="0.06" width="0.06" height="0.079" mass="0.150" z_offset="0.05595"
+      min_range="0.05" max_range="10.0" samples="811"
+      mesh="package://sick_scan/meshes/sick_tim_5xx.stl" />
+  </xacro:macro>
+
+  <xacro:macro name="sick_tim_57x" params="name ros_topic">
+    <xacro:sick_tim name="${name}" ros_topic="${ros_topic}"
+      length="0.06" width="0.06" height="0.079" mass="0.150" z_offset="0.05595"
+      min_range="0.05" max_range="25.0" samples="811"
       mesh="package://sick_scan/meshes/sick_tim_5xx.stl" />
   </xacro:macro>
 
   <xacro:macro name="sick_mrs_1xxx" params="name ros_topic">
     <xacro:sick_tim name="${name}" ros_topic="${ros_topic}"
       length="0.06" width="0.06" height="0.079" mass="0.150" z_offset="0.05595"
-      min_range="0.05" max_range="4.0"
+      min_range="0.05" max_range="4.0" samples="271"
       mesh="package://sick_scan/meshes/sick_tim_5xx.stl" />
   </xacro:macro>
 
-  <xacro:macro name="sick_tim" params="name ros_topic length width height mass z_offset min_range max_range mesh">
+  <xacro:macro name="sick_tim" params="name ros_topic length width height mass z_offset min_range max_range samples mesh">
     <!-- z_offset: distance between base plate and laser center (= center of mesh) -->
     <link name="${name}_mount_link">
       <inertial>
@@ -72,7 +86,7 @@
         <ray>
           <scan>
             <horizontal>
-              <samples>271</samples>
+              <samples>${samples}</samples>
               <resolution>1</resolution>
               <min_angle>${min_angle}</min_angle>
               <max_angle>${max_angle}</max_angle>
