@@ -11,16 +11,18 @@
       mesh="package://sick_scan/meshes/sick_tim_5xx.stl" />
   </xacro:macro>
 
-  <xacro:macro name="sick_tim_56x" params="name ros_topic">
+  <xacro:macro name="sick_tim_56x" params="name ros_topic min_angle:=-2.357 max_angle:=2.357">
     <xacro:sick_tim name="${name}" ros_topic="${ros_topic}"
       length="0.06" width="0.06" height="0.079" mass="0.150" z_offset="0.05595"
+      min_angle="${min_angle}" max_angle="${max_angle}"
       min_range="0.05" max_range="10.0" samples="811"
       mesh="package://sick_scan/meshes/sick_tim_5xx.stl" />
   </xacro:macro>
 
-  <xacro:macro name="sick_tim_57x" params="name ros_topic">
+  <xacro:macro name="sick_tim_57x" params="name ros_topic min_angle:=-2.357 max_angle:=2.357">
     <xacro:sick_tim name="${name}" ros_topic="${ros_topic}"
       length="0.06" width="0.06" height="0.079" mass="0.150" z_offset="0.05595"
+      min_angle="${min_angle}" max_angle="${max_angle}"
       min_range="0.05" max_range="25.0" samples="811"
       mesh="package://sick_scan/meshes/sick_tim_5xx.stl" />
   </xacro:macro>
@@ -32,7 +34,7 @@
       mesh="package://sick_scan/meshes/sick_tim_5xx.stl" />
   </xacro:macro>
 
-  <xacro:macro name="sick_tim" params="name ros_topic length width height mass z_offset min_range max_range samples mesh">
+  <xacro:macro name="sick_tim" params="name ros_topic length width height mass z_offset min_angle max_angle min_range max_range samples mesh">
     <!-- z_offset: distance between base plate and laser center (= center of mesh) -->
     <link name="${name}_mount_link">
       <inertial>
@@ -71,11 +73,11 @@
           izz="${0.0833333 * mass * (length * length + width * width)}" />
       </inertial>
     </link>
-    <xacro:sick_tim_laser_gazebo_v0 name="${name}" link="${name}" ros_topic="${ros_topic}" update_rate="15.0" min_angle="-2.357" max_angle="2.357" min_range="${min_range}" max_range="${max_range}"/>
+    <xacro:sick_tim_laser_gazebo_v0 name="${name}" link="${name}" ros_topic="${ros_topic}" update_rate="15.0" min_angle="-2.357" max_angle="2.357" min_range="${min_range}" max_range="${max_range}" samples="${samples}"/>
   </xacro:macro>
 
 
-  <xacro:macro name="sick_tim_laser_gazebo_v0" params="name link ros_topic update_rate min_angle max_angle min_range max_range">
+  <xacro:macro name="sick_tim_laser_gazebo_v0" params="name link ros_topic update_rate min_angle max_angle min_range max_range samples">
     <gazebo reference="${link}">
       <material value="Gazebo/Blue" />
       <sensor type="ray" name="${name}">
