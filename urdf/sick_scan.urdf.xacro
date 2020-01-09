@@ -75,7 +75,7 @@
           izz="${0.0833333 * mass * (length * length + width * width)}" />
       </inertial>
     </link>
-    <xacro:sick_tim_laser_gazebo_v0 name="${name}" link="${name}" ros_topic="${ros_topic}" update_rate="15.0" min_angle="-2.357" max_angle="2.357" min_range="${min_range}" max_range="${max_range}" samples="${samples}"/>
+    <xacro:sick_tim_laser_gazebo_v0 name="${name}" link="${name}" ros_topic="${ros_topic}" update_rate="15.0" min_angle="${min_angle}" max_angle="${max_angle}" min_range="${min_range}" max_range="${max_range}" samples="${samples}"/>
   </xacro:macro>
 
 
