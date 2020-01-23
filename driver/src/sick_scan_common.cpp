@@ -2654,6 +2654,13 @@ namespace sick_scan
                   //ROS_INFO("%F,%F,%u,%u,%F",timestampfloat,timestampfloat_coor,SystemCountTransmit,SystemCountScan,DeltaTime);
                   //TODO Handle return values
 
+                  // Skip this datagram/scan if the PLL is not locked.
+                  // See https://github.com/SICKAG/sick_scan/issues/66#issuecomment-568726277.
+                  if (!bRet) {
+                    dataToProcess = false;
+                    break;
+                  }
+
 #ifdef DEBUG_DUMP_ENABLED
                   double elevationAngleInDeg=elevationAngleInRad = -elevAngleX200 / 200.0;
                   // DataDumper::instance().pushData((double)SystemCountScan, "LAYER", elevationAngleInDeg);
