@@ -46,10 +46,11 @@ public:
 	void ExtrapolationDivergenceCounter(uint32_t val) { extrapolationDivergenceCounter = val; }
   bool updatePLL(uint32_t sec, uint32_t nanoSec, uint32_t curtick);
     int findDiffInFifo(double diff, double tol);
+	static const int fifoSize = 7;
+	int packeds_droped=0;//just for printing statusmessages when dropping packets
 
 private:
 	int numberValInFifo;
-	static const int fifoSize = 7;
 	static const double MaxAllowedTimeDeviation;
 	static const uint32_t  MaxExtrapolationCounter;
 	uint32_t tickFifo[fifoSize]; //  = { 0 };

@@ -2685,6 +2685,18 @@ namespace sick_scan
                   double DeltaTime=timestampfloat-timestampfloat_coor;
                   //ROS_INFO("%F,%F,%u,%u,%F",timestampfloat,timestampfloat_coor,SystemCountTransmit,SystemCountScan,DeltaTime);
                   //TODO Handle return values
+                  if(config_.sw_pll_only_publish==true && bRet==false)
+                  {
+                    int packets_expected_to_drop=SoftwarePLL::instance().fifoSize-1;
+                    SoftwarePLL::instance().packeds_droped++;
+                    ROS_INFO("%i / %i Packet dropped Software PLL not yet locked.",SoftwarePLL::instance().packeds_droped,packets_expected_to_drop);
+                    if(SoftwarePLL::instance().packeds_droped==packets_expected_to_drop)
+                    {
+                        ROS_INFO("Software PLL is expected to be ready now!");
+                    }
+                    dataToProcess = false;
+                    break;
+                  }
 
 #ifdef DEBUG_DUMP_ENABLED
                   double elevationAngleInDeg=elevationAngleInRad = -elevAngleX200 / 200.0;
