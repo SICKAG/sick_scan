@@ -2547,7 +2547,7 @@ namespace sick_scan
         bool FireEncoder=false;
         EncoderMsg.header.frame_id="Encoder";
         EncoderMsg.header.seq=numPacketsProcessed;
-        msg.header.stamp = recvTimeStamp;
+        msg.header.stamp = recvTimeStamp + ros::Duration(config_.time_offset);
         double elevationAngleInRad = 0.0;
         /*
          * datagrams are enclosed in <STX> (0x02), <ETX> (0x03) pairs
@@ -3277,7 +3277,7 @@ namespace sick_scan
               int numTmpLayer = numOfLayers;
 
 
-              cloud_.header.stamp = recvTimeStamp;
+              cloud_.header.stamp = recvTimeStamp + ros::Duration(config_.time_offset);
 
 
               cloud_.header.frame_id = config_.frame_id;
