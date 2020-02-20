@@ -1915,7 +1915,7 @@ namespace sick_scan
         // Uses sprintf-Mask to set bitencoded echos and rssi enable flag
         // sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 00 %d 00 0 0 0 1 1\x03";
         const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG].c_str();
-        sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0, rssiResolutionIs16Bit ? 1 : 0,EncoderSetings ? 1 : 0);
+        sprintf(requestLMDscandatacfg, pcCmdMask, outputChannelFlagId, rssiFlag ? 1 : 0, rssiResolutionIs16Bit ? 1 : 0,EncoderSetings != -1 ? EncoderSetings : 0);
         if (useBinaryCmd)
         {
           std::vector<unsigned char> reqBinary;
