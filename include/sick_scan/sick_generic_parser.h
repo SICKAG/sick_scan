@@ -46,6 +46,7 @@
 #define SICK_SCANNER_MRS_6XXX_NAME "sick_mrs_6xxx"
 #define SICK_SCANNER_LMS_4XXX_NAME "sick_lms_4xxx"
 #define SICK_SCANNER_RMS_3XX_NAME "sick_rms_3xx"
+#define SICK_SCANNER_NAV_3XX_NAME "sick_nav_3xx"
 #include "abstract_parser.h"
 
 #include "sensor_msgs/LaserScan.h"
@@ -72,6 +73,8 @@ namespace sick_scan
 		double getExpectedFrequency(void);
 		bool getDeviceIsRadar(void);
 		bool getUseBinaryProtocol(void);
+        void setScanMirrored(bool _scanMirrored);
+        bool getScanMirrored();
 		void setUseBinaryProtocol(bool _useBinary);
 		void setDeviceIsRadar(bool _deviceIsRadar);
 		void setIntensityResolutionIs16Bit(bool _IntensityResolutionIs16Bit);
@@ -96,6 +99,7 @@ namespace sick_scan
 	  bool useSafetyPasWD;
 	  int8_t encoderMode;
 	  bool CartographerCompatibility;
+	  bool scanMirrored;
 	};
 
 

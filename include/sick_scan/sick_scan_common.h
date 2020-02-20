@@ -148,6 +148,7 @@ namespace sick_scan
       CMD_SET_IP_ADDR,
       CMD_SET_GATEWAY,
 			CMD_SET_NTP_SERVER_IP_ADDR,
+			CMD_SET_SCANDATACONFIGNAV,
 			CMD_SET_TO_COLA_A_PROTOCOL,  //		sWN EIHstCola 1  // Cola B 	sWN EIHstCola 0  // Cola A 
 			CMD_SET_TO_COLA_B_PROTOCOL,  // 
 			// ML: Add above new CMD-Identifier
