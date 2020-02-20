@@ -2542,7 +2542,7 @@ namespace sick_scan
 
         sensor_msgs::LaserScan msg;
         sick_scan::Encoder EncoderMsg;
-        EncoderMsg.header.stamp = recvTimeStamp;
+        EncoderMsg.header.stamp = recvTimeStamp + ros::Duration(config_.time_offset);
         //TODO remove this hardcoded variable
         bool FireEncoder=false;
         EncoderMsg.header.frame_id="Encoder";
