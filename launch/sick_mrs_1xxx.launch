@@ -38,6 +38,7 @@ default max_angle for this scanner type is +137.5 degree.
     <param name="timelimit" type="int" value="5" />
     <param name="cloud_topic" type="string" value="$(arg cloud_topic)"/>
     <param name="frame_id" type="str" value="$(arg frame_id)" />
+    <param name="sw_pll_only_publish" type="bool" value="true" />
     
   </node>
 </launch>

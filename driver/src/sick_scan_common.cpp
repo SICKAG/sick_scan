@@ -906,6 +906,28 @@ namespace sick_scan
     sopasCmdVec[CMD_SET_3_4_TO_ENCODER]="\x02sWN DO3And4Fnc 1\x03";
     //TODO remove this and add param
     sopasCmdVec[CMD_SET_ENOCDER_RES_1] ="\x02sWN LICencres 1\x03";
+		/*
+		 * Special configuration for NAV Scanner
+		 * in hex
+		 * sMN mLMPsetscancfg 0320 01 09C4 0 0036EE80 09C4 0 0 09C4 0 0 09C4 0 0
+		 *                      |  |    |  |     |      |  | |  |   | |  |   | |
+		 *                      |  |    |  |     |      |  | |  |   | |  |   | +->
+     *                      |  |    |  |     |      |  | |  |   | |  |   +---> 0x0      -->    0   -> 0° start ang for sector 4
+     *                      |  |    |  |     |      |  | |  |   | |  +-------> 0x09c4   --> 2500   -> 0.25° deg ang res for Sector 4
+     *                      |  |    |  |     |      |  | |  |   | +----------> 0x0      -->    0   -> 0° start ang for sector 4
+     *                      |  |    |  |     |      |  | |  |   +------------> 0x0      -->    0   -> 0° start ang for sector 3
+     *                      |  |    |  |     |      |  | |  +----------------> 0x09c4   --> 2500   -> 0.25° deg ang res for Sector 3
+     *                      |  |    |  |     |      |  | +-------------------> 0x0      -->    0   -> 0° start ang for sector 2
+     *                      |  |    |  |     |      |  +---------------------> 0x0      -->    0   -> 0° start ang for sector 2
+     *                      |  |    |  |     |      +------------------------> 0x09c4   --> 2500   -> 0.25° Deg ang res for Sector 2
+     *                      |  |    |  |     +-------------------------------> 0x36EE80h--> 3600000-> 360° stop ang for sector 1
+     *                      |  |    |  +-------------------------------------> 0x0      -->    0   -> 0° Start ang for sector 1
+     *                      |  |    +----------------------------------------> 0x09c4   --> 2500   -> 0.25° Deg ang res for Sector 1
+     *                      |  +---------------------------------------------> 0x01     -->   01   -> 1 Number of active sectors
+     *                      +------------------------------------------------> 0x0320   --> 0800   -> 8 Hz scanfreq
+    */
+		//                                                                   0320 01 09C4 0 0036EE80 09C4 0 0 09C4 0 0 09C4 0 0
+		sopasCmdVec[CMD_SET_SCANDATACONFIGNAV] = "\x02sMN mLMPsetscancfg +2000 +1 +7500 +3600000 0 +2500 0 0 +2500 0 0 +2500 0 0\x03";
 
     // defining cmd mask for cmds with variable input
     sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %d 1 %d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
@@ -956,6 +978,7 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_SET_NTP_TIMEZONE] = "Error setting NTP timezone";
     sopasCmdErrMsg[CMD_SET_ENCODER_MODE] = "Error activating encoder in single incremnt mode";
     sopasCmdErrMsg[CMD_SET_INCREMENTSOURCE_ENC] = "Error seting encoder increment source to Encoder";
+    sopasCmdErrMsg[CMD_SET_SCANDATACONFIGNAV]= "Error setting scandata config";
 
     // ML: Add hier more useful cmd and mask entries
 
@@ -978,6 +1001,11 @@ namespace sick_scan
     {
       //for binary Mode Testing
       sopasCmdChain.push_back(CMD_SET_TO_COLA_A_PROTOCOL);
+    }
+
+    if(parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
+    {
+      sopasCmdChain.push_back(CMD_STOP_MEASUREMENT);
     }
 
 	bool tryToStopMeasurement = true;
@@ -1029,6 +1057,10 @@ namespace sick_scan
     sopasCmdChain.push_back(CMD_OPERATION_HOURS); // read operation hours
     sopasCmdChain.push_back(CMD_POWER_ON_COUNT); // read power on count
     sopasCmdChain.push_back(CMD_LOCATION_NAME); // read location name
+	if(parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
+	{
+		sopasCmdChain.push_back(CMD_SET_SCANDATACONFIGNAV);
+	}
     return (0);
 
   }
@@ -2542,7 +2574,7 @@ namespace sick_scan
 
         sensor_msgs::LaserScan msg;
         sick_scan::Encoder EncoderMsg;
-        EncoderMsg.header.stamp = recvTimeStamp;
+        EncoderMsg.header.stamp = recvTimeStamp + ros::Duration(config_.time_offset);
         //TODO remove this hardcoded variable
         bool FireEncoder=false;
         EncoderMsg.header.frame_id="Encoder";
@@ -2653,6 +2685,25 @@ namespace sick_scan
                   double DeltaTime=timestampfloat-timestampfloat_coor;
                   //ROS_INFO("%F,%F,%u,%u,%F",timestampfloat,timestampfloat_coor,SystemCountTransmit,SystemCountScan,DeltaTime);
                   //TODO Handle return values
+                  if(config_.sw_pll_only_publish==true && bRet==false)
+                  {
+                    int packets_expected_to_drop=SoftwarePLL::instance().fifoSize-1;
+                    SoftwarePLL::instance().packeds_droped++;
+                    ROS_INFO("%i / %i Packet dropped Software PLL not yet locked.",SoftwarePLL::instance().packeds_droped,packets_expected_to_drop);
+                    if(SoftwarePLL::instance().packeds_droped==packets_expected_to_drop)
+                    {
+                        ROS_INFO("Software PLL is expected to be ready now!");
+                    }
+                    if(SoftwarePLL::instance().packeds_droped>packets_expected_to_drop)
+                    {
+                      ROS_WARN("More packages than expected were dropped!!\n"
+                               "Check the network connection.\n"
+                               "Check if the system time has been changed in a leap.\n"
+                               "If the problems can persist, disable the software PLL with the option sw_pll_only_publish=False  !");
+                    }
+                    dataToProcess = false;
+                    break;
+                  }
 
 #ifdef DEBUG_DUMP_ENABLED
                   double elevationAngleInDeg=elevationAngleInRad = -elevAngleX200 / 200.0;
@@ -2926,6 +2977,18 @@ namespace sick_scan
                               msg.angle_increment = sizeOfSingleAngularStep;
                               msg.angle_max = msg.angle_min + (numberOfItems - 1) * msg.angle_increment;
 
+													if (this->parser_->getCurrentParamPtr()->getScanMirrored())
+													{
+														msg.angle_min *= -1.0;
+														msg.angle_increment *= -1.0;
+														msg.angle_max *= -1.0;
+
+														double tmp;
+														tmp = msg.angle_min;
+														msg.angle_min = msg.angle_max;
+														msg.angle_max = msg.angle_min;
+
+													}
                               float *rangePtr = NULL;
 
                               if (numberOfItems > 0)
@@ -3310,6 +3373,10 @@ namespace sick_scan
               int rangeNum = rangeTmp.size() / numValidEchos;
               cosAlphaTable.resize(rangeNum);
               sinAlphaTable.resize(rangeNum);
+            float mirror_factor=1.0;
+            if(this->parser_->getCurrentParamPtr()->getScanMirrored()){
+              mirror_factor=-1.0;
+            }
 
               for (size_t iEcho = 0; iEcho < numValidEchos; iEcho++)
               {
@@ -3374,8 +3441,8 @@ namespace sick_scan
                   // Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
                   float rangeCos=range_meter * cosAlphaTablePtr[i];
                   fptr[idx_x] = rangeCos * cos(phi);  // copy x value in pointcloud
-                  fptr[idx_y] = rangeCos * sin(phi);  // copy y value in pointcloud
-                  fptr[idx_z] = range_meter * sinAlphaTablePtr[i];// copy z value in pointcloud
+                  fptr[idx_y] = rangeCos * sin(phi) * mirror_factor;  // copy y value in pointcloud
+                  fptr[idx_z] = range_meter * sinAlphaTablePtr[i]  * mirror_factor;// copy z value in pointcloud
 
                   fptr[idx_intensity] = 0.0;
                   if (config_.intensity)
@@ -3618,6 +3685,7 @@ namespace sick_scan
     std::string keyWord8 = "sWN TSCTCupdatetime";
     std::string keyWord9 = "sWN TSCTCSrvAddr";
     std::string keyWord10 = "sWN LICencres";
+	
     //BBB
 
     std::string cmdAscii = requestAscii;
@@ -3744,40 +3812,40 @@ namespace sick_scan
     // FF F9 22 30 sector start always 0
     // 00 22 55 10 sector stop  always 0
     // 21
-    if (cmdAscii.find(keyWord7) != std::string::npos)
-    {
-      bufferLen = 18;
-      for(int i=0;i<bufferLen;i++)
-      {
-        unsigned char uch=0x00;
-        switch (i)
-        {
-          case 5:
-            uch=0x01;break;
-        }
-        buffer[i]=uch;
-      }
-      char tmpStr[1024] = {0};
-      char szApplStr[255] = {0};
-      int keyWord7Len = keyWord7.length();
-      int scanDataStatus = 0;
-      int dummy0, dummy1;
-      strcpy(tmpStr, requestAscii + keyWord7Len + 2);
-      sscanf(tmpStr, "%d 1 %d", &dummy0, &dummy1);
+		if (cmdAscii.find(keyWord7) != std::string::npos)
+		{
+			int keyWord3Len = keyWord7.length();
+			int dummyArr[14] = { 0 };
+			if (14 == sscanf(requestAscii + keyWord3Len + 1, " %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+											 &dummyArr[0], &dummyArr[1], &dummyArr[2],
+											 &dummyArr[3], &dummyArr[4], &dummyArr[5],
+											 &dummyArr[6], &dummyArr[7], &dummyArr[8],
+											 &dummyArr[9], &dummyArr[10], &dummyArr[11], &dummyArr[12],&dummyArr[13]))
+			{
+				for (int i = 0; i < 54; i++)
+				{
+					buffer[i] = 0x00;
+				}
+				int targetPosArr[] = {0,4,6,10,14,18,22,26,30,34,38,42,46,50,54};
+				int numElem = (sizeof(targetPosArr)/sizeof(targetPosArr[0])) - 1;
+				for (int i = 0; i <  numElem; i++)
+				{
+					int lenOfBytesToRead = targetPosArr[i+1] - targetPosArr[i];
+					int adrPos = targetPosArr[i];
+					unsigned char *destPtr = buffer + adrPos;
+					memcpy(destPtr, &(dummyArr[i]),lenOfBytesToRead);
+					swap_endian(destPtr, lenOfBytesToRead);
+				}
+				bufferLen=targetPosArr[numElem];
+				/*
+				 * 00 00 03 20 00 01
+00 00 09 C4 00 00 00 00 00 36 EE 80 00 00 09 C4 00 00 00 00 00 00 00 00 00 00 09 C4 00 00 00 00 00
+00 00 00 00 00 09 C4 00 00 00 00 00 00 00 00 00 00 09 C4 00 00 00 00 00 00 00 00 E4
+				 */
 
-      buffer[0] = (unsigned char)(0xFF & (dummy0 >> 24));
-      buffer[1] = (unsigned char)(0xFF & (dummy0 >> 16));
-      buffer[2] = (unsigned char)(0xFF & (dummy0 >> 8));
-      buffer[3] = (unsigned char)(0xFF & (dummy0 >> 0));
+			}
 
-
-      buffer[6] = (unsigned char)(0xFF & (dummy1 >> 24));
-      buffer[7] = (unsigned char)(0xFF & (dummy1 >> 16));
-      buffer[8] = (unsigned char)(0xFF & (dummy1 >> 8));
-      buffer[9] = (unsigned char)(0xFF & (dummy1 >> 0));
-
-
-    }
+		}
     if (cmdAscii.find(keyWord8) != std::string::npos)
     {
       uint32_t updatetime = 0;
@@ -3812,6 +3880,7 @@ namespace sick_scan
       swap_endian(buffer,bufferLen);
 
     }
+
     // copy base command string to buffer
     bool switchDoBinaryData = false;
     for (int i = 1; i <= (int) (msgLen); i++)  // STX DATA ETX --> 0 1 2

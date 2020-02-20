@@ -28,6 +28,7 @@
     <!-- 60 Deg total opening angle: -->
     <param name="min_ang" type="double" value="-0.523598667" />
     <param name="max_ang" type="double" value="+0.523598667" />
+    <param name="sw_pll_only_publish" type="bool" value="true" />
 
     
   </node>
