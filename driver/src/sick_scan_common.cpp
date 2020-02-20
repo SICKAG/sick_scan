@@ -2694,6 +2694,13 @@ namespace sick_scan
                     {
                         ROS_INFO("Software PLL is expected to be ready now!");
                     }
+                    if(SoftwarePLL::instance().packeds_droped>packets_expected_to_drop)
+                    {
+                      ROS_WARN("More packages than expected were dropped!!\n"
+                               "Check the network connection.\n"
+                               "Check if the system time has been changed in a leap.\n"
+                               "If the problems can persist, disable the software PLL with the option sw_pll_only_publish=False  !");
+                    }
                     dataToProcess = false;
                     break;
                   }
