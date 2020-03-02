@@ -146,7 +146,7 @@ For the visualization a ROS node was developed, which receives
 the radar messages and exports them as boxes for the objects and as arrows for the raw data. 
 The ROS node **radar_object_marker** receives the radar data and exports marker arrays that can be visualized in rviz.
 
-Die Visualisierung kann durch folgende Parameter gesteuert werden:
+The visualization could be controlled by the following parameters:
 
 |Parameters | Description |
 |-----------| ------- |
