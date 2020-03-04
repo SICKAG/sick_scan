@@ -131,7 +131,7 @@ std::vector<unsigned char> stringToVector(std::string s)
 
 /*!
 \brief return diagnostic error code (small helper function)
-	   This small helper function was introduced to allow the compiling under Visual c++.
+     This small helper function was introduced to allow the compiling under Visual c++.
 \return Diagnostic error code (value 2)
 */
 static int getDiagnosticErrorCode() // workaround due to compiling error under Visual C++
@@ -797,9 +797,9 @@ namespace sick_scan
   }
 
   /*!
-	\brief init routine of scanner
-	\return exit code
-	*/
+  \brief init routine of scanner
+  \return exit code
+  */
   int SickScanCommon::init()
   {
     int result = init_device();
@@ -808,6 +808,7 @@ namespace sick_scan
       ROS_FATAL("Failed to init device: %d", result);
       return result;
     }
+
     result = init_scanner();
     if (result != 0)
     {
@@ -906,12 +907,12 @@ namespace sick_scan
     sopasCmdVec[CMD_SET_3_4_TO_ENCODER]="\x02sWN DO3And4Fnc 1\x03";
     //TODO remove this and add param
     sopasCmdVec[CMD_SET_ENOCDER_RES_1] ="\x02sWN LICencres 1\x03";
-		/*
-		 * Special configuration for NAV Scanner
-		 * in hex
-		 * sMN mLMPsetscancfg 0320 01 09C4 0 0036EE80 09C4 0 0 09C4 0 0 09C4 0 0
-		 *                      |  |    |  |     |      |  | |  |   | |  |   | |
-		 *                      |  |    |  |     |      |  | |  |   | |  |   | +->
+    /*
+     * Special configuration for NAV Scanner
+     * in hex
+     * sMN mLMPsetscancfg 0320 01 09C4 0 0036EE80 09C4 0 0 09C4 0 0 09C4 0 0
+     *                      |  |    |  |     |      |  | |  |   | |  |   | |
+     *                      |  |    |  |     |      |  | |  |   | |  |   | +->
      *                      |  |    |  |     |      |  | |  |   | |  |   +---> 0x0      -->    0   -> 0° start ang for sector 4
      *                      |  |    |  |     |      |  | |  |   | |  +-------> 0x09c4   --> 2500   -> 0.25° deg ang res for Sector 4
      *                      |  |    |  |     |      |  | |  |   | +----------> 0x0      -->    0   -> 0° start ang for sector 4
@@ -980,10 +981,11 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_SET_INCREMENTSOURCE_ENC] = "Error seting encoder increment source to Encoder";
     sopasCmdErrMsg[CMD_SET_SCANDATACONFIGNAV]= "Error setting scandata config";
 
-    // ML: Add hier more useful cmd and mask entries
+    // ML: Add here more useful cmd and mask entries
 
     // After definition of command, we specify the command sequence for scanner initalisation
-    ;
+
+
     if (parser_->getCurrentParamPtr()->getUseSafetyPasWD())
     {
       sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3_SAFETY_SCANNER);
@@ -2126,7 +2128,16 @@ namespace sick_scan
     else
     {
       // initializing sequence for laserscanner
-      startProtocolSequence.push_back(CMD_START_MEASUREMENT);
+      // is this device a TiM240????
+      // The TiM240 can not interpret CMD_START_MEASUREMENT
+      if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_240_NAME) == 0)
+      {
+         // do nothing for a TiM240
+      }
+      else
+      {
+        startProtocolSequence.push_back(CMD_START_MEASUREMENT);
+      }
       startProtocolSequence.push_back(CMD_RUN);  // leave user level
       startProtocolSequence.push_back(CMD_START_SCANDATA);
       if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)  // MRS1104 - start IMU-Transfer

@@ -2,8 +2,8 @@
 * \file
 * \brief Laser Scanner Entry Point
 *
-* Copyright (C) 2019,2018,2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
-* Copyright (C) 2019,2018,2017, SICK AG, Waldkirch
+* Copyright (C) 2020, 2019,2018,2017, Ing.-Buero Dr. Michael Lehning, Hildesheim
+* Copyright (C) 2020, 2019,2018,2017, SICK AG, Waldkirch
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 05th Nov. 2019
+*  Last modified: 04th Mar. 2020
 *
 *      Authors:
 *         Michael Lehning <michael.lehning@lehning.de>
@@ -108,9 +108,10 @@
 // 001.004.000: Oct 2019 ENCODER Support added
 // 001.004.001: Nov 2019 IMU Timestamp Fix
 // 1.5.0: 2019-11-20: Radar implementation moved to a singleton
+// 1.5.1: 2020-03-04: First support of TiM240 prototype
 #define SICK_GENERIC_MAJOR_VER "1"
 #define SICK_GENERIC_MINOR_VER "5"
-#define SICK_GENERIC_PATCH_LEVEL "0"
+#define SICK_GENERIC_PATCH_LEVEL "1"
 
 #include <algorithm> // for std::min
 

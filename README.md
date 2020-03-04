@@ -33,6 +33,8 @@ ROS Device Driver for SICK lidar and radar sensors - supported scanner types:
 |                    |                                                                                                                                  | Scan-Rate: 50 Hz, 4x12.5 Hz            |                 |
 | LMS1104            | [1092445](https://www.sick.com/ag/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1000/c/g387151)                         | 1 layer max. range: 64 m, ang. resol. 0.25 [deg] |  ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 150 Hz, 4x37.5 Hz   |                 |
+| TiM240             | prototype                  | 1 layer max. range: unknown, ang. resol. 1.00 [deg], open. angle similiar to TiM | ✔ [prototype]|
+|                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
 | TiM551             | [1060445](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim551-2050001/p/p343045)                 | 1 layer max. range: 10 m, ang. resol. 1.00[deg] | ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
 | TiM561             | [1071419](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim561-2050101/p/p369446)                 | 1 layer max. range: 10 m, ang. resol. 0.33 [deg]| ✔ [stable]|
@@ -74,6 +76,10 @@ roslaunch sick_scan sick_mrs_1xxx.launch
 roslaunch sick_scan sick_lms_1xxx.launch
 ```
 
+- For TiM240-prototype:
+```bash
+roslaunch sick_scan sick_tim_240.launch
+```
 - For TiM5xx-family:
 ```bash
 roslaunch sick_scan sick_tim_5xx.launch
@@ -125,6 +131,51 @@ roslaunch sick_scan sick_tim_5xx.launch hostname:=192.168.0.71
 
 Take the launchfile "sick_tim_5xx_twin.launch" as an example.
 Rempping the scan and cloud topics is essential to distinguish the scanndata and provide TF information.
+
+## Parameter
+
+The use of the parameters can be looked up in the launch files. This is also recommended as a starting point.
+### Common parameters
+
+- `scanner_type`
+  Name of the used scanner. Usually this is also the name of the launch file. This entry is used to differentiate 
+  between the various scanner properties within the software code.
+ 
+- `hostname`
+  IP-address of the scanner (default: 192.168.0.1)
+
+- `port`
+  IP-port of the scanner (default: 2112)
+  
+- `min_ang`
+  Start angle in [rad]
+
+- `max_ang`
+  End angle in [rad]
+
+- `use_binary_protocol`
+  Switch between SOPAS Binary and SOPAS ASCII protocol
+  
+- `intensity`
+  Enable or disable transport of intensity values 
+
+- `intensity_resolution_16bit`
+  If true, the intensity values is transferred as 16 bit value. If false, as 8 bit value.
+  
+- `cloud_topic`
+  Topic name of the published pointcloud2 data
+
+- `frame_id`
+  Frame id used for the published data
+  
+### Further useful parameters
+- `timelimit`
+  Timelimit in [sec] for max. wait time of incoming sensor reply
+  
+- `sw_pll_only_publish`
+  If true, the internal Software PLL is fored to sync the scan generation time stamp to a system timestamp
+    
+  
 
 ## Sopas Mode
 This driver supports both COLA-B (binary) and COLA-A (ASCII) communication with the laser scanner. Binary mode is activated by default. Since this mode generates less network traffic.
