@@ -33,8 +33,8 @@ ROS Device Driver for SICK lidar and radar sensors - supported scanner types:
 |                    |                                                                                                                                  | Scan-Rate: 50 Hz, 4x12.5 Hz            |                 |
 | LMS1104            | [1092445](https://www.sick.com/ag/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1000/c/g387151)                         | 1 layer max. range: 64 m, ang. resol. 0.25 [deg] |  ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 150 Hz, 4x37.5 Hz   |                 |
-| TiM240             | prototype                  | 1 layer max. range: unknown, ang. resol. 1.00 [deg], open. angle similiar to TiM | ✔ [prototype]|
-|                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
+| TiM240             | prototype [more info here](doc/tim240/tim240.md) | 1 layer max. range: unknown, ang. resol. 1.00 [deg], 240 [deg]| ✔ [prototype]|
+|                    |                                                                                                                                  | Scan-Rate: 14.4 Hz   |                 |
 | TiM551             | [1060445](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim551-2050001/p/p343045)                 | 1 layer max. range: 10 m, ang. resol. 1.00[deg] | ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
 | TiM561             | [1071419](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim561-2050101/p/p369446)                 | 1 layer max. range: 10 m, ang. resol. 0.33 [deg]| ✔ [stable]|

@@ -986,6 +986,9 @@ namespace sick_scan
     // After definition of command, we specify the command sequence for scanner initalisation
 
 
+
+
+
     if (parser_->getCurrentParamPtr()->getUseSafetyPasWD())
     {
       sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3_SAFETY_SCANNER);
@@ -1326,6 +1329,7 @@ namespace sick_scan
           {
             restartDueToProcolChange = true;
           }
+
           useBinaryCmd = useBinaryCmdNow;
           setReadTimeOutInMs(defaultTimeOutInMs);
         }
@@ -1697,7 +1701,8 @@ namespace sick_scan
           angleRes10000th = askTmpAngleRes10000th;
           ROS_INFO("Angle resolution of scanner is %0.5lf [deg]  (in 1/10000th deg: 0x%X)", askTmpAngleRes,
                    askTmpAngleRes10000th);
-
+          ROS_INFO("[From:To] %0.5lf [deg] to %0.5lf [deg] (in 1/10000th deg: from 0x%X to 0x%X)",
+                   askTmpAngleStart, askTmpAngleEnd, askTmpAngleStart10000th, askTmpAngleEnd10000th);
         }
       }
       //-----------------------------------------------------------------
@@ -1710,8 +1715,19 @@ namespace sick_scan
       ROS_INFO("MAX_ANG: %8.3f [rad] %8.3f [deg]", config_.max_ang, rad2deg(this->config_.max_ang));
 
       // convert to 10000th degree
-      double minAngSopas = rad2deg(this->config_.min_ang) + 90;
-      double maxAngSopas = rad2deg(this->config_.max_ang) + 90;
+      double minAngSopas = rad2deg(this->config_.min_ang);
+      double maxAngSopas = rad2deg(this->config_.max_ang);
+
+      if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_240_NAME) == 0)
+      {
+        // the TiM240 operates directly in the ros coordinate system
+      }
+      else
+      {
+        minAngSopas += 90.0;
+        maxAngSopas += 90.0;
+      }
+
       angleStart10000th = (int) (boost::math::round(10000.0 * minAngSopas));
       angleEnd10000th = (int) (boost::math::round(10000.0 * maxAngSopas));
 
@@ -1855,8 +1871,15 @@ namespace sick_scan
         double askAngleStart = askAngleStart10000th / 10000.0;
         double askAngleEnd = askAngleEnd10000th / 10000.0;
 
-        askAngleStart -= 90; // angle in ROS relative to y-axis
-        askAngleEnd -= 90; // angle in ROS relative to y-axis
+        if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_240_NAME) == 0)
+        {
+          // the TiM240 operates directly in the ros coordinate system
+        }
+        else
+        {
+          askAngleStart -= 90; // angle in ROS relative to y-axis
+          askAngleEnd -= 90; // angle in ROS relative to y-axis
+        }
         this->config_.min_ang = askAngleStart / 180.0 * M_PI;
         this->config_.max_ang = askAngleEnd / 180.0 * M_PI;
         ros::NodeHandle nhPriv("~");
@@ -2132,6 +2155,7 @@ namespace sick_scan
       // The TiM240 can not interpret CMD_START_MEASUREMENT
       if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_240_NAME) == 0)
       {
+        // the TiM240 operates directly in the ros coordinate system
          // do nothing for a TiM240
       }
       else

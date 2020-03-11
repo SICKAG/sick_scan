@@ -418,7 +418,7 @@ bool ScannerBasicParam::getUseSafetyPasWD()
       {
         basicParams[i].setNumberOfMaximumEchos(1);
         basicParams[i].setNumberOfLayers(1);
-        basicParams[i].setNumberOfShots(211);
+        basicParams[i].setNumberOfShots(241); // [-120 deg, 120 deg]
         basicParams[i].setAngularDegreeResolution(1.00000);
         basicParams[i].setExpectedFrequency(15.0);
         basicParams[i].setUseBinaryProtocol(true);
@@ -956,7 +956,7 @@ bool ScannerBasicParam::getUseSafetyPasWD()
 		// ROS_DEBUG("measurement_freq: %d, time_increment: %f", measurement_freq, msg.time_increment);
 
 		// 18: Number of encoders (0)
-		// 19: Number of 16 bit channels (1)
+		// 19: Number of 16 bit channels (1)verbose
 		// 20: Measured data contents (DIST1)
 
 		// 21: Scaling factor (3F800000)
