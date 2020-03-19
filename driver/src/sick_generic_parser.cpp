@@ -498,7 +498,7 @@ bool ScannerBasicParam::getUseSafetyPasWD()
       {
         basicParams[i].setNumberOfMaximumEchos(1);
         basicParams[i].setNumberOfLayers(1);
-        basicParams[i].setNumberOfShots(541);
+        basicParams[i].setNumberOfShots(1081);
         basicParams[i].setAngularDegreeResolution(0.5);
         basicParams[i].setExpectedFrequency(25.0);
         basicParams[i].setUseBinaryProtocol(true);
