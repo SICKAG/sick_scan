@@ -109,9 +109,10 @@
 // 001.004.001: Nov 2019 IMU Timestamp Fix
 // 1.5.0: 2019-11-20: Radar implementation moved to a singleton
 // 1.5.1: 2020-03-04: First support of TiM240 prototype
+// 1.5.3: 2020-03-19: Fixes for LMS1xx
 #define SICK_GENERIC_MAJOR_VER "1"
 #define SICK_GENERIC_MINOR_VER "5"
-#define SICK_GENERIC_PATCH_LEVEL "1"
+#define SICK_GENERIC_PATCH_LEVEL "3"
 
 #include <algorithm> // for std::min
 
