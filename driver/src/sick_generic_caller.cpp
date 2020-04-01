@@ -111,9 +111,11 @@
 // 1.5.1: 2020-03-04: First support of TiM240 prototype
 // 1.5.3: 2020-03-19: Fixes for LMS1xx
 // 1.5.4: 2020-03-26: Fixes for 16 bit resolution flag
+// 1.5.5: 2020-04-01: MRS6xxx check
+
 #define SICK_GENERIC_MAJOR_VER "1"
 #define SICK_GENERIC_MINOR_VER "5"
-#define SICK_GENERIC_PATCH_LEVEL "4"
+#define SICK_GENERIC_PATCH_LEVEL 5"
 
 #include <algorithm> // for std::min
 
