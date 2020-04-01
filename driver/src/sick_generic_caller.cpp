@@ -115,7 +115,7 @@
 
 #define SICK_GENERIC_MAJOR_VER "1"
 #define SICK_GENERIC_MINOR_VER "5"
-#define SICK_GENERIC_PATCH_LEVEL 5"
+#define SICK_GENERIC_PATCH_LEVEL "5"
 
 #include <algorithm> // for std::min
 
