@@ -266,14 +266,21 @@ mkdir -p ~/ros_catkin_ws/src/
 cd ~/ros_catkin_ws/src/
 git clone git://github.com/SICKAG/sick_scan.git
 cd ..
-catkin_make install/setup.bash
+catkin_make install
+source ~/ros_catkin_ws/install/setup.bash
 ```
 
 #### Development branch
 
 A "devel" branch is also maintained for the very latest developments and tests. Add-ons and support for brand new scanners are usually first tested in this branch and can be checked out as needed as follows:
 ```bash
+source /opt/ros/<rosdistro>/setup.bash
+mkdir -p ~/ros_catkin_ws/src/
+cd ~/ros_catkin_ws/src/
 git clone -b devel --single-branch git://github.com/SICKAG/sick_scan.git
+cd ..
+catkin_make install
+source ~/ros_catkin_ws/install/setup.bash
 ```
 
 ## Quick Start
