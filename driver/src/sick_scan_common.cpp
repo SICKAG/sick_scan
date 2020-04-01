@@ -937,7 +937,24 @@ namespace sick_scan
     sopasCmdMaskVec[CMD_ALIGNMENT_MODE] = "\x02sWN MMAlignmentMode %d\x03";
     sopasCmdMaskVec[CMD_APPLICATION_MODE] = "\x02sWN SetActiveApplications 1 %s %d\x03";
     sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES] = "\x02sWN LMPoutputRange 1 %X %X %X\x03";
-    sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d 00 %d %d 00 0 0 0 1 1\x03";
+    //sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG]=  "\x02sWN LMDscandatacfg %02d 00 %d 00 %d 0 %d 0 0 0 1 +1\x03"; //outputChannelFlagId,rssiFlag, rssiResolutionIs16Bit ,EncoderSetings
+      sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 0 0 %02d 0 0 0 1 1\x03";//outputChannelFlagId,rssiFlag, rssiResolutionIs16Bit ,EncoderSetings
+    /*
+   configuration
+ * in ASCII
+ * sWN LMDscandatacfg  %02d 00 %d   %d  0    %02d    0  0    0  1  1
+ *                      |      |    |   |     |      |  |    |  |  | +----------> Output rate       -> All scans: 1--> every 1 scan
+ *                      |      |    |   |     |      |  |    |  +----------------> Time             ->True (unused in Data Processing)
+ *                      |      |    |   |     |      |  |    +-------------------> Comment          ->False
+ *                      |      |    |   |     |      |  +------------------------> Device Name      ->False
+ *                      |      |    |   |     |      +---------------------------> Position         ->False
+ *                      |      |    |   |     +----------------------------------> Encoder          ->Param set by Mask
+ *                      |      |    |   +----------------------------------------> Unit of Remission->Always 0
+ *                      |      |    +--------------------------------------------> RSSi Resolution  ->0 8Bit 1 16 Bit
+ *                      |      +-------------------------------------------------> Remission data   ->Param set by Mask 0 False 1 True
+ *                      +--------------------------------------------------------> Data channel     ->Param set by Mask
+*/
+
     sopasCmdMaskVec[CMD_SET_ECHO_FILTER] = "\x02sWN FREchoFilter %d\x03";
     sopasCmdMaskVec[CMD_SET_NTP_UPDATETIME] = "\x02sWN TSCTCupdatetime %d\x03";
     sopasCmdMaskVec[CMD_SET_NTP_TIMEZONE]= "sWN TSCTCtimezone %d";
@@ -3773,26 +3790,42 @@ namespace sick_scan
       int scanDataStatus = 0;
       int keyWord3Len = keyWord3.length();
       int dummyArr[12] = {0};
-      if (12 == sscanf(requestAscii + keyWord3Len + 1, " %d %d %d %d %d %d %d %d %d %d %d %d",
-                       &dummyArr[0], &dummyArr[1], &dummyArr[2],
-                       &dummyArr[3], &dummyArr[4], &dummyArr[5],
-                       &dummyArr[6], &dummyArr[7], &dummyArr[8],
-                       &dummyArr[9], &dummyArr[10], &dummyArr[11]))
+      //sWN LMDscandatacfg %02d 00 %d %d 0 0 %02d 0 0 0 1 1\x03"
+      int sscanfresult=sscanf(requestAscii + keyWord3Len + 1, " %d %d %d %d %d %d %d %d %d %d %d %d",
+                             &dummyArr[0], // Data Channel Idx LSB
+                             &dummyArr[1], // Data Channel Idx MSB
+                             &dummyArr[2], // Remission
+                             &dummyArr[3], // Remission data format
+                             &dummyArr[4], // Unit
+                             &dummyArr[5], // Encoder Setting LSB
+                             &dummyArr[6], // Encoder Setting MSB
+                             &dummyArr[7], // Position
+                             &dummyArr[8], // Send Name
+                             &dummyArr[9], // Send Comment
+                             &dummyArr[10], // Time information
+                             &dummyArr[11]); // n-th Scan (packed - not sent as single byte sequence) !!!
+      if (1 < sscanfresult)
       {
+
         for (int i = 0; i < 13; i++)
         {
           buffer[i] = 0x00;
         }
-        buffer[0] = (unsigned char) (0xFF & dummyArr[0]);
-        buffer[1] = (unsigned char) (0xFF & dummyArr[1]);
+        buffer[0] = (unsigned char) (0xFF & dummyArr[0]);  //Data Channel 2 Bytes
+        buffer[1] = (unsigned char) (0xFF & dummyArr[1]);; // MSB of Data Channel (here Little Endian!!)
         buffer[2] = (unsigned char) (0xFF & dummyArr[2]);  // Remission
         buffer[3] = (unsigned char) (0xFF & dummyArr[3]);  // Remission data format 0=8 bit 1= 16 bit
-        buffer[5] = (unsigned char) (0xFF & dummyArr[5]);  //encoder Setings
-        buffer[6] = (unsigned char) (0xFF & dummyArr[6]);  //encoder Setings
-        buffer[10]= (unsigned char) (0xFF & dummyArr[10]);  // Enable timestamp
-        buffer[12] = (unsigned char) (0xFF & (dummyArr[11]));  // nth-Scan
-
+        buffer[4] = (unsigned char) (0xFF & dummyArr[4]);  //Unit of remission data
+        buffer[5] = (unsigned char) (0xFF & dummyArr[5]);  //encoder Data LSB
+        buffer[6] = (unsigned char) (0xFF & dummyArr[6]);  //encoder Data MSB
+        buffer[7] = (unsigned char) (0xFF & dummyArr[7]);  // Position
+        buffer[8]= (unsigned char) (0xFF & dummyArr[8]);  // Send Scanner Name
+        buffer[9]= (unsigned char) (0xFF & dummyArr[9]);  // Comment
+        buffer[10] = (unsigned char) (0xFF & dummyArr[10]);  // Time information
+        buffer[11] = (unsigned char) (0xFF & (dummyArr[11]>>8));  // BIG Endian High Byte nth-Scan
+        buffer[12] = (unsigned char) (0xFF & (dummyArr[11]>>0));  // BIG Endian Low Byte nth-Scan
         bufferLen = 13;
+
       }
 
     }
