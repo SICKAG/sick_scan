@@ -50,7 +50,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 04th Mar. 2020
+*  Last modified: 26th Mar. 2020
 *
 *      Authors:
 *         Michael Lehning <michael.lehning@lehning.de>
@@ -110,9 +110,10 @@
 // 1.5.0: 2019-11-20: Radar implementation moved to a singleton
 // 1.5.1: 2020-03-04: First support of TiM240 prototype
 // 1.5.3: 2020-03-19: Fixes for LMS1xx
+// 1.5.4: 2020-03-26: Fixes for 16 bit resolution flag
 #define SICK_GENERIC_MAJOR_VER "1"
 #define SICK_GENERIC_MINOR_VER "5"
-#define SICK_GENERIC_PATCH_LEVEL "3"
+#define SICK_GENERIC_PATCH_LEVEL "4"
 
 #include <algorithm> // for std::min
 
