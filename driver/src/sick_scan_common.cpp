@@ -131,7 +131,7 @@ std::vector<unsigned char> stringToVector(std::string s)
 
 /*!
 \brief return diagnostic error code (small helper function)
-	   This small helper function was introduced to allow the compiling under Visual c++.
+     This small helper function was introduced to allow the compiling under Visual c++.
 \return Diagnostic error code (value 2)
 */
 static int getDiagnosticErrorCode() // workaround due to compiling error under Visual C++
@@ -797,9 +797,9 @@ namespace sick_scan
   }
 
   /*!
-	\brief init routine of scanner
-	\return exit code
-	*/
+  \brief init routine of scanner
+  \return exit code
+  */
   int SickScanCommon::init()
   {
     int result = init_device();
@@ -808,6 +808,7 @@ namespace sick_scan
       ROS_FATAL("Failed to init device: %d", result);
       return result;
     }
+
     result = init_scanner();
     if (result != 0)
     {
@@ -906,12 +907,12 @@ namespace sick_scan
     sopasCmdVec[CMD_SET_3_4_TO_ENCODER]="\x02sWN DO3And4Fnc 1\x03";
     //TODO remove this and add param
     sopasCmdVec[CMD_SET_ENOCDER_RES_1] ="\x02sWN LICencres 1\x03";
-		/*
-		 * Special configuration for NAV Scanner
-		 * in hex
-		 * sMN mLMPsetscancfg 0320 01 09C4 0 0036EE80 09C4 0 0 09C4 0 0 09C4 0 0
-		 *                      |  |    |  |     |      |  | |  |   | |  |   | |
-		 *                      |  |    |  |     |      |  | |  |   | |  |   | +->
+    /*
+     * Special configuration for NAV Scanner
+     * in hex
+     * sMN mLMPsetscancfg 0320 01 09C4 0 0036EE80 09C4 0 0 09C4 0 0 09C4 0 0
+     *                      |  |    |  |     |      |  | |  |   | |  |   | |
+     *                      |  |    |  |     |      |  | |  |   | |  |   | +->
      *                      |  |    |  |     |      |  | |  |   | |  |   +---> 0x0      -->    0   -> 0° start ang for sector 4
      *                      |  |    |  |     |      |  | |  |   | |  +-------> 0x09c4   --> 2500   -> 0.25° deg ang res for Sector 4
      *                      |  |    |  |     |      |  | |  |   | +----------> 0x0      -->    0   -> 0° start ang for sector 4
@@ -930,13 +931,30 @@ namespace sick_scan
 		sopasCmdVec[CMD_SET_SCANDATACONFIGNAV] = "\x02sMN mLMPsetscancfg +2000 +1 +7500 +3600000 0 +2500 0 0 +2500 0 0 +2500 0 0\x03";
 
     // defining cmd mask for cmds with variable input
-    sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %d 1 %d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
+    sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %+d 1 %+d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
     sopasCmdMaskVec[CMD_SET_PARTICLE_FILTER] = "\x02sWN LFPparticle %d %d\x03";
     sopasCmdMaskVec[CMD_SET_MEAN_FILTER] = "\x02sWN LFPmeanfilter %d +%d 1\x03";
     sopasCmdMaskVec[CMD_ALIGNMENT_MODE] = "\x02sWN MMAlignmentMode %d\x03";
     sopasCmdMaskVec[CMD_APPLICATION_MODE] = "\x02sWN SetActiveApplications 1 %s %d\x03";
     sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES] = "\x02sWN LMPoutputRange 1 %X %X %X\x03";
-    sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d 00 %d %d 00 0 0 0 1 1\x03";
+    //sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG]=  "\x02sWN LMDscandatacfg %02d 00 %d 00 %d 0 %d 0 0 0 1 +1\x03"; //outputChannelFlagId,rssiFlag, rssiResolutionIs16Bit ,EncoderSetings
+      sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 0 0 %02d 0 0 0 1 1\x03";//outputChannelFlagId,rssiFlag, rssiResolutionIs16Bit ,EncoderSetings
+    /*
+   configuration
+ * in ASCII
+ * sWN LMDscandatacfg  %02d 00 %d   %d  0    %02d    0  0    0  1  1
+ *                      |      |    |   |     |      |  |    |  |  | +----------> Output rate       -> All scans: 1--> every 1 scan
+ *                      |      |    |   |     |      |  |    |  +----------------> Time             ->True (unused in Data Processing)
+ *                      |      |    |   |     |      |  |    +-------------------> Comment          ->False
+ *                      |      |    |   |     |      |  +------------------------> Device Name      ->False
+ *                      |      |    |   |     |      +---------------------------> Position         ->False
+ *                      |      |    |   |     +----------------------------------> Encoder          ->Param set by Mask
+ *                      |      |    |   +----------------------------------------> Unit of Remission->Always 0
+ *                      |      |    +--------------------------------------------> RSSi Resolution  ->0 8Bit 1 16 Bit
+ *                      |      +-------------------------------------------------> Remission data   ->Param set by Mask 0 False 1 True
+ *                      +--------------------------------------------------------> Data channel     ->Param set by Mask
+*/
+
     sopasCmdMaskVec[CMD_SET_ECHO_FILTER] = "\x02sWN FREchoFilter %d\x03";
     sopasCmdMaskVec[CMD_SET_NTP_UPDATETIME] = "\x02sWN TSCTCupdatetime %d\x03";
     sopasCmdMaskVec[CMD_SET_NTP_TIMEZONE]= "sWN TSCTCtimezone %d";
@@ -980,10 +998,14 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_SET_INCREMENTSOURCE_ENC] = "Error seting encoder increment source to Encoder";
     sopasCmdErrMsg[CMD_SET_SCANDATACONFIGNAV]= "Error setting scandata config";
 
-    // ML: Add hier more useful cmd and mask entries
+    // ML: Add here more useful cmd and mask entries
 
     // After definition of command, we specify the command sequence for scanner initalisation
-    ;
+
+
+
+
+
     if (parser_->getCurrentParamPtr()->getUseSafetyPasWD())
     {
       sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3_SAFETY_SCANNER);
@@ -1224,7 +1246,7 @@ namespace sick_scan
     int maxCmdLoop = 2; // try binary and ascii during startup
 
     const int shortTimeOutInMs = 5000; // during startup phase to check binary or ascii
-    const int defaultTimeOutInMs = 20000; // standard time out 20 sec.
+    const int defaultTimeOutInMs = 120000; // standard time out 120 sec.
 
     setReadTimeOutInMs(shortTimeOutInMs);
 
@@ -1324,6 +1346,7 @@ namespace sick_scan
           {
             restartDueToProcolChange = true;
           }
+
           useBinaryCmd = useBinaryCmdNow;
           setReadTimeOutInMs(defaultTimeOutInMs);
         }
@@ -1695,7 +1718,8 @@ namespace sick_scan
           angleRes10000th = askTmpAngleRes10000th;
           ROS_INFO("Angle resolution of scanner is %0.5lf [deg]  (in 1/10000th deg: 0x%X)", askTmpAngleRes,
                    askTmpAngleRes10000th);
-
+          ROS_INFO("[From:To] %0.5lf [deg] to %0.5lf [deg] (in 1/10000th deg: from 0x%X to 0x%X)",
+                   askTmpAngleStart, askTmpAngleEnd, askTmpAngleStart10000th, askTmpAngleEnd10000th);
         }
       }
       //-----------------------------------------------------------------
@@ -1708,8 +1732,19 @@ namespace sick_scan
       ROS_INFO("MAX_ANG: %8.3f [rad] %8.3f [deg]", config_.max_ang, rad2deg(this->config_.max_ang));
 
       // convert to 10000th degree
-      double minAngSopas = rad2deg(this->config_.min_ang) + 90;
-      double maxAngSopas = rad2deg(this->config_.max_ang) + 90;
+      double minAngSopas = rad2deg(this->config_.min_ang);
+      double maxAngSopas = rad2deg(this->config_.max_ang);
+
+      if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_240_NAME) == 0)
+      {
+        // the TiM240 operates directly in the ros coordinate system
+      }
+      else
+      {
+        minAngSopas += 90.0;
+        maxAngSopas += 90.0;
+      }
+
       angleStart10000th = (int) (boost::math::round(10000.0 * minAngSopas));
       angleEnd10000th = (int) (boost::math::round(10000.0 * maxAngSopas));
 
@@ -1853,8 +1888,15 @@ namespace sick_scan
         double askAngleStart = askAngleStart10000th / 10000.0;
         double askAngleEnd = askAngleEnd10000th / 10000.0;
 
-        askAngleStart -= 90; // angle in ROS relative to y-axis
-        askAngleEnd -= 90; // angle in ROS relative to y-axis
+        if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_240_NAME) == 0)
+        {
+          // the TiM240 operates directly in the ros coordinate system
+        }
+        else
+        {
+          askAngleStart -= 90; // angle in ROS relative to y-axis
+          askAngleEnd -= 90; // angle in ROS relative to y-axis
+        }
         this->config_.min_ang = askAngleStart / 180.0 * M_PI;
         this->config_.max_ang = askAngleEnd / 180.0 * M_PI;
         ros::NodeHandle nhPriv("~");
@@ -2126,7 +2168,17 @@ namespace sick_scan
     else
     {
       // initializing sequence for laserscanner
-      startProtocolSequence.push_back(CMD_START_MEASUREMENT);
+      // is this device a TiM240????
+      // The TiM240 can not interpret CMD_START_MEASUREMENT
+      if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_240_NAME) == 0)
+      {
+        // the TiM240 operates directly in the ros coordinate system
+         // do nothing for a TiM240
+      }
+      else
+      {
+        startProtocolSequence.push_back(CMD_START_MEASUREMENT);
+      }
       startProtocolSequence.push_back(CMD_RUN);  // leave user level
       startProtocolSequence.push_back(CMD_START_SCANDATA);
       if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)  // MRS1104 - start IMU-Transfer
@@ -3738,26 +3790,42 @@ namespace sick_scan
       int scanDataStatus = 0;
       int keyWord3Len = keyWord3.length();
       int dummyArr[12] = {0};
-      if (12 == sscanf(requestAscii + keyWord3Len + 1, " %d %d %d %d %d %d %d %d %d %d %d %d",
-                       &dummyArr[0], &dummyArr[1], &dummyArr[2],
-                       &dummyArr[3], &dummyArr[4], &dummyArr[5],
-                       &dummyArr[6], &dummyArr[7], &dummyArr[8],
-                       &dummyArr[9], &dummyArr[10], &dummyArr[11]))
+      //sWN LMDscandatacfg %02d 00 %d %d 0 0 %02d 0 0 0 1 1\x03"
+      int sscanfresult=sscanf(requestAscii + keyWord3Len + 1, " %d %d %d %d %d %d %d %d %d %d %d %d",
+                             &dummyArr[0], // Data Channel Idx LSB
+                             &dummyArr[1], // Data Channel Idx MSB
+                             &dummyArr[2], // Remission
+                             &dummyArr[3], // Remission data format
+                             &dummyArr[4], // Unit
+                             &dummyArr[5], // Encoder Setting LSB
+                             &dummyArr[6], // Encoder Setting MSB
+                             &dummyArr[7], // Position
+                             &dummyArr[8], // Send Name
+                             &dummyArr[9], // Send Comment
+                             &dummyArr[10], // Time information
+                             &dummyArr[11]); // n-th Scan (packed - not sent as single byte sequence) !!!
+      if (1 < sscanfresult)
       {
+
         for (int i = 0; i < 13; i++)
         {
           buffer[i] = 0x00;
         }
-        buffer[0] = (unsigned char) (0xFF & dummyArr[0]);
-        buffer[1] = (unsigned char) (0xFF & dummyArr[1]);
+        buffer[0] = (unsigned char) (0xFF & dummyArr[0]);  //Data Channel 2 Bytes
+        buffer[1] = (unsigned char) (0xFF & dummyArr[1]);; // MSB of Data Channel (here Little Endian!!)
         buffer[2] = (unsigned char) (0xFF & dummyArr[2]);  // Remission
         buffer[3] = (unsigned char) (0xFF & dummyArr[3]);  // Remission data format 0=8 bit 1= 16 bit
-        buffer[5] = (unsigned char) (0xFF & dummyArr[5]);  //encoder Setings
-        buffer[6] = (unsigned char) (0xFF & dummyArr[6]);  //encoder Setings
-        buffer[10]= (unsigned char) (0xFF & dummyArr[10]);  // Enable timestamp
-        buffer[12] = (unsigned char) (0xFF & (dummyArr[11]));  // nth-Scan
-
+        buffer[4] = (unsigned char) (0xFF & dummyArr[4]);  //Unit of remission data
+        buffer[5] = (unsigned char) (0xFF & dummyArr[5]);  //encoder Data LSB
+        buffer[6] = (unsigned char) (0xFF & dummyArr[6]);  //encoder Data MSB
+        buffer[7] = (unsigned char) (0xFF & dummyArr[7]);  // Position
+        buffer[8]= (unsigned char) (0xFF & dummyArr[8]);  // Send Scanner Name
+        buffer[9]= (unsigned char) (0xFF & dummyArr[9]);  // Comment
+        buffer[10] = (unsigned char) (0xFF & dummyArr[10]);  // Time information
+        buffer[11] = (unsigned char) (0xFF & (dummyArr[11]>>8));  // BIG Endian High Byte nth-Scan
+        buffer[12] = (unsigned char) (0xFF & (dummyArr[11]>>0));  // BIG Endian Low Byte nth-Scan
         bufferLen = 13;
+
       }
 
     }

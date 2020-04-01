@@ -63,106 +63,106 @@
 
 namespace sick_scan
 {
-	using namespace std;
+  using namespace std;
 
-	/*!
-	\brief Setting name (type) of scanner
+  /*!
+  \brief Setting name (type) of scanner
 
-	\param _s name of scanner
-	\sa getScannerName
-	*/
-	void ScannerBasicParam::setScannerName(std::string _s)
-	{
-		scannerName = _s;
-	}
+  \param _s name of scanner
+  \sa getScannerName
+  */
+  void ScannerBasicParam::setScannerName(std::string _s)
+  {
+    scannerName = _s;
+  }
 
-	/*!
-	\brief Getting name (type) of scanner
+  /*!
+  \brief Getting name (type) of scanner
 
-	\return Name of scanner
-	\sa setScannerName
-	*/
-	std::string ScannerBasicParam::getScannerName()
-	{
-		return(scannerName);
-	}
-
-
-	/*!
-	\brief Setting number of scanner layers (depending of scanner type/family)
-
-	\param _layerNum of scanner layers (e.g. 1 for TiM5xx and 24 for MRS6124
-	\sa getNumberOfLayers
-	*/
-	void ScannerBasicParam::setNumberOfLayers(int _layerNum)
-	{
-		numberOfLayers = _layerNum;
-	}
-
-	/*!
-	\brief Getting number of scanner layers 
-
-	\return Number of scanners layer (e.g. 1 for TiM5xx and 24 for MRS6124)
-	\sa setNumberOfLayers
-	*/
-	int ScannerBasicParam::getNumberOfLayers(void)
-	{
-		return(numberOfLayers);
-
-	}
-
-	/*!
-	\brief Set number of shots per scan
-	
-	\param _shots of shots per scan (for one layer)
-	\sa getNumberOfLayers
-	*/
-	void ScannerBasicParam::setNumberOfShots(int _shots)
-	{
-		numberOfShots = _shots;
-	}
-
-	/*!
-	\brief Get number of shots per scan
-
-	\return Number of shots per scan (for one layer)
-	\sa getNumberOfLayers
-	*/
-	int ScannerBasicParam::getNumberOfShots(void)
-	{
-		return(numberOfShots);
-	}
-
-	/*!
-	\brief Set number of maximum echoes for this laser scanner type
-
-	\param _maxEchos of max echoes
-	\sa getNumberOfMaximumEchos
-	*/
-	void ScannerBasicParam::setNumberOfMaximumEchos(int _maxEchos)
-	{
-		this->numberOfMaximumEchos = _maxEchos;
-	}
+  \return Name of scanner
+  \sa setScannerName
+  */
+  std::string ScannerBasicParam::getScannerName()
+  {
+    return(scannerName);
+  }
 
 
-	/*!
-	\brief Get number of maximum echoes for this laser scanner type
+  /*!
+  \brief Setting number of scanner layers (depending of scanner type/family)
 
-	\return Number of max echoes
-	\sa setNumberOfMaximumEchos
-	*/
-	int ScannerBasicParam::getNumberOfMaximumEchos(void)
-	{
-		return(numberOfMaximumEchos);
-	}
+  \param _layerNum of scanner layers (e.g. 1 for TiM5xx and 24 for MRS6124
+  \sa getNumberOfLayers
+  */
+  void ScannerBasicParam::setNumberOfLayers(int _layerNum)
+  {
+    numberOfLayers = _layerNum;
+  }
 
-	/*!
-	\brief Set pointer to corresponding parameter object to the parser
-	
-	\param _ptr to parameter object
-	\sa getCurrentParamPtr
-	*/
-	void SickGenericParser::setCurrentParamPtr(ScannerBasicParam* _ptr)
+  /*!
+  \brief Getting number of scanner layers
+
+  \return Number of scanners layer (e.g. 1 for TiM5xx and 24 for MRS6124)
+  \sa setNumberOfLayers
+  */
+  int ScannerBasicParam::getNumberOfLayers(void)
+  {
+    return(numberOfLayers);
+
+  }
+
+  /*!
+  \brief Set number of shots per scan
+
+  \param _shots of shots per scan (for one layer)
+  \sa getNumberOfLayers
+  */
+  void ScannerBasicParam::setNumberOfShots(int _shots)
+  {
+    numberOfShots = _shots;
+  }
+
+  /*!
+  \brief Get number of shots per scan
+
+  \return Number of shots per scan (for one layer)
+  \sa getNumberOfLayers
+  */
+  int ScannerBasicParam::getNumberOfShots(void)
+  {
+    return(numberOfShots);
+  }
+
+  /*!
+  \brief Set number of maximum echoes for this laser scanner type
+
+  \param _maxEchos of max echoes
+  \sa getNumberOfMaximumEchos
+  */
+  void ScannerBasicParam::setNumberOfMaximumEchos(int _maxEchos)
+  {
+    this->numberOfMaximumEchos = _maxEchos;
+  }
+
+
+  /*!
+  \brief Get number of maximum echoes for this laser scanner type
+
+  \return Number of max echoes
+  \sa setNumberOfMaximumEchos
+  */
+  int ScannerBasicParam::getNumberOfMaximumEchos(void)
+  {
+    return(numberOfMaximumEchos);
+  }
+
+  /*!
+  \brief Set pointer to corresponding parameter object to the parser
+
+  \param _ptr to parameter object
+  \sa getCurrentParamPtr
+  */
+  void SickGenericParser::setCurrentParamPtr(ScannerBasicParam* _ptr)
 	{
 		currentParamSet = _ptr;
 	}
@@ -369,6 +369,7 @@ bool ScannerBasicParam::getUseSafetyPasWD()
 	{
 		setScannerType(_scanType);
 		allowedScannerNames.push_back(SICK_SCANNER_MRS_1XXX_NAME);
+    allowedScannerNames.push_back(SICK_SCANNER_TIM_240_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_TIM_5XX_NAME);
 		allowedScannerNames.push_back(SICK_SCANNER_TIM_7XX_NAME);
     allowedScannerNames.push_back(SICK_SCANNER_TIM_7XXS_NAME);
@@ -413,6 +414,20 @@ bool ScannerBasicParam::getUseSafetyPasWD()
 				basicParams[i].setEncoderMode(-1); // Default
 				basicParams[i].setScanMirrored(false);
 			}
+      if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_240_NAME) == 0) // TIM_5xx - 1 Layer, max. 811 shots per scan
+      {
+        basicParams[i].setNumberOfMaximumEchos(1);
+        basicParams[i].setNumberOfLayers(1);
+        basicParams[i].setNumberOfShots(241); // [-120 deg, 120 deg]
+        basicParams[i].setAngularDegreeResolution(1.00000);
+        basicParams[i].setExpectedFrequency(15.0);
+        basicParams[i].setUseBinaryProtocol(true);
+        basicParams[i].setDeviceIsRadar(false); // Default
+        basicParams[i].setUseSafetyPasWD(false); // Default
+        basicParams[i].setEncoderMode(-1); // Default
+        basicParams[i].setScanMirrored(false);
+
+      }
 			if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_5XX_NAME) == 0) // TIM_5xx - 1 Layer, max. 811 shots per scan
       {
         basicParams[i].setNumberOfMaximumEchos(1);
@@ -483,7 +498,7 @@ bool ScannerBasicParam::getUseSafetyPasWD()
       {
         basicParams[i].setNumberOfMaximumEchos(1);
         basicParams[i].setNumberOfLayers(1);
-        basicParams[i].setNumberOfShots(541);
+        basicParams[i].setNumberOfShots(1081);
         basicParams[i].setAngularDegreeResolution(0.5);
         basicParams[i].setExpectedFrequency(25.0);
         basicParams[i].setUseBinaryProtocol(true);
@@ -941,7 +956,7 @@ bool ScannerBasicParam::getUseSafetyPasWD()
 		// ROS_DEBUG("measurement_freq: %d, time_increment: %f", measurement_freq, msg.time_increment);
 
 		// 18: Number of encoders (0)
-		// 19: Number of 16 bit channels (1)
+		// 19: Number of 16 bit channels (1)verbose
 		// 20: Measured data contents (DIST1)
 
 		// 21: Scaling factor (3F800000)

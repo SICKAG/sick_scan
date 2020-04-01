@@ -38,6 +38,7 @@
 // List of supported laser scanner and radar scanner
 #define SICK_SCANNER_LMS_1XXX_NAME "sick_lms_1xxx"
 #define SICK_SCANNER_MRS_1XXX_NAME "sick_mrs_1xxx"
+#define SICK_SCANNER_TIM_240_NAME "sick_tim_240"
 #define SICK_SCANNER_TIM_5XX_NAME "sick_tim_5xx"
 #define SICK_SCANNER_TIM_7XX_NAME "sick_tim_7xx"
 #define SICK_SCANNER_TIM_7XXS_NAME "sick_tim_7xxS"
@@ -73,8 +74,8 @@ namespace sick_scan
 		double getExpectedFrequency(void);
 		bool getDeviceIsRadar(void);
 		bool getUseBinaryProtocol(void);
-        void setScanMirrored(bool _scanMirrored);
-        bool getScanMirrored();
+		void setScanMirrored(bool _scanMirrored);
+    bool getScanMirrored();
 		void setUseBinaryProtocol(bool _useBinary);
 		void setDeviceIsRadar(bool _deviceIsRadar);
 		void setIntensityResolutionIs16Bit(bool _IntensityResolutionIs16Bit);
