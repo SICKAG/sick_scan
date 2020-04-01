@@ -112,7 +112,8 @@ roslaunch sick_scan sick_lms_4xxx.launch
 
 - For RMS3xx-family:
 ```bash
-roslaunch sick_scan sick_rms_3xx.launch (under development)
+roslaunch sick_scan sick_rms_3xx.launch (under 
+opment)
 ```
 ### Starting Scanner with Specific Ip Address
 To start the scanner with a specific IP address, the launch command can be used for most launch files as follows.
@@ -263,10 +264,16 @@ The driver is released at longer intervals as a binary package and can therefore
 source /opt/ros/<rosdistro>/setup.bash
 mkdir -p ~/ros_catkin_ws/src/
 cd ~/ros_catkin_ws/src/
-git clone -b devel --single-branch git://github.com/SICKAG/sick_scan.git
+git clone git://github.com/SICKAG/sick_scan.git
 cd ..
-catkin_make install
-source ~/ros_catkin_ws/install/setup.bash
+catkin_make install/setup.bash
+```
+
+#### Development branch
+
+A "devel" branch is also maintained for the very latest developments and tests. Add-ons and support for brand new scanners are usually first tested in this branch and can be checked out as needed as follows:
+```bash
+git clone -b devel --single-branch git://github.com/SICKAG/sick_scan.git
 ```
 
 ## Quick Start
