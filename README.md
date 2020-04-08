@@ -236,6 +236,10 @@ Overview of the tools:
    * Try to ping scanner ip address (used in launch file)
 9. If the driver stops during init phase please stop the driver with ctrl-c and restart (could be caused due to protocol ASCII/Binary cola-dialect).
 
+## FAQ
+
+* FAQ: [doc/faq.md](doc/faq.md)
+
 ## Support
 
 * In case of technical support please open a new issue. For optimal support, add the following information to your request:
