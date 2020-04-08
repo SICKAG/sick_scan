@@ -20,5 +20,3 @@ rosrun rviz rviz
 
 Further information can be found at http://wiki.ros.org/rviz/Troubleshooting. 
 
-
-Translated with www.DeepL.com/Translator (free version)
