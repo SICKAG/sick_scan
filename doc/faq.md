@@ -1,6 +1,6 @@
 # sick_scan FAQ
 
-## rviz show a grey point cloud 
+## rviz shows a grey point cloud 
 
 :question: rviz shows a grey point cloud. The size of points can be adjusted.
 
