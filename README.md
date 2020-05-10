@@ -51,13 +51,13 @@ ROS Device Driver for SICK lidar and radar sensors - supported scanner types:
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
 | LMS4xxx-Family      | [e.g. 1091423](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/lms4000/lms4111r-13000/p/p578044?ff_data) | 1 layer max. range: 3 m, ang. resol. 0.0833 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 600 Hz   |                 |
-| NAV310-3211        | [e.g. 1091423](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/lms4000/lms4111r-13000/p/p578044?ff_data) | 1 layer max. range: 3 m, ang. resol. 0.0833 [deg]| ✔ [stable]|
-|                    |                                                                                                                                  | Scan-Rate: 20 Hz  |                 |
-| RMS3xx             | [1060834](https://www.sick.com/us/en/detection-and-ranging-solutions/2d-lidar-sensors/nav3xx/nav310-3211/p/p349345)| 1 layer max. range: 250 m, ang. resol. 0.125 [deg] | ✔ [stable]|
+| NAV310-3211        | [1060834](https://www.sick.com/us/en/detection-and-ranging-solutions/2d-lidar-sensors/nav3xx/nav310-3211/p/p349345)| 1 layer max. range: 250 m, ang. resol. 0.125 [deg] | ✔ [stable]|
 |                    |                                                                                                   | Opening angle: +/- 50 [deg]   |                 |
+| RMS3xx             | [8021530](https://cdn.sick.com/media/docs/4/04/504/Operating_instructions_RMS3xx_en_IM0075504.PDF)| Radar Sensor | ✔ [stable]|
+
 
 ## IMU Support
-Devices of the MRS6xxx and MRS1xxx series will in future (2019) be available with an optionally built-in IMU.
+Devices of the MRS6xxx and MRS1xxx series are available with an optionally built-in IMU.
 Further information on the implementation and use of the experimental Imu support can be found on the [Imu page](doc/IMU.md).
 ##  Start Node
 
@@ -112,11 +112,16 @@ roslaunch sick_scan sick_lms_5xx.launch
 roslaunch sick_scan sick_lms_4xxx.launch
 ```
 
+- For NAV310:
+```bash
+roslaunch sick_scan sick_nav_3xx.launch
+```
+
 - For RMS3xx-family:
 ```bash
-roslaunch sick_scan sick_rms_3xx.launch (under 
-opment)
+roslaunch sick_scan sick_rms_3xx.launch
 ```
+
 ### Starting Scanner with Specific Ip Address
 To start the scanner with a specific IP address, the launch command can be used for most launch files as follows.
 The hostname is the ip-address of the scanner:
@@ -336,6 +341,7 @@ TiM781
 TiM781S
 LMS5xx
 LMS511
+NAV310
 
 
 ## Creators
