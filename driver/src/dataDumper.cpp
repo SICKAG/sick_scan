@@ -31,7 +31,7 @@ int DataDumper::pushData(double timeStamp, std::string info, double val)
 		}
 	}
 	pushCounter++;
-	return(retCode);
+	return (retCode);
 }
 
 int DataDumper::writeDataToCsv(std::string filename)
@@ -52,14 +52,14 @@ int DataDumper::writeDataToCsv(std::string filename)
 	{
 		retCode = -1;
 	}
-	return(retCode);
+	return (retCode);
 }
 
 
 int DataDumper::writeToFileNameWhenBufferIsFull(std::string filename)
 {
 	dumpFileName = filename;
-	return(0);
+	return (0);
 }
 
 int DataDumper::dumpUcharBufferToConsole(unsigned char *buffer, int bufLen)
@@ -67,27 +67,27 @@ int DataDumper::dumpUcharBufferToConsole(unsigned char *buffer, int bufLen)
 	char asciiBuffer[255] = {0};
 	for (int i = 0; i < bufLen; i++)
 	{
-		  if ((i % 8) == 0)
-			{
-		  	printf("%08x: ", i);
-			}
+		if ((i % 8) == 0)
+		{
+			printf("%08x: ", i);
+		}
 
-			printf("%02x ", buffer[i]);
+		printf("%02x ", buffer[i]);
 
-		  char ch = '.';
-		  if ((buffer[i] >= 0x20) && (buffer[i] < 0x80))
-	  	{
-		  	ch = (char)buffer[i];
-	  	}
-	  	int iStrLen = strlen(asciiBuffer);
-		  asciiBuffer[iStrLen] = ch;
-		  asciiBuffer[iStrLen+1] = '\0';
+		char ch = '.';
+		if ((buffer[i] >= 0x20) && (buffer[i] < 0x80))
+		{
+			ch = (char) buffer[i];
+		}
+		int iStrLen = strlen(asciiBuffer);
+		asciiBuffer[iStrLen] = ch;
+		asciiBuffer[iStrLen + 1] = '\0';
 
-		  if ((i % 8) == 7)
-			{
-		  	printf("%s\n", asciiBuffer);
-		  	strcpy(asciiBuffer,"");
-			}
+		if ((i % 8) == 7)
+		{
+			printf("%s\n", asciiBuffer);
+			strcpy(asciiBuffer, "");
+		}
 	}
 	if (bufLen % 8)
 	{
@@ -108,13 +108,13 @@ int DataDumper::testbed()
 	for (double t = 0; t < 5.0; t += 1.0 / sampleRate)
 	{
 		cnt++;
-		testSignal = 1.0 * cos(2 * M_PI*freq*t);
+		testSignal = 1.0 * cos(2 * M_PI * freq * t);
 		if (cnt == 1000)
 		{
 			DataDumper::instance().writeDataToCsv("C:\\temp\\000_partial.csv");
 		}
 		DataDumper::instance().pushData(t, "COS", testSignal);
-		testSignal = 1.0 * sin(2 * M_PI*freq*t);
+		testSignal = 1.0 * sin(2 * M_PI * freq * t);
 		DataDumper::instance().pushData(t, "SIN", testSignal);
 	}
 	return 0;

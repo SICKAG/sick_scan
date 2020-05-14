@@ -50,12 +50,12 @@
 namespace sick_scan
 {
 
-AbstractParser::AbstractParser()
-{
-}
+  AbstractParser::AbstractParser()
+  {
+  }
 
-AbstractParser::~AbstractParser()
-{
-}
+  AbstractParser::~AbstractParser()
+  {
+  }
 
 } /* namespace sick_scan */

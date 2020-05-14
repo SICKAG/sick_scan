@@ -49,6 +49,10 @@ ROS Device Driver for SICK lidar and radar sensors - supported scanner types:
 |                    |                                                                                                                                  | Scan-Rate: 100 Hz   |                 |
 | LMS1xx-Family      | [e.g. 1041114](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1xx/c/g91901) | 1 layer max. range: 28 m, ang. resol. 0.25 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
+| NAV310     | [e.g. 1052928](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/nav3xx/nav350-3232/p/p256041) | 1 layer max. range: 100 m, ang. resol. 0.25 [deg]| ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 8 Hz   |                 |
+| NAV210+NAV245      | [e.g. 	1074308](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/nav2xx/c/g356151) | 1 layer max. range: 100 m, ang. resol. 0.25 [deg]| ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 25 Hz   |                 |
 | LMS4xxx-Family      | [e.g. 1091423](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/lms4000/lms4111r-13000/p/p578044?ff_data) | 1 layer max. range: 3 m, ang. resol. 0,0833 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 600 Hz   |                 |
 | RMS3xx             | [8021530](https://cdn.sick.com/media/docs/4/04/504/Operating_instructions_RMS3xx_en_IM0075504.PDF)| Radar Sensor | ✔ [stable]|
@@ -112,7 +116,7 @@ roslaunch sick_scan sick_lms_4xxx.launch
 
 - For RMS3xx-family:
 ```bash
-roslaunch sick_scan sick_rms_3xx.launch (under 
+roslaunch sick_scan sick_rms_3xx.launch (under
 opment)
 ```
 ### Starting Scanner with Specific Ip Address
@@ -139,15 +143,15 @@ The use of the parameters can be looked up in the launch files. This is also rec
 ### Common parameters
 
 - `scanner_type`
-  Name of the used scanner. Usually this is also the name of the launch file. This entry is used to differentiate 
+  Name of the used scanner. Usually this is also the name of the launch file. This entry is used to differentiate
   between the various scanner properties within the software code.
- 
+
 - `hostname`
   IP-address of the scanner (default: 192.168.0.1)
 
 - `port`
   IP-port of the scanner (default: 2112)
-  
+
 - `min_ang`
   Start angle in [rad]
 
@@ -156,27 +160,27 @@ The use of the parameters can be looked up in the launch files. This is also rec
 
 - `use_binary_protocol`
   Switch between SOPAS Binary and SOPAS ASCII protocol
-  
+
 - `intensity`
-  Enable or disable transport of intensity values 
+  Enable or disable transport of intensity values
 
 - `intensity_resolution_16bit`
   If true, the intensity values is transferred as 16 bit value. If false, as 8 bit value.
-  
+
 - `cloud_topic`
   Topic name of the published pointcloud2 data
 
 - `frame_id`
   Frame id used for the published data
-  
+
 ### Further useful parameters
 - `timelimit`
   Timelimit in [sec] for max. wait time of incoming sensor reply
-  
+
 - `sw_pll_only_publish`
   If true, the internal Software PLL is fored to sync the scan generation time stamp to a system timestamp
-    
-  
+
+
 
 ## Sopas Mode
 This driver supports both COLA-B (binary) and COLA-A (ASCII) communication with the laser scanner. Binary mode is activated by default. Since this mode generates less network traffic.

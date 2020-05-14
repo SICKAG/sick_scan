@@ -48,6 +48,8 @@
 #define SICK_SCANNER_LMS_4XXX_NAME "sick_lms_4xxx"
 #define SICK_SCANNER_RMS_3XX_NAME "sick_rms_3xx"
 #define SICK_SCANNER_NAV_3XX_NAME "sick_nav_3xx"
+#define SICK_SCANNER_NAV_2XX_NAME "sick_nav_2xx"
+
 #include "abstract_parser.h"
 
 #include "sensor_msgs/LaserScan.h"
@@ -56,91 +58,127 @@
 // namespace sensor_msgs
 namespace sick_scan
 {
-	class ScannerBasicParam
-	{
-	public:
-		void setScannerName(std::string _s);
-		std::string getScannerName(void);
-		void setNumberOfLayers(int _layerNum);
-		int getNumberOfLayers(void);
-		void setNumberOfShots(int _shots);
-		int getNumberOfShots(void);
-		void setNumberOfMaximumEchos(int _maxEchos);
-		int getNumberOfMaximumEchos(void);
-		void setAngularDegreeResolution(double _res);
-		void setElevationDegreeResolution(double _elevRes); 
-		double getElevationDegreeResolution(void);
-		double getAngularDegreeResolution(void);
-		double getExpectedFrequency(void);
-		bool getDeviceIsRadar(void);
-		bool getUseBinaryProtocol(void);
-		void setScanMirrored(bool _scanMirrored);
+  class ScannerBasicParam
+  {
+  public:
+    void setScannerName(std::string _s);
+
+    std::string getScannerName(void);
+
+    void setNumberOfLayers(int _layerNum);
+
+    int getNumberOfLayers(void);
+
+    void setNumberOfShots(int _shots);
+
+    int getNumberOfShots(void);
+
+    void setNumberOfMaximumEchos(int _maxEchos);
+
+    int getNumberOfMaximumEchos(void);
+
+    void setAngularDegreeResolution(double _res);
+
+    void setElevationDegreeResolution(double _elevRes);
+
+    double getElevationDegreeResolution(void);
+
+    double getAngularDegreeResolution(void);
+
+    double getExpectedFrequency(void);
+
+    bool getDeviceIsRadar(void);
+
+    bool getUseBinaryProtocol(void);
+
+    void setScanMirrored(bool _scanMirrored);
+
     bool getScanMirrored();
-		void setUseBinaryProtocol(bool _useBinary);
-		void setDeviceIsRadar(bool _deviceIsRadar);
-		void setIntensityResolutionIs16Bit(bool _IntensityResolutionIs16Bit);
-		bool getIntensityResolutionIs16Bit(void);
-		void setExpectedFrequency(double _freq);
-		ScannerBasicParam();
-		void setUseSafetyPasWD(bool _useSafetyPasWD);
-		bool getUseSafetyPasWD();
-		void setEncoderMode(int8_t _EncoderMode);
-		int8_t getEncoderMode();
-	private:
-		std::string scannerName;
-		int numberOfLayers;
-		int numberOfShots;
-		int numberOfMaximumEchos;
-		double elevationDegreeResolution;
-		double angleDegressResolution;
+
+    void setUseBinaryProtocol(bool _useBinary);
+
+    void setDeviceIsRadar(bool _deviceIsRadar);
+
+    void setIntensityResolutionIs16Bit(bool _IntensityResolutionIs16Bit);
+
+    bool getIntensityResolutionIs16Bit(void);
+
+    void setExpectedFrequency(double _freq);
+
+    ScannerBasicParam();
+
+    void setUseSafetyPasWD(bool _useSafetyPasWD);
+
+    bool getUseSafetyPasWD();
+
+    void setEncoderMode(int8_t _EncoderMode);
+
+    int8_t getEncoderMode();
+
+  private:
+    std::string scannerName;
+    int numberOfLayers;
+    int numberOfShots;
+    int numberOfMaximumEchos;
+    double elevationDegreeResolution;
+    double angleDegressResolution;
     double expectedFrequency;
-	  bool useBinaryProtocol;
-	  bool IntensityResolutionIs16Bit;
-	  bool deviceIsRadar;
-	  bool useSafetyPasWD;
-	  int8_t encoderMode;
-	  bool CartographerCompatibility;
-	  bool scanMirrored;
-	};
+    bool useBinaryProtocol;
+    bool IntensityResolutionIs16Bit;
+    bool deviceIsRadar;
+    bool useSafetyPasWD;
+    int8_t encoderMode;
+    bool CartographerCompatibility;
+    bool scanMirrored;
+  };
 
 
-	class SickGenericParser : public AbstractParser
-	{
-	public:
-		SickGenericParser(std::string scannerType);
-		virtual ~SickGenericParser();
+  class SickGenericParser : public AbstractParser
+  {
+  public:
+    SickGenericParser(std::string scannerType);
 
-		virtual int parse_datagram(char* datagram, size_t datagram_length, SickScanConfig &config,
-			sensor_msgs::LaserScan &msg, int &numEchos, int& echoMask);
+    virtual ~SickGenericParser();
+
+    virtual int parse_datagram(char *datagram, size_t datagram_length, SickScanConfig &config,
+                               sensor_msgs::LaserScan &msg, int &numEchos, int &echoMask);
 
 
-		void checkScanTiming(float time_increment, float scan_time, float angle_increment, float tol);
+    void checkScanTiming(float time_increment, float scan_time, float angle_increment, float tol);
 
-		void set_range_min(float min);
-		void set_range_max(float max);
+    void set_range_min(float min);
+
+    void set_range_max(float max);
 
     float get_range_min(void);
+
     float get_range_max(void);
 
-		void set_time_increment(float time);
-		void setScannerType(std::string s);
-		std::string getScannerType(void);
-		int lookUpForAllowedScanner(std::string scannerName);
-		void setCurrentParamPtr(ScannerBasicParam* _ptr);
-		ScannerBasicParam *getCurrentParamPtr();
+    void set_time_increment(float time);
+
+    void setScannerType(std::string s);
+
+    std::string getScannerType(void);
+
+    int lookUpForAllowedScanner(std::string scannerName);
+
+    void setCurrentParamPtr(ScannerBasicParam *_ptr);
+
+    ScannerBasicParam *getCurrentParamPtr();
 
 
-		int checkForDistAndRSSI(std::vector<char *>& fields, int expected_number_of_data, int& distNum, int& rssiNum, std::vector<float>& distVal, std::vector<float>& rssiVal,int& distMask);
+    int checkForDistAndRSSI(std::vector<char *> &fields, int expected_number_of_data, int &distNum, int &rssiNum,
+                            std::vector<float> &distVal, std::vector<float> &rssiVal, int &distMask);
 
 
-	private:
-		float override_range_min_, override_range_max_;
-		float override_time_increment_;
-		std::string scannerType;
-		std::vector<std::string> allowedScannerNames;
-		std::vector<ScannerBasicParam> basicParams;
-		ScannerBasicParam *currentParamSet;
-	};
+  private:
+    float override_range_min_, override_range_max_;
+    float override_time_increment_;
+    std::string scannerType;
+    std::vector<std::string> allowedScannerNames;
+    std::vector<ScannerBasicParam> basicParams;
+    ScannerBasicParam *currentParamSet;
+  };
 
 } /* namespace sick_scan */
 #endif /* SICK_GENERIC_PARSER_H_ */
