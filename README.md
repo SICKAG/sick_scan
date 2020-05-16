@@ -49,13 +49,12 @@ ROS Device Driver for SICK lidar and radar sensors - supported scanner types:
 |                    |                                                                                                                                  | Scan-Rate: 100 Hz   |                 |
 | LMS1xx-Family      | [e.g. 1041114](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1xx/c/g91901) | 1 layer max. range: 28 m, ang. resol. 0.25 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| NAV310     | [e.g. 1052928](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/nav3xx/nav350-3232/p/p256041) | 1 layer max. range: 100 m, ang. resol. 0.25 [deg]| ✔ [stable]|
+| NAV310     | [e.g. 1052928](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/nav3xx/nav350-3232/p/p256041) | 1 layer max. range: 250 m, ang. resol. 0.125 [deg] | ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 8 Hz   |                 |
 | NAV210+NAV245      | [e.g. 	1074308](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/nav2xx/c/g356151) | 1 layer max. range: 100 m, ang. resol. 0.25 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 25 Hz   |                 |
 | LMS4xxx-Family      | [e.g. 1091423](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/lms4000/lms4111r-13000/p/p578044?ff_data) | 1 layer max. range: 3 m, ang. resol. 0,0833 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 600 Hz   |                 |
-| NAV310-3211        | [1060834](https://www.sick.com/us/en/detection-and-ranging-solutions/2d-lidar-sensors/nav3xx/nav310-3211/p/p349345)| 1 layer max. range: 250 m, ang. resol. 0.125 [deg] | ✔ [stable]|
 |                    |                                                                                                   | Opening angle: +/- 50 [deg]   |                 |
 | RMS3xx             | [8021530](https://cdn.sick.com/media/docs/4/04/504/Operating_instructions_RMS3xx_en_IM0075504.PDF)| Radar Sensor | ✔ [stable]|
 
