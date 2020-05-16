@@ -115,6 +115,16 @@ roslaunch sick_scan sick_lms_5xx.launch
 roslaunch sick_scan sick_lms_4xxx.launch
 ```
 
+- For NAV210:
+```bash
+roslaunch sick_scan sick_nav_2xx.launch
+```
+
+- For NAV245:
+```bash
+roslaunch sick_scan sick_nav_2xx.launch
+```
+
 - For NAV310:
 ```bash
 roslaunch sick_scan sick_nav_3xx.launch
