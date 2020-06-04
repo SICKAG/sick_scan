@@ -848,7 +848,7 @@ namespace sick_scan
     fout = fopen(szFileName, "wb");
     if (fout != NULL)
     {
-      fwrite(receiveBuffer, size, 1, fout);
+      fwrite(receiveBuffer, *actual_length, 1, fout);
       fclose(fout);
     }
 #endif

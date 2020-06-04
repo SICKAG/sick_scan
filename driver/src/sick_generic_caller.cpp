@@ -113,9 +113,10 @@
 // 1.5.4: 2020-03-26: Fixes for 16 bit resolution flag
 // 1.5.5: 2020-04-01: MRS6xxx check
 // 1.5.5: 2020-05-14: NAV 2xx support
+// 1.7.0: 2020-06-04: TiM 443 support added
 
 #define SICK_GENERIC_MAJOR_VER "1"
-#define SICK_GENERIC_MINOR_VER "6"
+#define SICK_GENERIC_MINOR_VER "7"
 #define SICK_GENERIC_PATCH_LEVEL "0"
 
 #include <algorithm> // for std::min
