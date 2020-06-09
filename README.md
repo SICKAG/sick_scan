@@ -35,7 +35,9 @@ ROS Device Driver for SICK lidar and radar sensors - supported scanner types:
 |                    |                                                                                                                                  | Scan-Rate: 150 Hz, 4x37.5 Hz   |                 |
 | TiM240             | prototype [more info here](doc/tim240/tim240.md) | 1 layer max. range: unknown, ang. resol. 1.00 [deg], 240 [deg]| ✔ [prototype]|
 |                    |                                                                                                                                  | Scan-Rate: 14.4 Hz   |                 |
-| TiM443             | prototype  | 1 layer max. range: unknown, ang. resol. 1.00 [deg], 240 [deg]| ✔ [prototype]|
+| TiM433             | prototype  | 1 layer range: 0.05 m ... 15 m, ang. resol. 0.33 [deg], 240 [deg]| ✔ [prototype]|
+|                    |                                                                                                                                  | Scan-Rate: 15.0 Hz   |                 |
+| TiM443             | prototype  | 1 layer range: 0.05 m ... 15 m, ang. resol. 0.33 [deg], 240 [deg]| ✔ [prototype]|
 |                    |                                                                                                                                  | Scan-Rate: 15.0 Hz   |                 |
 | TiM551             | [1060445](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim551-2050001/p/p343045)                 | 1 layer max. range: 10 m, ang. resol. 1.00[deg] | ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
@@ -87,6 +89,12 @@ roslaunch sick_scan sick_lms_1xxx.launch
 ```bash
 roslaunch sick_scan sick_tim_240.launch
 ```
+
+- For TiM4xx-family:
+```bash
+roslaunch sick_scan sick_tim_4xx.launch
+```
+
 - For TiM5xx-family:
 ```bash
 roslaunch sick_scan sick_tim_5xx.launch
