@@ -59,7 +59,7 @@
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <diagnostic_updater/publisher.h>
 #include <sick_scan/sick_scan_common_nw.h>
-
+#include <sick_scan/helper/angle_compensator.h>
 
 #ifndef _MSC_VER
 
@@ -152,6 +152,7 @@ namespace sick_scan
       CMD_SET_GATEWAY,
       CMD_SET_NTP_SERVER_IP_ADDR,
       CMD_SET_SCANDATACONFIGNAV,
+      CMD_GET_ANGLE_COMPENSATION_PARAM, // Angle Compensation Parameter for NAV lidar
       CMD_SET_TO_COLA_A_PROTOCOL,  //		sWN EIHstCola 1  // Cola B 	sWN EIHstCola 0  // Cola A
       CMD_SET_TO_COLA_B_PROTOCOL,  //
       // ML: Add above new CMD-Identifier
@@ -358,6 +359,8 @@ namespace sick_scan
     int readTimeOutInMs;
   private:
     bool sensorIsRadar;
+
+    AngleCompensator *angleCompensator = NULL;
   };
 
 } /* namespace sick_scan */

@@ -49,7 +49,7 @@
 #define SICK_SCANNER_RMS_3XX_NAME "sick_rms_3xx"
 #define SICK_SCANNER_NAV_3XX_NAME "sick_nav_3xx"
 #define SICK_SCANNER_NAV_2XX_NAME "sick_nav_2xx"
-#define SICK_SCANNER_TIM_443_NAME "sick_tim_443"
+#define SICK_SCANNER_TIM_4XX_NAME "sick_tim_4xx"
 #include "abstract_parser.h"
 
 #include "sensor_msgs/LaserScan.h"

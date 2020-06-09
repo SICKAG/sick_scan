@@ -50,7 +50,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 26th Mar. 2020
+*  Last modified: 9th June 2020
 *
 *      Authors:
 *         Michael Lehning <michael.lehning@lehning.de>
@@ -77,6 +77,8 @@
 #include "sick_scan/binScanf.hpp"
 #include "sick_scan/binPrintf.hpp"
 #include "sick_scan/dataDumper.h"
+
+#include "sick_scan/helper/angle_compensator.h"
 
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
@@ -113,11 +115,13 @@
 // 1.5.4: 2020-03-26: Fixes for 16 bit resolution flag
 // 1.5.5: 2020-04-01: MRS6xxx check
 // 1.5.5: 2020-05-14: NAV 2xx support
-// 1.7.0: 2020-06-04: TiM 443 support added
+// 1.7.0: 2020-06-01: TiM443 added
+// 1.7.1: 2020-06-04: NAV 2xx angle correction added
+// 1.7.2: 2020-06-09: TiM433 added and launch file info for TiM4xx added
 
 #define SICK_GENERIC_MAJOR_VER "1"
 #define SICK_GENERIC_MINOR_VER "7"
-#define SICK_GENERIC_PATCH_LEVEL "0"
+#define SICK_GENERIC_PATCH_LEVEL "2"
 
 #include <algorithm> // for std::min
 
@@ -136,7 +140,8 @@ std::string getVersionInfo();
 */
 int main(int argc, char **argv)
 {
-
+  // AngleCompensator ac;
+  // ac.testbed();
 
   DataDumper::instance().writeToFileNameWhenBufferIsFull("/tmp/sickscan_debug.csv");
   char nameId[] = "__name:=";

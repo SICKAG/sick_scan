@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!--
-     **********************************************
-     Launch File for TiM 443 lidar
-     **********************************************
+     *******************************************************************
+     Launch File for TiM 4xx lidar family (convering TiM 433 and TiM 443
+     *******************************************************************
      Start and stop angle is given in [rad]
 
      Default min_angle is  -120 degree.
@@ -35,7 +35,7 @@
 
 <!-- You can launch the lidar on a specific ip address (e.g. 192.68.0.71) using the following example call:
 
-     roslaunch sick_scan sick_tim_443.launch hostname:=192.168.0.71
+     roslaunch sick_scan sick_tim_4xx.launch hostname:=192.168.0.71
 
 -->
 
@@ -43,9 +43,9 @@
     <arg name="hostname" default="192.168.0.1"/>
     <arg name="cloud_topic" default="cloud"/>
     <arg name="frame_id" default="cloud"/>
-    <node name="sick_tim_443" pkg="sick_scan" type="sick_generic_caller" respawn="false" output="screen">
+    <node name="sick_tim_4xx" pkg="sick_scan" type="sick_generic_caller" respawn="false" output="screen">
         <!--<param name="robot_description" command="$(find xacro)/xacro.py '$(find sick_scan)/urdf/example.urdf.xacro'" />-->
-        <param name="scanner_type" type="string" value="sick_tim_443"/>
+        <param name="scanner_type" type="string" value="sick_tim_4xx"/>
         <!-- -120° -->
         <param name="min_ang" type="double" value="-2.094395102"/>
         <!-- 120° -->

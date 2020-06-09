@@ -59,7 +59,7 @@
 #include <sick_scan/sick_scan_common_nw.h>
 #include <sick_scan/sick_scan_common.h>
 #include <sick_scan/sick_generic_radar.h>
-
+#include <sick_scan/helper/angle_compensator.h>
 #include <sick_scan/sick_scan_config_internal.h>
 
 #ifdef _MSC_VER
@@ -928,6 +928,15 @@ namespace sick_scan
      *                      +------------------------------------------------> 0x0320   --> 0800   -> 8 Hz scanfreq
     */
     //                                                                   0320 01 09C4 0 0036EE80 09C4 0 0 09C4 0 0 09C4 0 0
+
+
+    /*
+     *  Angle Compensation Command
+     *
+     */
+    sopasCmdVec[CMD_GET_ANGLE_COMPENSATION_PARAM] = "\x02sRN MCAngleCompSin\x03";
+
+
     sopasCmdVec[CMD_SET_SCANDATACONFIGNAV] = "\x02sMN mLMPsetscancfg +2000 +1 +7500 +3600000 0 +2500 0 0 +2500 0 0 +2500 0 0\x03";
 
     // defining cmd mask for cmds with variable input
@@ -1025,10 +1034,20 @@ namespace sick_scan
       sopasCmdChain.push_back(CMD_SET_TO_COLA_A_PROTOCOL);
     }
 
+
     if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
     {
       sopasCmdChain.push_back(CMD_STOP_MEASUREMENT);
     }
+
+    /*
+     * NAV2xx supports angle compensation
+     */
+    if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_2XX_NAME) == 0)
+    {
+      sopasCmdChain.push_back(CMD_GET_ANGLE_COMPENSATION_PARAM);
+    }
+
 
     bool tryToStopMeasurement = true;
     if (parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
@@ -1606,8 +1625,20 @@ namespace sick_scan
           ROS_INFO("Config: %s\n", strPtr);
         }
           break;
+
+        case CMD_GET_ANGLE_COMPENSATION_PARAM:
+          {
+            this->angleCompensator = new AngleCompensator();
+            std::string s = sopasReplyStrVec[CMD_GET_ANGLE_COMPENSATION_PARAM];
+            angleCompensator->parseReply(useBinaryCmd, sopasReplyBinVec[CMD_GET_ANGLE_COMPENSATION_PARAM]);
+
+          }
+          break;
+          // if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_2XX_NAME) == 0)
+
           // ML: add here reply handling
       }
+
 
       if (restartDueToProcolChange)
       {
@@ -1625,6 +1656,11 @@ namespace sick_scan
       ROS_INFO("Exiting node NOW.");
       exit(0);//stopping node hard to avoide further IP-Communication
     }
+
+
+
+
+
 
     if (setUseNTP)
     {
@@ -3504,8 +3540,16 @@ namespace sick_scan
                   }
                   // Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
                   float rangeCos = range_meter * cosAlphaTablePtr[i];
-                  fptr[idx_x] = rangeCos * cos(phi);  // copy x value in pointcloud
-                  fptr[idx_y] = rangeCos * sin(phi) * mirror_factor;  // copy y value in pointcloud
+
+                  double phi_used = phi * mirror_factor;
+                  if (this->angleCompensator != NULL)
+                  {
+                    phi_used += M_PI/2.0; // 90° SICK corresponds to 0° ROS. We muss add 90° before using the lookup table
+                    phi_used = angleCompensator->compensateAngleInRad(phi_used);
+                    phi_used -= M_PI/2.0;
+                  }
+                  fptr[idx_x] = rangeCos * cos(phi_used);  // copy x value in pointcloud
+                  fptr[idx_y] = rangeCos * sin(phi_used);  // copy y value in pointcloud
                   fptr[idx_z] = range_meter * sinAlphaTablePtr[i] * mirror_factor;// copy z value in pointcloud
 
                   fptr[idx_intensity] = 0.0;

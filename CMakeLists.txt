@@ -125,6 +125,7 @@ add_library(sick_scan_lib
         driver/src/sick_scan_config_internal.cpp
         include/sick_scan/softwarePLL.h
         driver/src/softwarePLL.cpp
+        driver/src/helper/angle_compensator.cpp
         )
 
 add_dependencies(sick_scan_lib ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})

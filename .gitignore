@@ -83,3 +83,5 @@ tools/sick_generic_device_finder/venv
 
 tools/sick_generic_device_finder/.idea
 
+
+doc/angle_compensation/ampl_phase_offset\.png

@@ -388,7 +388,7 @@ namespace sick_scan
     allowedScannerNames.push_back(SICK_SCANNER_RMS_3XX_NAME); // Radar scanner
     allowedScannerNames.push_back(SICK_SCANNER_NAV_3XX_NAME);
     allowedScannerNames.push_back(SICK_SCANNER_NAV_2XX_NAME);
-    allowedScannerNames.push_back(SICK_SCANNER_TIM_443_NAME);
+    allowedScannerNames.push_back(SICK_SCANNER_TIM_4XX_NAME);
     basicParams.resize(allowedScannerNames.size()); // resize to number of supported scanner types
     for (int i = 0; i <
                     (int) basicParams.size(); i++) // set specific parameter for each scanner type - scanner type is identified by name
@@ -574,12 +574,12 @@ namespace sick_scan
         basicParams[i].setEncoderMode(-1); // Default
         basicParams[i].setScanMirrored(false);
       }
-      if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_443_NAME) == 0) // NAV_2xx - 1 Layer
+      if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_4XX_NAME) == 0) // TiM433 and TiM443
       {
         basicParams[i].setNumberOfMaximumEchos(1);
         basicParams[i].setNumberOfLayers(1);
-        basicParams[i].setNumberOfShots(241);
-        basicParams[i].setAngularDegreeResolution(1.0);
+        basicParams[i].setNumberOfShots(721);
+        basicParams[i].setAngularDegreeResolution(0.33333333333);
         basicParams[i].setExpectedFrequency(15.0);
         basicParams[i].setUseBinaryProtocol(true);
         basicParams[i].setDeviceIsRadar(false); // Default
@@ -965,7 +965,7 @@ namespace sick_scan
     // ----- read fields into msg
     msg.header.frame_id = config.frame_id;
     // evtl. debug stream benutzen
-    ROS_DEBUG("publishing with frame_id %s", config.frame_id.c_str());
+    // ROS_DEBUG("publishing with frame_id %s", config.frame_id.c_str());
 
     ros::Time start_time = ros::Time::now(); // will be adjusted in the end
 
@@ -992,7 +992,7 @@ namespace sick_scan
     unsigned short scanning_freq = -1;
     sscanf(fields[16], "%hx", &scanning_freq);
     msg.scan_time = 1.0 / (scanning_freq / 100.0);
-   ROS_DEBUG("hex: %s, scanning_freq: %d, scan_time: %f", fields[16], scanning_freq, msg.scan_time);
+    // ROS_DEBUG("hex: %s, scanning_freq: %d, scan_time: %f", fields[16], scanning_freq, msg.scan_time);
 
     // 17: Measurement Frequency (36)
     unsigned short measurement_freq = -1;
@@ -1003,7 +1003,7 @@ namespace sick_scan
       // Some lasers may report incorrect measurement frequency
       msg.time_increment = override_time_increment_;
     }
-    ROS_DEBUG("measurement_freq: %d, time_increment: %f", measurement_freq, msg.time_increment);
+    // ROS_DEBUG("measurement_freq: %d, time_increment: %f", measurement_freq, msg.time_increment);
 
     // 18: Number of encoders (0)
     // 19: Number of 16 bit channels (1)verbose
@@ -1022,7 +1022,7 @@ namespace sick_scan
     int starting_angle = -1;
     sscanf(fields[23], "%x", &starting_angle);
     msg.angle_min = (starting_angle / 10000.0) / 180.0 * M_PI - M_PI / 2;
-   ROS_DEBUG("starting_angle: %d, angle_min: %f", starting_angle, msg.angle_min);
+    // ROS_DEBUG("starting_angle: %d, angle_min: %f", starting_angle, msg.angle_min);
 
     // 24: Angular step width (2710)
     unsigned short angular_step_width = -1;
