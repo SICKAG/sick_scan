@@ -200,14 +200,14 @@ The use of the parameters can be looked up in the launch files. This is also rec
 - `frame_id`
   Frame id used for the published data
 
-### Further useful parameters
+### Further useful parameters and features
 - `timelimit`
   Timelimit in [sec] for max. wait time of incoming sensor reply
 
 - `sw_pll_only_publish`
   If true, the internal Software PLL is fored to sync the scan generation time stamp to a system timestamp
 
-
+- Angle compensation: For highest angle accuracy the NAV-Lidar series supports an [angle compensation mechanism](./doc/angular_compensation.md).
 
 ## Sopas Mode
 This driver supports both COLA-B (binary) and COLA-A (ASCII) communication with the laser scanner. Binary mode is activated by default. Since this mode generates less network traffic.

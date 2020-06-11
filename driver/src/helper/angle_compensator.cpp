@@ -161,9 +161,9 @@ int AngleCompensator::parseAsciiReply(const char *replyStr)
   // 32
   // 16
 
-  int16_t ampl10000th;
+  int32_t ampl10000th;
   int32_t phase10000th;
-  int16_t offset10000th;
+  int32_t offset10000th;
 
 
   if (cont.size() == 5)
@@ -181,9 +181,20 @@ int AngleCompensator::parseAsciiReply(const char *replyStr)
          helperArr[i] = std::stoul(cont[2+i], nullptr, 16);
       }
     }
-    ampl10000th = (int16_t)(0xFFFF & helperArr[0]);
-    phase10000th = (int32_t)(0xFFFFFFFF & helperArr[1]); // check againt https://www.rapidtables.com/convert/number/hex-to-decimal.html
-    offset10000th = (int16_t)(0xFFFF & helperArr[2]);
+
+    if(useNegSign) // NAV310 uses 16/32/16 and subtracts given offset from sine-wave-compensation part
+    {
+      ampl10000th = (int32_t)((int16_t)(0xFFFF & helperArr[0]));
+      phase10000th = (int32_t)(0xFFFFFFFF & helperArr[1]); // check againt https://www.rapidtables.com/convert/number/hex-to-decimal.html
+      offset10000th = (int32_t)(int16_t)(0xFFFF & helperArr[2]);
+    }
+    else // NAV210 uses 32/32/32 and POSITIVE Sign for phase offset
+    {
+      ampl10000th =   (int32_t)(0xFFFFFFFF & helperArr[0]);
+      phase10000th =  (int32_t)(0xFFFFFFFF & helperArr[1]); // check againt https://www.rapidtables.com/convert/number/hex-to-decimal.html
+      offset10000th = (int32_t)(0xFFFFFFFF & helperArr[2]);
+
+    }
   }
 
   amplCorr = 1/10000.0 * ampl10000th;
