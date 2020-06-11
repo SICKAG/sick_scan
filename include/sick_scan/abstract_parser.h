@@ -34,28 +34,29 @@
 
 #ifndef ABSTRACT_PARSER_H_
 #define ABSTRACT_PARSER_H_
+
 #include <sick_scan/SickScanConfig.h>
 #include <sensor_msgs/LaserScan.h>
 
 namespace sick_scan
 {
 
-enum ExitCode
-{
-    ExitSuccess = 0
-    , ExitError = 1    // non-fatal error, retry
+  enum ExitCode
+  {
+    ExitSuccess = 0, ExitError = 1    // non-fatal error, retry
     , ExitFatal = 2    // fatal error, exit
-};
+  };
 
-class AbstractParser
-{
-public:
-  AbstractParser();
-  virtual ~AbstractParser();
+  class AbstractParser
+  {
+  public:
+    AbstractParser();
 
-  virtual int parse_datagram(char* datagram, size_t datagram_length, SickScanConfig &config,
-                             sensor_msgs::LaserScan &msg, int &numEchos, int& echoMask) = 0;
-};
+    virtual ~AbstractParser();
+
+    virtual int parse_datagram(char *datagram, size_t datagram_length, SickScanConfig &config,
+                               sensor_msgs::LaserScan &msg, int &numEchos, int &echoMask) = 0;
+  };
 
 } /* namespace sick_scan */
 #endif /* ABSTRACT_PARSER_H_ */

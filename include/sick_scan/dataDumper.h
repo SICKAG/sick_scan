@@ -10,36 +10,44 @@
 class DataDumper
 {
 public:
-	static DataDumper& instance()
-	{
-		static DataDumper _instance;
-		return _instance;
-	}
-	~DataDumper() {}
-	int pushData(double timeStamp, std::string info, double val);
-	int writeDataToCsv(std::string fileName);
-	int writeToFileNameWhenBufferIsFull(std::string filename);
+  static DataDumper &instance()
+  {
+    static DataDumper _instance;
+    return _instance;
+  }
 
-	int dumpUcharBufferToConsole(unsigned char *buffer, int bufLen);
-	int testbed();
+  ~DataDumper()
+  {}
+
+  int pushData(double timeStamp, std::string info, double val);
+
+  int writeDataToCsv(std::string fileName);
+
+  int writeToFileNameWhenBufferIsFull(std::string filename);
+
+  int dumpUcharBufferToConsole(unsigned char *buffer, int bufLen);
+
+  int testbed();
+
 private:
-	const int maxFifoSize = 10000;
-	std::vector<double> timeStampVec;
-	std::vector<std::string> infoVec;
-	std::vector<double> dataVec;
-	int pushCounter;
-	DataDumper()
-	{
-		timeStampVec.resize(maxFifoSize);
-		infoVec.resize(maxFifoSize);
-		dataVec.resize(maxFifoSize);
-		pushCounter = 0;
-	}           // verhindert, dass ein Objekt von au�erhalb von N erzeugt wird.
-				// protected, wenn man von der Klasse noch erben m�chte
-	DataDumper(const DataDumper&); /* verhindert, dass eine weitere Instanz via
+  const int maxFifoSize = 10000;
+  std::vector<double> timeStampVec;
+  std::vector<std::string> infoVec;
+  std::vector<double> dataVec;
+  int pushCounter;
+
+  DataDumper()
+  {
+    timeStampVec.resize(maxFifoSize);
+    infoVec.resize(maxFifoSize);
+    dataVec.resize(maxFifoSize);
+    pushCounter = 0;
+  }           // verhindert, dass ein Objekt von au�erhalb von N erzeugt wird.
+  // protected, wenn man von der Klasse noch erben m�chte
+  DataDumper(const DataDumper &); /* verhindert, dass eine weitere Instanz via
 								   Kopier-Konstruktor erstellt werden kann */
-	DataDumper & operator = (const DataDumper &); //Verhindert weitere Instanz durch Kopie
-	std::string dumpFileName;
+  DataDumper &operator=(const DataDumper &); //Verhindert weitere Instanz durch Kopie
+  std::string dumpFileName;
 };
 
 /* Verwendung:

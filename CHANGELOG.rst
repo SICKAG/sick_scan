@@ -2,6 +2,12 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.6.0 (2020-05-14)
+------------------
+* NAV 210+NAV245 support added code reformated
+* NAV310 added
+* Contributors: Michael Lehning
+
 1.4.2 (2019-11-14)
 ------------------
 

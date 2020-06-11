@@ -50,7 +50,7 @@
 * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 *
-*  Last modified: 26th Mar. 2020
+*  Last modified: 9th June 2020
 *
 *      Authors:
 *         Michael Lehning <michael.lehning@lehning.de>
@@ -77,6 +77,8 @@
 #include "sick_scan/binScanf.hpp"
 #include "sick_scan/binPrintf.hpp"
 #include "sick_scan/dataDumper.h"
+
+#include "sick_scan/helper/angle_compensator.h"
 
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
@@ -112,17 +114,21 @@
 // 1.5.3: 2020-03-19: Fixes for LMS1xx
 // 1.5.4: 2020-03-26: Fixes for 16 bit resolution flag
 // 1.5.5: 2020-04-01: MRS6xxx check
+// 1.5.5: 2020-05-14: NAV 2xx support
+// 1.7.0: 2020-06-01: TiM443 added
+// 1.7.1: 2020-06-04: NAV 2xx angle correction added
+// 1.7.2: 2020-06-09: TiM433 added and launch file info for TiM4xx added
+// 1.7.3: 2020-06-10: NAV 3xx angle correction added
 
 #define SICK_GENERIC_MAJOR_VER "1"
-#define SICK_GENERIC_MINOR_VER "5"
-#define SICK_GENERIC_PATCH_LEVEL "5"
+#define SICK_GENERIC_MINOR_VER "7"
+#define SICK_GENERIC_PATCH_LEVEL "3"
 
 #include <algorithm> // for std::min
 
 
-
-
 std::string getVersionInfo();
+
 /*!
 \brief Startup routine - if called with no argmuments we assume debug session.
        Set scanner name variable by parsing for "__name:=". This will be changed in the future
@@ -135,64 +141,65 @@ std::string getVersionInfo();
 */
 int main(int argc, char **argv)
 {
-
+  // AngleCompensator ac(false);
+  // ac.testbed();
 
   DataDumper::instance().writeToFileNameWhenBufferIsFull("/tmp/sickscan_debug.csv");
-	char nameId[] = "__name:=";
-	char nameVal[MAX_NAME_LEN] = { 0 };
-	char **argv_tmp; // argv_tmp[0][0] argv_tmp[0] identisch ist zu (*argv_tmp)
-	int argc_tmp;
-	std::string scannerName = "????";
+  char nameId[] = "__name:=";
+  char nameVal[MAX_NAME_LEN] = {0};
+  char **argv_tmp; // argv_tmp[0][0] argv_tmp[0] identisch ist zu (*argv_tmp)
+  int argc_tmp;
+  std::string scannerName = "????";
 
-	// sick_scan::SickScanImu::imuParserTest();
+  // sick_scan::SickScanImu::imuParserTest();
 
-	argc_tmp = argc;
-	argv_tmp = argv;
+  argc_tmp = argc;
+  argv_tmp = argv;
 
-	const int MAX_STR_LEN = 1024;
-	char nameTagVal[MAX_STR_LEN] = { 0 };
-	char logTagVal[MAX_STR_LEN] = { 0 };
-	char internalDebugTagVal[MAX_STR_LEN] = { 0 };
-	char sensorEmulVal[MAX_STR_LEN] = { 0 };
+  const int MAX_STR_LEN = 1024;
+  char nameTagVal[MAX_STR_LEN] = {0};
+  char logTagVal[MAX_STR_LEN] = {0};
+  char internalDebugTagVal[MAX_STR_LEN] = {0};
+  char sensorEmulVal[MAX_STR_LEN] = {0};
 
-	if (argc == 1) // just for testing without calling by roslaunch
-	{
-		// recommended call for internal debugging as an example: __name:=sick_rms_320 __internalDebug:=1
-		// strcpy(nameTagVal, "__name:=sick_rms_3xx");  // sick_rms_320 -> radar
-		strcpy(nameTagVal, "__name:=sick_tim_5xx");  // sick_rms_320 -> radar
-		strcpy(logTagVal, "__log:=/tmp/tmp.log");
-		strcpy(internalDebugTagVal, "__internalDebug:=1");
-		// strcpy(sensorEmulVal, "__emulSensor:=1");
-        strcpy(sensorEmulVal, "__emulSensor:=0");
-		argc_tmp = 5;
-		argv_tmp = (char **)malloc(sizeof(char *) * argc_tmp);
+  if (argc == 1) // just for testing without calling by roslaunch
+  {
+    // recommended call for internal debugging as an example: __name:=sick_rms_320 __internalDebug:=1
+    // strcpy(nameTagVal, "__name:=sick_rms_3xx");  // sick_rms_320 -> radar
+    strcpy(nameTagVal, "__name:=sick_tim_5xx");  // sick_rms_320 -> radar
+    strcpy(logTagVal, "__log:=/tmp/tmp.log");
+    strcpy(internalDebugTagVal, "__internalDebug:=1");
+    // strcpy(sensorEmulVal, "__emulSensor:=1");
+    strcpy(sensorEmulVal, "__emulSensor:=0");
+    argc_tmp = 5;
+    argv_tmp = (char **) malloc(sizeof(char *) * argc_tmp);
 
-		argv_tmp[0] = argv[0];
-		argv_tmp[1] = nameTagVal;
-		argv_tmp[2] = logTagVal;
-		argv_tmp[3] = internalDebugTagVal;
-		argv_tmp[4] = sensorEmulVal;
+    argv_tmp[0] = argv[0];
+    argv_tmp[1] = nameTagVal;
+    argv_tmp[2] = logTagVal;
+    argv_tmp[3] = internalDebugTagVal;
+    argv_tmp[4] = sensorEmulVal;
 
-	}
+  }
   //
-	std::string versionInfo = "sick_generic_caller V. ";
-	versionInfo += std::string(SICK_GENERIC_MAJOR_VER) + '.';
-	versionInfo += std::string(SICK_GENERIC_MINOR_VER) + '.';
-	versionInfo += std::string(SICK_GENERIC_PATCH_LEVEL);
+  std::string versionInfo = "sick_generic_caller V. ";
+  versionInfo += std::string(SICK_GENERIC_MAJOR_VER) + '.';
+  versionInfo += std::string(SICK_GENERIC_MINOR_VER) + '.';
+  versionInfo += std::string(SICK_GENERIC_PATCH_LEVEL);
 
-	setVersionInfo(versionInfo);
+  setVersionInfo(versionInfo);
   ROS_INFO("%s", versionInfo.c_str());
-	for (int i = 0; i < argc_tmp; i++)
-	{
-		if (strstr(argv_tmp[i], nameId) == argv_tmp[i])
-		{
-			strcpy(nameVal, argv_tmp[i] + strlen(nameId));
-			scannerName = nameVal;
-		}
-		ROS_INFO("Program arguments: %s", argv_tmp[i]);
-	}
+  for (int i = 0; i < argc_tmp; i++)
+  {
+    if (strstr(argv_tmp[i], nameId) == argv_tmp[i])
+    {
+      strcpy(nameVal, argv_tmp[i] + strlen(nameId));
+      scannerName = nameVal;
+    }
+    ROS_INFO("Program arguments: %s", argv_tmp[i]);
+  }
 
-	int result = mainGenericLaser(argc_tmp, argv_tmp, scannerName);
-	return result;
+  int result = mainGenericLaser(argc_tmp, argv_tmp, scannerName);
+  return result;
 
 }

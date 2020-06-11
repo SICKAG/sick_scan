@@ -13,7 +13,7 @@
         <!-- 270° -->
         <param name="max_ang" type="double" value="4.71238898"/>
 
-        <param name="use_binary_protocol" type="bool" value="true"/>
+        <param name="use_binary_protocol" type="bool" value="false"/>
         <param name="intensity" type="bool" value="True"/>
         <param name="hostname" type="string" value="$(arg hostname)"/>
         <param name="cloud_topic" type="string" value="$(arg cloud_topic)"/>

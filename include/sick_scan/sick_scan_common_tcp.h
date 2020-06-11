@@ -45,30 +45,33 @@
 #include "sick_scan_common.h"
 #include "sick_generic_parser.h"
 #include "template_queue.h"
+
 namespace sick_scan
 {
 /* class prepared for optimized time stamping */
 
-class DatagramWithTimeStamp
-{
-public:
-		DatagramWithTimeStamp(ros::Time timeStamp_, std::vector<unsigned char> datagram_)
-		{
-       timeStamp = timeStamp_;
-			 datagram = datagram_;
- 		}
-// private:
-	  ros::Time timeStamp;
-		std::vector<unsigned char> datagram;
-};
-
-
-class SickScanCommonTcp : public SickScanCommon
+  class DatagramWithTimeStamp
+  {
+  public:
+    DatagramWithTimeStamp(ros::Time timeStamp_, std::vector<unsigned char> datagram_)
     {
-public:
+      timeStamp = timeStamp_;
+      datagram = datagram_;
+    }
+
+// private:
+    ros::Time timeStamp;
+    std::vector<unsigned char> datagram;
+  };
+
+
+  class SickScanCommonTcp : public SickScanCommon
+  {
+  public:
     static void disconnectFunctionS(void *obj);
 
-    SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser *parser, char cola_dialect_id);
+    SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, SickGenericParser *parser,
+                      char cola_dialect_id);
 
     virtual ~SickScanCommonTcp();
 
@@ -80,84 +83,87 @@ public:
 
     int getReplyMode();
 
-		void setEmulSensor(bool _emulFlag);
+    void setEmulSensor(bool _emulFlag);
 
-		bool getEmulSensor();
+    bool getEmulSensor();
 
-		bool stopScanData();
+    bool stopScanData();
 
-		int numberOfDatagramInInputFifo();
-	SopasEventMessage findFrameInReceiveBuffer();
-	void processFrame(ros::Time timeStamp, SopasEventMessage& frame);
-	// Queue<std::vector<unsigned char> > recvQueue;
+    int numberOfDatagramInInputFifo();
+
+    SopasEventMessage findFrameInReceiveBuffer();
+
+    void processFrame(ros::Time timeStamp, SopasEventMessage &frame);
+
+    // Queue<std::vector<unsigned char> > recvQueue;
     Queue<DatagramWithTimeStamp> recvQueue;
     UINT32 m_alreadyReceivedBytes;
     UINT32 m_lastPacketSize;
-    UINT8  m_packetBuffer[480000];
+    UINT8 m_packetBuffer[480000];
 /**
  * Read callback. Diese Funktion wird aufgerufen, sobald Daten auf der Schnittstelle
  * hereingekommen sind.
  */
 
-    protected:
-        void disconnectFunction();
+  protected:
+    void disconnectFunction();
 
-		void readCallbackFunctionOld(UINT8* buffer, UINT32& numOfBytes);
-		virtual int init_device();
+    void readCallbackFunctionOld(UINT8 *buffer, UINT32 &numOfBytes);
 
-        virtual int close_device();
+    virtual int init_device();
 
-        /// Send a SOPAS command to the device and print out the response to the console.
-        virtual int sendSOPASCommand(const char *request, std::vector<unsigned char> *reply, int cmdLen);
+    virtual int close_device();
 
-        /// Read a datagram from the device.
-        /**
-         * \param [out] recvTimeStamp timestamp of received datagram
-         * \param [in] receiveBuffer data buffer to fill
-         * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
-         * \param [out] actual_length the actual amount of data written
-         * \param [in] isBinaryProtocol true=binary False=ASCII
-         */
-        virtual int
-        get_datagram(ros::Time &recvTimeStamp, unsigned char *receiveBuffer, int bufferSize, int *actual_length,
-                     bool isBinaryProtocol, int *numberOfRemainingFifoEntries);
+    /// Send a SOPAS command to the device and print out the response to the console.
+    virtual int sendSOPASCommand(const char *request, std::vector<unsigned char> *reply, int cmdLen);
 
-        // Helpers for boost asio
-        int readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read = 0,
-                            bool *exception_occured = 0, bool isBinary = false);
+    /// Read a datagram from the device.
+    /**
+     * \param [out] recvTimeStamp timestamp of received datagram
+     * \param [in] receiveBuffer data buffer to fill
+     * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
+     * \param [out] actual_length the actual amount of data written
+     * \param [in] isBinaryProtocol true=binary False=ASCII
+     */
+    virtual int
+    get_datagram(ros::Time &recvTimeStamp, unsigned char *receiveBuffer, int bufferSize, int *actual_length,
+                 bool isBinaryProtocol, int *numberOfRemainingFifoEntries);
 
-        void handleRead(boost::system::error_code error, size_t bytes_transfered);
+    // Helpers for boost asio
+    int readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read = 0,
+                        bool *exception_occured = 0, bool isBinary = false);
 
-        void checkDeadline();
+    void handleRead(boost::system::error_code error, size_t bytes_transfered);
 
-    private:
+    void checkDeadline();
+
+  private:
 
 
+    // Response buffer
+    UINT32 m_numberOfBytesInResponseBuffer; ///< Number of bytes in buffer
+    UINT8 m_responseBuffer[1024]; ///< Receive buffer for everything except scan data and eval case data.
+    Mutex m_receiveDataMutex; ///< Access mutex for buffer
 
-		// Response buffer
-		UINT32 m_numberOfBytesInResponseBuffer; ///< Number of bytes in buffer
-		UINT8 m_responseBuffer[1024]; ///< Receive buffer for everything except scan data and eval case data.
-		Mutex m_receiveDataMutex; ///< Access mutex for buffer
+    // Receive buffer
+    UINT32 m_numberOfBytesInReceiveBuffer; ///< Number of bytes in buffer
+    UINT8 m_receiveBuffer[480000]; ///< Low-Level receive buffer for all data
 
-								  // Receive buffer
-		UINT32 m_numberOfBytesInReceiveBuffer; ///< Number of bytes in buffer
-		UINT8 m_receiveBuffer[480000]; ///< Low-Level receive buffer for all data 
+    bool m_beVerbose;
+    bool m_emulSensor;
 
-		bool m_beVerbose;
-				bool m_emulSensor;
+    boost::asio::io_service io_service_;
+    boost::asio::ip::tcp::socket socket_;
+    boost::asio::deadline_timer deadline_;
+    boost::asio::streambuf input_buffer_;
+    boost::system::error_code ec_;
+    size_t bytes_transfered_;
 
-        boost::asio::io_service io_service_;
-        boost::asio::ip::tcp::socket socket_;
-        boost::asio::deadline_timer deadline_;
-        boost::asio::streambuf input_buffer_;
-        boost::system::error_code ec_;
-        size_t bytes_transfered_;
-
-        std::string hostname_;
-        std::string port_;
-        int timelimit_;
-        int m_replyMode;
-};
+    std::string hostname_;
+    std::string port_;
+    int timelimit_;
+    int m_replyMode;
+  };
 
 
 } /* namespace sick_scan */
