@@ -946,6 +946,7 @@ namespace sick_scan
     sopasCmdMaskVec[CMD_ALIGNMENT_MODE] = "\x02sWN MMAlignmentMode %d\x03";
     sopasCmdMaskVec[CMD_APPLICATION_MODE] = "\x02sWN SetActiveApplications 1 %s %d\x03";
     sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES] = "\x02sWN LMPoutputRange 1 %X %X %X\x03";
+    sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES_NAV3] = "\x02sWN LMPoutputRange 1 %X %X %X %X %X %X %X %X %X %X %X %X\x03";
     //sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG]=  "\x02sWN LMDscandatacfg %02d 00 %d 00 %d 0 %d 0 0 0 1 +1\x03"; //outputChannelFlagId,rssiFlag, rssiResolutionIs16Bit ,EncoderSetings
     sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 0 0 %02d 0 0 0 1 1\x03";//outputChannelFlagId,rssiFlag, rssiResolutionIs16Bit ,EncoderSetings
     /*
@@ -1627,10 +1628,12 @@ namespace sick_scan
           pn.setParam("locationName", std::string(szLocationName));
         }
           break;
+
+
         case CMD_GET_PARTIAL_SCANDATA_CFG:
         {
 
-          const char *strPtr = sopasReplyStrVec[CMD_LOCATION_NAME].c_str();
+          const char *strPtr = sopasReplyStrVec[CMD_GET_PARTIAL_SCANDATA_CFG].c_str();
           ROS_INFO("Config: %s\n", strPtr);
         }
           break;
@@ -1817,9 +1820,20 @@ namespace sick_scan
       char requestOutputAngularRange[MAX_STR_LEN];
 
       std::vector<unsigned char> outputAngularRangeReply;
-      const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES].c_str();
-      sprintf(requestOutputAngularRange, pcCmdMask, angleRes10000th, angleStart10000th, angleEnd10000th);
 
+
+      bool NAV3xxOutputRangeSpecialHandlig=false;
+      if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
+      {
+        NAV3xxOutputRangeSpecialHandlig=true;
+        const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES_NAV3].c_str();
+        sprintf(requestOutputAngularRange, pcCmdMask, angleRes10000th, angleStart10000th, angleEnd10000th, angleRes10000th, angleStart10000th, angleEnd10000th, angleRes10000th, angleStart10000th, angleEnd10000th, angleRes10000th, angleStart10000th, angleEnd10000th);
+      }
+      else
+      {
+        const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES].c_str();
+        sprintf(requestOutputAngularRange, pcCmdMask, angleRes10000th, angleStart10000th, angleEnd10000th);
+      }
       if (useBinaryCmd)
       {
         unsigned char tmpBuffer[255] = {0};
@@ -1833,10 +1847,28 @@ namespace sick_scan
 
         strcpy((char *) tmpBuffer, "WN LMPoutputRange ");
         unsigned short orgLen = strlen((char *) tmpBuffer);
-        colab::addIntegerToBuffer<UINT16>(tmpBuffer, orgLen, iStatus);
-        colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
-        colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
-        colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
+        if (NAV3xxOutputRangeSpecialHandlig){
+          colab::addIntegerToBuffer<UINT16>(tmpBuffer, orgLen, iStatus);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
+        }
+        else
+        {
+          colab::addIntegerToBuffer<UINT16>(tmpBuffer, orgLen, iStatus);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
+          colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleEnd10000th);
+        }
         sendLen = orgLen;
         colab::addFrameToBuffer(sendBuffer, tmpBuffer, &sendLen);
 
