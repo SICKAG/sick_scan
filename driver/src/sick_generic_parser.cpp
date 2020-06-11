@@ -748,7 +748,7 @@ namespace sick_scan
     }
 
     float expected_time_increment =
-        this->getCurrentParamPtr()->getNumberOfLayers() * scan_time * angle_increment / (2.0 * M_PI);
+        fabs(this->getCurrentParamPtr()->getNumberOfLayers() * scan_time * angle_increment / (2.0 * M_PI));//If the direction of rotation is reversed, i.e. negative angle increment, a negative scan time results. This does not makes sense, therefore the absolute value is calculated.
     if (fabs(expected_time_increment - time_increment) > 0.00001)
     {
       ROS_WARN_THROTTLE(60,

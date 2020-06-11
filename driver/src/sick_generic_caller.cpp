@@ -119,10 +119,11 @@
 // 1.7.1: 2020-06-04: NAV 2xx angle correction added
 // 1.7.2: 2020-06-09: TiM433 added and launch file info for TiM4xx added
 // 1.7.3: 2020-06-10: NAV 3xx angle correction added
+// 1.7.4: 2020-06-10: NAV 3xx angle correction improved
 
 #define SICK_GENERIC_MAJOR_VER "1"
 #define SICK_GENERIC_MINOR_VER "7"
-#define SICK_GENERIC_PATCH_LEVEL "3"
+#define SICK_GENERIC_PATCH_LEVEL "4"
 
 #include <algorithm> // for std::min
 
