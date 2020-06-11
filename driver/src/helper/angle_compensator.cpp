@@ -64,7 +64,7 @@
 #include <sstream>
 #include <iostream>
 #include <math.h>
-
+#include <assert.h>
 
 using namespace std;
 
@@ -104,7 +104,12 @@ using namespace std;
 double AngleCompensator::compensateAngleInRad(double angleInRad)
 {
   double deg2radFactor = 0.01745329252; // pi/180 deg - see for example: https://www.rapidtables.com/convert/number/degrees-to-radians.html
-  double angleCompInRad = angleInRad + deg2radFactor * amplCorr * sin(angleInRad + phaseCorrInRad) + offsetCorrInRad;
+  int sign = 1;
+  if (useNegSign)
+  {
+    sign = -1;
+  }
+  double angleCompInRad = angleInRad + deg2radFactor * amplCorr * sin(angleInRad + sign * phaseCorrInRad) + offsetCorrInRad;
   return(angleCompInRad);
 }
 
@@ -114,12 +119,17 @@ double AngleCompensator::compensateAngleInRad(double angleInRad)
 */
 double AngleCompensator::compensateAngleInDeg(double angleInDeg)
 {
+  int sign = 1;
+  if (useNegSign)
+  {
+    sign = -1;
+  }
   // AngleComp =AngleRaw + AngleCompAmpl * SIN( AngleRaw + AngleCompPhase ) + AngleCompOffset
   double angleCompInDeg;
   double deg2radFactor = 0.01745329252; // pi/180 deg - see for example: https://www.rapidtables.com/convert/number/degrees-to-radians.html
   double angleRawInRad = deg2radFactor * angleInDeg;
   double phaseCorrInRad= deg2radFactor * phaseCorrInDeg;
-  angleCompInDeg = angleInDeg + amplCorr * sin(angleRawInRad + phaseCorrInRad) + offsetCorrInDeg;
+  angleCompInDeg = angleInDeg + amplCorr * sin(angleRawInRad + sign * phaseCorrInRad) + offsetCorrInDeg;
   return(angleCompInDeg);
 }
 
@@ -192,15 +202,34 @@ int AngleCompensator::parseAsciiReply(const char *replyStr)
 */
 int AngleCompensator::parseReply(bool isBinary, std::vector<unsigned char>& replyVec)
 {
+
   int retCode = 0;
-std::string stmp;
+  std::string stmp;
+  int payLoadLen = 0;
   if (isBinary) // convert binary message into the ASCII format to reuse parsing algorithm
   {
     stmp = "";
     int sLen = replyVec.size();
-    int offset = sLen - 12;
+    assert((sLen == 40) || (sLen == 36));
+
+    switch(sLen)
+    {
+      case 36:
+        useNegSign = true; // phase compensation is negative for 310 - using the short telegram
+        payLoadLen = 8;
+        break;
+      case 40:
+        payLoadLen = 12;
+        break;
+      default:
+        assert(0);
+        break;
+    }
+
+    int offset = sLen - payLoadLen - 1; // -1 for CRC
+    assert(replyVec[offset-1] == 0x20); // must be a space there - last test
     int relCnt = 0;
-    for (int i = 0; i < sLen; i++)
+    for (int i = 8; i < sLen - 1; i++)
     {
       if (i < offset)
       {
@@ -212,21 +241,51 @@ std::string stmp;
         sprintf(szTmp,"%02X", replyVec[i]);
         relCnt++;
         stmp += szTmp;
-        if (relCnt < 12)
+
+        int posCutArr[2] = {4,8};
+        if (payLoadLen == 8)
         {
-          if ((relCnt % 4) == 0)
+          posCutArr[0] = 2;
+          posCutArr[1] = 6;
+
+        }
+        if (relCnt < payLoadLen)
+        {
+          for (int k = 0; k < 2; k++)
           {
-             stmp += ' ';
+            if (posCutArr[k] == relCnt)
+            {
+              stmp += ' ';
+            }
           }
         }
-
       }
     }
+  }
+  else
+  {
+     for (int i = 0; i <  replyVec.size(); i++)
+     {
+       stmp += (char)replyVec[i];
+     }
   }
   parseAsciiReply(stmp.c_str());
   return(retCode);
 }
 
+
+std::string AngleCompensator::getHumanReadableFormula(void)
+{
+  char szDummy[1024] = {0};
+  std::string s;
+
+  sprintf(szDummy,"Angle[comp.] = Angle[Raw] + %8.6lf * sin(Angle[Raw] %c %8.6lf [deg]) +  %8.6lf",
+          amplCorr, useNegSign ? '-' : '+', phaseCorrInDeg, offsetCorrInDeg);
+
+  s  = szDummy;
+  return(s);
+
+}
 /*!
 \brief Testbed for angle compensation
 */
@@ -236,16 +295,61 @@ void AngleCompensator::testbed()
   std::vector<unsigned char> testVec;
 
   std::string s = string("sRA MCAngleCompSin ");
-  for (int i = 0; i < s.length(); i++)
+
+  for (int iLoop = 0; iLoop < 2; iLoop++)
   {
-    testVec.push_back(s[i]);
+    testVec.clear(); // start with empty test vector
+    switch(iLoop)
+    {
+      case 0: // test for NAV2XX
+      {
+        unsigned char preFix[8] = {0x02,0x02,0x02,0x02,0x00,0x00,0x00,27+4};
+        for (int i = 0; i < 8; i++)
+        {
+          testVec.push_back(preFix[i]);
+        }
+        // TODO CHECK IT!! 0xFF appended
+        unsigned char dataArr[] = {0x00,0x00,0x07,0x65,0xff,0xfc,0xc9,0xb9,0xff,0xff,0xff,0x0b,0xFF};
+        for (int i = 0; i < s.length(); i++)
+        {
+          testVec.push_back(s[i]);
+        }
+        for (int i = 0; i < sizeof(dataArr)/sizeof(dataArr[0]); i++)
+        {
+          testVec.push_back(dataArr[i]);
+        }
+        break;
+      }
+      case 1:
+      {
+        unsigned char preFix[8] = {0x02,0x02,0x02,0x02,0x00,0x00,0x00,27};
+        for (int i = 0; i < 8; i++)
+        {
+          testVec.push_back(preFix[i]);
+        }
+        for (int i = 0; i < s.length(); i++)
+        {
+          testVec.push_back(s[i]);
+        }
+        unsigned char dataArr[] = {0x03,	0x37,	0x00,	0x1d,	0x8e,	0x8d,	0x00,	0xe7,	0x87};
+        for (int i = 0; i < sizeof(dataArr)/sizeof(dataArr[0]); i++)
+        {
+          testVec.push_back(dataArr[i]);
+        }
+
+        break;
+      }
+
+    }
+    ac.parseReply(true,testVec);
+    printf("Formula used: %s\n", ac.getHumanReadableFormula().c_str());
+
   }
-  unsigned char dataArr[] = {0x00,0x00,0x07,0x65,0xff,0xfc,0xc9,0xb9,0xff,0xff,0xff,0x0b };
-  for (int i = 0; i < sizeof(dataArr)/sizeof(dataArr[0]); i++)
-  {
-    testVec.push_back(dataArr[i]);
-  }
-  ac.parseReply(true,testVec);
+
+
+
+
+
 
 
   testVec.clear();

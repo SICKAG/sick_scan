@@ -7,7 +7,7 @@
 
 #include <string>
 #include <vector>
-
+#include <assert.h>
 class AngleCompensator
 {
 public:
@@ -15,7 +15,16 @@ public:
   double compensateAngleInDeg(double angleInDeg);
   int parseAsciiReply(const char *asciiReply);
   int parseReply(bool isBinary, std::vector<unsigned char>& replyVec);
+  std::string getHumanReadableFormula(void);
   void testbed();
+  AngleCompensator()
+  {
+    assert(0); // forbidden!
+  }
+  AngleCompensator(bool _useNegSign)
+  {
+    useNegSign = _useNegSign;
+  }
 private:
 
   double amplCorr;
@@ -23,6 +32,7 @@ private:
   double offsetCorrInDeg;
   double phaseCorrInRad;
   double offsetCorrInRad;
+  bool useNegSign; // for NAV310
 
 };
 

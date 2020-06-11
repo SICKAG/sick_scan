@@ -1043,7 +1043,16 @@ namespace sick_scan
     /*
      * NAV2xx supports angle compensation
      */
+    bool isNav2xxOr3xx = false;
     if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_2XX_NAME) == 0)
+    {
+      isNav2xxOr3xx = true;
+    }
+    if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
+    {
+      isNav2xxOr3xx = true;
+    }
+    if (isNav2xxOr3xx)
     {
       sopasCmdChain.push_back(CMD_GET_ANGLE_COMPENSATION_PARAM);
     }
@@ -1628,10 +1637,30 @@ namespace sick_scan
 
         case CMD_GET_ANGLE_COMPENSATION_PARAM:
           {
-            this->angleCompensator = new AngleCompensator();
-            std::string s = sopasReplyStrVec[CMD_GET_ANGLE_COMPENSATION_PARAM];
-            angleCompensator->parseReply(useBinaryCmd, sopasReplyBinVec[CMD_GET_ANGLE_COMPENSATION_PARAM]);
+            bool useNegSign = false;
+            if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
+            {
+              useNegSign = true; // use negative phase compensation for NAV3xx
+            }
 
+            this->angleCompensator = new AngleCompensator(useNegSign);
+            std::string s = sopasReplyStrVec[CMD_GET_ANGLE_COMPENSATION_PARAM];
+            std::vector<unsigned char> tmpVec;
+
+            if (useBinaryCmd == false)
+            {
+              for (int i = 0; i < s.length(); i++)
+              {
+                tmpVec.push_back((unsigned char)s[i]);
+              }
+            }
+            else
+            {
+              tmpVec = sopasReplyBinVec[CMD_GET_ANGLE_COMPENSATION_PARAM];
+            }
+            angleCompensator->parseReply(useBinaryCmd, tmpVec);
+
+            ROS_INFO("Angle Comp. Formula used: %s\n", angleCompensator->getHumanReadableFormula().c_str());
           }
           break;
           // if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_2XX_NAME) == 0)
