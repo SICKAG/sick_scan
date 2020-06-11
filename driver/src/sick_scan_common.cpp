@@ -907,6 +907,8 @@ namespace sick_scan
     sopasCmdVec[CMD_SET_3_4_TO_ENCODER] = "\x02sWN DO3And4Fnc 1\x03";
     //TODO remove this and add param
     sopasCmdVec[CMD_SET_ENOCDER_RES_1] = "\x02sWN LICencres 1\x03";
+
+    sopasCmdVec[CMD_SET_SCANDATACONFIGNAV] = "\x02sMN mLMPsetscancfg +2000 +1 +7500 +3600000 0 +2500 0 0 +2500 0 0 +2500 0 0\x03";
     /*
      * Special configuration for NAV Scanner
      * in hex
@@ -935,14 +937,10 @@ namespace sick_scan
      *
      */
     sopasCmdVec[CMD_GET_ANGLE_COMPENSATION_PARAM] = "\x02sRN MCAngleCompSin\x03";
-
-
-    sopasCmdVec[CMD_SET_SCANDATACONFIGNAV] = "\x02sMN mLMPsetscancfg +2000 +1 +7500 +3600000 0 +2500 0 0 +2500 0 0 +2500 0 0\x03";
-
     // defining cmd mask for cmds with variable input
     sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %+d 1 %+d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
     sopasCmdMaskVec[CMD_SET_PARTICLE_FILTER] = "\x02sWN LFPparticle %d %d\x03";
-    sopasCmdMaskVec[CMD_SET_MEAN_FILTER] = "\x02sWN LFPmeanfilter %d +%d 1\x03";
+    sopasCmdMaskVec[CMD_SET_MEAN_FILTER] = "\x02sWN LFPmeanfilter %d %d 0\x03";
     sopasCmdMaskVec[CMD_ALIGNMENT_MODE] = "\x02sWN MMAlignmentMode %d\x03";
     sopasCmdMaskVec[CMD_APPLICATION_MODE] = "\x02sWN SetActiveApplications 1 %s %d\x03";
     sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES] = "\x02sWN LMPoutputRange 1 %X %X %X\x03";
@@ -1822,12 +1820,16 @@ namespace sick_scan
       std::vector<unsigned char> outputAngularRangeReply;
 
 
-      bool NAV3xxOutputRangeSpecialHandlig=false;
+      bool NAV3xxOutputRangeSpecialHandling=false;
       if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
       {
-        NAV3xxOutputRangeSpecialHandlig=true;
+        NAV3xxOutputRangeSpecialHandling=true;
         const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES_NAV3].c_str();
-        sprintf(requestOutputAngularRange, pcCmdMask, angleRes10000th, angleStart10000th, angleEnd10000th, angleRes10000th, angleStart10000th, angleEnd10000th, angleRes10000th, angleStart10000th, angleEnd10000th, angleRes10000th, angleStart10000th, angleEnd10000th);
+        sprintf(requestOutputAngularRange, pcCmdMask,
+            angleRes10000th, angleStart10000th, angleEnd10000th,
+            angleRes10000th, angleStart10000th, angleEnd10000th,
+            angleRes10000th, angleStart10000th, angleEnd10000th,
+            angleRes10000th, angleStart10000th, angleEnd10000th);
       }
       else
       {
@@ -1847,7 +1849,7 @@ namespace sick_scan
 
         strcpy((char *) tmpBuffer, "WN LMPoutputRange ");
         unsigned short orgLen = strlen((char *) tmpBuffer);
-        if (NAV3xxOutputRangeSpecialHandlig){
+        if (NAV3xxOutputRangeSpecialHandling){
           colab::addIntegerToBuffer<UINT16>(tmpBuffer, orgLen, iStatus);
           colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleRes10000th);
           colab::addIntegerToBuffer<UINT32>(tmpBuffer, orgLen, angleStart10000th);
@@ -2144,6 +2146,43 @@ namespace sick_scan
           ROS_ERROR("ang_res and scan_freq have to be set, only one param is set skiping scan_fre/ang_res config");
         }
       }
+      // Config Mean filter
+      /*
+      char requestMeanSetting[MAX_STR_LEN];
+      int meanFilterSetting = 0;
+      int MeanFilterActive=0;
+      pn.getParam("mean_filter", meanFilterSetting); // filter_echos
+      if(meanFilterSetting>2)
+      {
+        MeanFilterActive=1;
+      }
+      else{
+        //needs to be at leas 2 even if filter is disabled
+        meanFilterSetting = 2;
+      }
+      // Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+      const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_MEAN_FILTER].c_str();
+
+      //First echo : 0
+      //All echos : 1
+      //Last echo : 2
+
+      sprintf(requestMeanSetting, pcCmdMask, MeanFilterActive, meanFilterSetting);
+      std::vector<unsigned char> outputFilterMeanReply;
+
+
+      if (useBinaryCmd)
+      {
+        std::vector<unsigned char> reqBinary;
+        this->convertAscii2BinaryCmd(requestMeanSetting, &reqBinary);
+        result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_ECHO_FILTER]);
+      }
+      else
+      {
+        result = sendSopasAndCheckAnswer(requestMeanSetting, &outputFilterMeanReply);
+      }
+
+*/
       // CONFIG ECHO-Filter (only for MRS1000 not available for TiM5xx
       if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() >= 4)
       {
@@ -3854,6 +3893,7 @@ namespace sick_scan
     std::string keyWord8 = "sWN TSCTCupdatetime";
     std::string keyWord9 = "sWN TSCTCSrvAddr";
     std::string keyWord10 = "sWN LICencres";
+    std::string keyWord11 = "sWN LFPmeanfilter";
 
     //BBB
 
@@ -4065,7 +4105,21 @@ namespace sick_scan
       swap_endian(buffer, bufferLen);
 
     }
-
+    if (cmdAscii.find(keyWord11) != std::string::npos)
+    {
+      char tmpStr[1024] = {0};
+      char szApplStr[255] = {0};
+      int keyWord11Len = keyWord11.length();
+      int dummy0, dummy1,dummy2;
+      strcpy(tmpStr, requestAscii + keyWord11Len + 2);
+      sscanf(tmpStr, "%d %d %d", &dummy0, &dummy1, &dummy2);
+      // rebuild string
+      buffer[0] = dummy0 ? 0x01 : 0x00;
+      buffer[1] =dummy1/256;//
+      buffer[2] =dummy1%256;//
+      buffer[3] =dummy2;
+      bufferLen = 4;
+    }
     // copy base command string to buffer
     bool switchDoBinaryData = false;
     for (int i = 1; i <= (int) (msgLen); i++)  // STX DATA ETX --> 0 1 2
