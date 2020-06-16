@@ -168,7 +168,7 @@ namespace sick_scan
 
     void simulateAsciiDatagramFromFile(unsigned char *receiveBuffer, int *actual_length, std::string filePattern);
 
-    bool emul;
+    bool emul = false;
 
     ros::NodeHandle nh_;
     ros::Publisher cloud_radar_rawtarget_pub_;
