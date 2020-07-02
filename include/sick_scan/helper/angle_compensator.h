@@ -11,6 +11,7 @@
 class AngleCompensator
 {
 public:
+  double compensateAngleInRadFromRos(double angleInRadFromRos);
   double compensateAngleInRad(double angleInRad);
   double compensateAngleInDeg(double angleInDeg);
   int parseAsciiReply(const char *asciiReply);

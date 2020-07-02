@@ -1146,7 +1146,7 @@ namespace sick_scan
     {
       boost::system::error_code ec;
       ipNewIPAddr = boost::asio::ip::address_v4::from_string(sNewIPAddr, ec);
-      if (ec == 0)
+      if (ec == boost::system::errc::success)
       {
         sopasCmdChain.clear();
         sopasCmdChain.push_back(CMD_SET_ACCESS_MODE_3);
@@ -1166,7 +1166,7 @@ namespace sick_scan
     {
       boost::system::error_code ec;
       NTPIpAdress = boost::asio::ip::address_v4::from_string(sNTPIpAdress, ec);
-      if (ec != 0)
+      if (ec != boost::system::errc::success)
       {
         setUseNTP = false;
         ROS_ERROR("ERROR: NTP Server IP ADDRESS could not be parsed Boost Error %s:%d", ec.category().name(),
@@ -2530,7 +2530,7 @@ namespace sick_scan
   {
     bool ret = true;
     static int cnt = 0;
-    char szDumpFileName[255] = {0};
+    char szDumpFileName[511] = {0};
     char szDir[255] = {0};
     if (cnt == 0)
     {
@@ -3174,16 +3174,18 @@ namespace sick_scan
                               msg.angle_increment = sizeOfSingleAngularStep;
                               msg.angle_max = msg.angle_min + (numberOfItems - 1) * msg.angle_increment;
 
-                              if (this->parser_->getCurrentParamPtr()->getScanMirrored())
+                              if (this->parser_->getCurrentParamPtr()->getScanMirroredAndShifted())
                               {
                                 msg.angle_min *= -1.0;
                                 msg.angle_increment *= -1.0;
                                 msg.angle_max *= -1.0;
-
                                 double tmp;
                                 tmp = msg.angle_min;
                                 msg.angle_min = msg.angle_max;
-                                msg.angle_max = msg.angle_min;
+                                msg.angle_max = tmp;
+
+                                msg.angle_min += M_PI/2.0;
+                                msg.angle_max += M_PI/2.0;
 
                               }
                               float *rangePtr = NULL;
@@ -3567,15 +3569,17 @@ namespace sick_scan
 
               // prepare lookup for elevation angle table
 
-              std::vector<float> cosAlphaTable;
-              std::vector<float> sinAlphaTable;
+              std::vector<float> cosAlphaTable; // Lookup table for cos
+              std::vector<float> sinAlphaTable; // Lookup table for sin
               int rangeNum = rangeTmp.size() / numValidEchos;
               cosAlphaTable.resize(rangeNum);
               sinAlphaTable.resize(rangeNum);
               float mirror_factor = 1.0;
-              if (this->parser_->getCurrentParamPtr()->getScanMirrored())
+              float angleShift=0;
+              if (this->parser_->getCurrentParamPtr()->getScanMirroredAndShifted())
               {
                 mirror_factor = -1.0;
+                angleShift = -M_PI/2.0; // subtract 90 deg for NAV3xx-series
               }
 
               for (size_t iEcho = 0; iEcho < numValidEchos; iEcho++)
@@ -3631,7 +3635,7 @@ namespace sick_scan
 
                   if (iEcho == 0)
                   {
-                    cosAlphaTablePtr[i] = cos(alpha);
+                    cosAlphaTablePtr[i] = cos(alpha); // for z-value (elevation)
                     sinAlphaTablePtr[i] = sin(alpha);
                   }
                   else
@@ -3641,12 +3645,10 @@ namespace sick_scan
                   // Thanks to Sebastian Pütz <spuetz@uos.de> for his hint
                   float rangeCos = range_meter * cosAlphaTablePtr[i];
 
-                  double phi_used = phi * mirror_factor;
+                  double phi_used = phi  + angleShift;
                   if (this->angleCompensator != NULL)
                   {
-                    phi_used += M_PI/2.0; // 90° SICK corresponds to 0° ROS. We muss add 90° before using the lookup table
-                    phi_used = angleCompensator->compensateAngleInRad(phi_used);
-                    phi_used -= M_PI/2.0;
+                    phi_used = angleCompensator->compensateAngleInRadFromRos(phi_used);
                   }
                   fptr[idx_x] = rangeCos * cos(phi_used);  // copy x value in pointcloud
                   fptr[idx_y] = rangeCos * sin(phi_used);  // copy y value in pointcloud

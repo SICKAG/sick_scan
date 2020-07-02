@@ -98,6 +98,40 @@ using namespace std;
 
 
 /*!
+\brief Compensate raw angle given in [RAD] in the ROS axis orientation system
+\param angleInRad: raw angle in [RAD] (
+*/
+double AngleCompensator::compensateAngleInRadFromRos(double angleInRadFromRos)
+{
+    // this is a NAV3xx - X-Axis is the same like ROS
+    // but we rotate clockwise instead of counter clockwise
+    double angleInRadFromSickOrg = 0.0;
+    double angleInRadToRosCompensated = 0.0;
+    if (useNegSign)
+    {
+      angleInRadFromSickOrg = -angleInRadFromRos;
+    }
+    else // NAV2xx
+    {
+      // NAV2xx uses "standard" counter clockwise rotation like ROS, but X-Axis shows to the right
+      angleInRadFromSickOrg = angleInRadFromRos + M_PI/2.0;
+    }
+
+    double angleInRadFromSickCompensated = compensateAngleInRad(angleInRadFromSickOrg);
+
+    if (useNegSign) // NAV3xx
+    {
+      angleInRadToRosCompensated = -angleInRadFromSickCompensated;
+   }
+   else // NAV2xx
+   {
+    // NAV2xx uses "standard" counter clockwise rotation like ROS
+     angleInRadToRosCompensated = angleInRadFromSickCompensated - M_PI/2.0;
+   }
+   return(angleInRadToRosCompensated);
+}
+
+/*!
 \brief Compensate raw angle given in [RAD]
 \param angleInRad: raw angle in [RAD]
 */
@@ -109,6 +143,7 @@ double AngleCompensator::compensateAngleInRad(double angleInRad)
   {
     sign = -1;
   }
+  //angleInRad *= sign;
   double angleCompInRad = angleInRad + deg2radFactor * amplCorr * sin(angleInRad + sign * phaseCorrInRad) + offsetCorrInRad;
   return(angleCompInRad);
 }
@@ -124,6 +159,7 @@ double AngleCompensator::compensateAngleInDeg(double angleInDeg)
   {
     sign = -1;
   }
+  //angleInDeg*=sign;
   // AngleComp =AngleRaw + AngleCompAmpl * SIN( AngleRaw + AngleCompPhase ) + AngleCompOffset
   double angleCompInDeg;
   double deg2radFactor = 0.01745329252; // pi/180 deg - see for example: https://www.rapidtables.com/convert/number/degrees-to-radians.html

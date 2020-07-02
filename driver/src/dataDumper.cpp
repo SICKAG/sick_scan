@@ -64,6 +64,7 @@ int DataDumper::writeToFileNameWhenBufferIsFull(std::string filename)
 
 int DataDumper::dumpUcharBufferToConsole(unsigned char *buffer, int bufLen)
 {
+  int ret = 0;
 	char asciiBuffer[255] = {0};
 	for (int i = 0; i < bufLen; i++)
 	{
@@ -94,6 +95,7 @@ int DataDumper::dumpUcharBufferToConsole(unsigned char *buffer, int bufLen)
 
 		printf("%s\n", asciiBuffer);
 	}
+	return(ret);
 }
 
 int DataDumper::testbed()

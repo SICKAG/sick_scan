@@ -23,9 +23,12 @@ endmacro(use_cxx11)
 
 # Switch on, if you use c11-specific commands
 use_cxx11()
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-overflow")
 
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
+#
+
 
 project(sick_scan)
 
@@ -48,10 +51,12 @@ project(sick_scan)
 # set(CATKIN_DEVEL_PREFIX "${CMAKE_BINARY_DIR}/devel")
 # set(CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/devel;/opt/ros/melodic")
 
+find_package(Boost REQUIRED COMPONENTS system)
 
-find_package(catkin REQUIRED
-        COMPONENTS
+
+find_package(catkin REQUIRED COMPONENTS
         roscpp
+        roslib # needed ros::package::getPath()
         sensor_msgs
         diagnostic_updater
         dynamic_reconfigure
@@ -60,14 +65,12 @@ find_package(catkin REQUIRED
         sensor_msgs
         visualization_msgs
         message_generation
-        pcl_conversions
-        pcl_ros
         )
 
 
 find_package(PkgConfig REQUIRED)
 
-find_package(Boost REQUIRED COMPONENTS system)
+
 
 generate_dynamic_reconfigure_options(
         cfg/SickScan.cfg
@@ -96,12 +99,13 @@ generate_messages(
 )
 
 catkin_package(
-        DEPENDS Boost
-        CATKIN_DEPENDS message_runtime roscpp sensor_msgs diagnostic_updater dynamic_reconfigure
+        CATKIN_DEPENDS message_runtime roscpp sensor_msgs diagnostic_updater dynamic_reconfigure perception_pcl
         LIBRARIES sick_scan_lib
-        INCLUDE_DIRS include)
+        INCLUDE_DIRS include
+        DEPENDS Boost
+)
 
-include_directories(include include/tinyxml ${catkin_INCLUDE_DIRS} include/sick_scan)
+include_directories(include include/tinyxml ${catkin_INCLUDE_DIRS}  include/sick_scan)
 
 add_library(sick_scan_lib
         driver/src/dataDumper.cpp
@@ -145,22 +149,19 @@ add_executable(radar_object_marker
         tools/radar_object_marker/src/radar_object_marker.cpp
         tools/pcl_converter/src/gnuplotPaletteReader.cpp
         include/radar_object_marker/radar_object_marker.h)
-target_link_libraries(radar_object_marker sick_scan_lib)
+target_link_libraries(radar_object_marker sick_scan_lib )
 #
 #
 #
 
 
-add_executable(pcl_converter tools/pcl_converter/src/pcl_converter.cpp tools/pcl_converter/src/gnuplotPaletteReader.cpp)
-
-target_link_libraries(pcl_converter
-        ${catkin_LIBRARIES}
-        ${roslib_LIBRARIES}
-        ${PCL_LIBRARIES})
-
-
-# add_executable( pcl_find_plane tools/pcl_converter/src/pcl_find_plane.cpp)
-# target_link_libraries(pcl_find_plane ${catkin_LIBRARIES})
+#
+# pcl_converter disabled to avoid dependency to pcl
+#
+# add_executable(pcl_converter tools/pcl_converter/src/pcl_converter.cpp tools/pcl_converter/src/gnuplotPaletteReader.cpp)
+#
+# target_link_libraries(pcl_converter
+#        ${catkin_LIBRARIES})
 
 
 target_link_libraries(sick_generic_caller sick_scan_lib)
@@ -176,31 +177,6 @@ target_link_libraries(sick_scan_test
         ${catkin_LIBRARIES}
         ${roslib_LIBRARIES}
         sick_scan_lib)
-
-#
-#  Sensor alignment tool
-#
-#  currently disabled for trusty support
-# add_executable(sensor_alignment
-#		tools/sensor_alignment/sensor_alignment_tf_dyn.cpp
-#		)
-#
-# target_link_libraries(sensor_alignment
-#		${catkin_LIBRARIES}
-#		)
-# add_dependencies(sensor_alignment ${PROJECT_NAME}_gencfg)
-
-# target_link_libraries(${PROJECT_NAME}_pointcloud2_refresh
-#		${catkin_LIBRARIES}
-#	)
-
-
-# Destinations:
-# LIB for library
-# BIN for Binaries
-# INCLUDE for Includes
-# SHARE for config files, launch files etc.
-
 
 install(TARGETS sick_scan_lib
         DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

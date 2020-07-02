@@ -91,9 +91,9 @@ namespace sick_scan
 
     bool getUseBinaryProtocol(void);
 
-    void setScanMirrored(bool _scanMirrored);
+    void setScanMirroredAndShifted(bool _scanMirroredAndShifted);
 
-    bool getScanMirrored();
+    bool getScanMirroredAndShifted();
 
     void setUseBinaryProtocol(bool _useBinary);
 
@@ -129,7 +129,7 @@ namespace sick_scan
     bool useSafetyPasWD;
     int8_t encoderMode;
     bool CartographerCompatibility;
-    bool scanMirrored;
+    bool scanMirroredAndShifted;
   };
 
 
