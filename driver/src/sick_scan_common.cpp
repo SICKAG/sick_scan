@@ -2780,7 +2780,7 @@ namespace sick_scan
          */
         char *buffer_pos = (char *) receiveBuffer;
         char *dstart, *dend;
-        bool dumpDbg = true; // !!!!!
+        bool dumpDbg = false;
         bool dataToProcess = true;
         std::vector<float> vang_vec;
         vang_vec.clear();
