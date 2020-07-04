@@ -51,7 +51,7 @@ project(sick_scan)
 # set(CATKIN_DEVEL_PREFIX "${CMAKE_BINARY_DIR}/devel")
 # set(CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/devel;/opt/ros/melodic")
 
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system serialization)
 
 
 find_package(catkin REQUIRED COMPONENTS
@@ -149,7 +149,8 @@ add_executable(radar_object_marker
         tools/radar_object_marker/src/radar_object_marker.cpp
         tools/pcl_converter/src/gnuplotPaletteReader.cpp
         include/radar_object_marker/radar_object_marker.h)
-target_link_libraries(radar_object_marker sick_scan_lib )
+
+target_link_libraries(radar_object_marker sick_scan_lib ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 #
 #
 #

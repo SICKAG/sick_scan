@@ -24,9 +24,10 @@
   <build_depend>diagnostic_updater</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>message_generation</build_depend>
-
+  <build_depend>tf</build_depend>
 
   <run_depend>roscpp</run_depend>
+  <run_depend>tf</run_depend>
   <run_depend>perception_pcl</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>diagnostic_updater</run_depend>
