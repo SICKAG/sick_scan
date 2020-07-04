@@ -13,7 +13,7 @@ cmake_minimum_required(VERSION 2.8.3)
 # Added CMP0048 to avoid unstable warning of build process
 #
 if (POLICY CMP0048)
-    cmake_policy(SET CMP0048 OLD)
+    cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
 
 project(sick_scan)
