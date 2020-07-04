@@ -39,6 +39,15 @@ For the example the compensation function looks like this (X-Axis: measured angl
 
  ![Plot of compensation function (example)](angle_compensation/angle_compensation_001.png)
 
+
+## Coordinate systems
+
+For a better understanding of the data sheets of the different lidar systems the following drawings compare the different coordinate systems. Usually the scanners rotate counter-clockwise. The scanners of the NAV3xx series rotate clockwise. All coordinate systems following but the right-hand rule, if the axis definition as shown in the picture is used. 
+ ![Used coordinate systems](angle_compensation/3d_coordinate_system_comp.png)
+
+By means of simple matrix operations all axis orientations can be transformed into each other. But since we are only interested in the angle around the Z-axis, the conversions can be done as follows:
+
+
 ## Check compensation function
 
 By using `Octave` ones can check the compensation function against the given values by exporting the value via a testbed function.
@@ -63,14 +72,6 @@ By using `Octave` ones can check the compensation function against the given val
    57 plot(a(:,1),a(:,3))
    58 title "compensation example"
 -> 
-
-
-## Coordinate systems
-
-For a better understanding of the data sheets of the different lidar systems the following drawings compare the different coordinate systems. Usually the scanners rotate counter-clockwise. The scanners of the NAV3xx series rotate clockwise. All coordinate systems following but the right-hand rule, if the axis definition as shown in the picture is used. 
- ![Used coordinate systems](angle_compensation/3d_coordinate_system_comp.png)
-
-By means of simple matrix operations all axis orientations can be transformed into each other. But since we are only interested in the angle around the Z-axis, the conversions can be done as follows:
 
 
 
