@@ -47,8 +47,7 @@ For a better understanding of the data sheets of the different lidar systems the
 
 By means of simple matrix operations all axis orientations can be transformed into each other. But since we are only interested in the angle around the Z-axis, the conversions can be done as follows (CS = Coordinate System):
 
-|From CS | To CS  | Operation  | 
-|IN      | Out    | Operation  | 
+|IN From | Out To | Operation  | 
 |--------|--------|------------|
 | ROS    | NAV3xx | Out=-In    |
 | NAV3xx | ROS    | Out=-In    |
