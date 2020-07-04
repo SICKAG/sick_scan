@@ -42,7 +42,7 @@ For the example the compensation function looks like this (X-Axis: measured angl
 
 ## Coordinate systems
 
-For a better understanding of the data sheets of the different lidar systems the following drawings compare the different coordinate systems. Usually the scanners rotate counter-clockwise. The scanners of the NAV3xx series rotate clockwise. All coordinate systems following but the right-hand rule, if the axis definition as shown in the picture is used. 
+For a better understanding of the data sheets of the different lidar systems the following drawings compare the different coordinate systems. Usually the scanners rotate counter-clockwise. The scanners of the NAV3xx series rotate clockwise. All coordinate systems following the right-hand rule, if the axis definition as shown in the picture is used. 
  ![Used coordinate systems](angle_compensation/3d_coordinate_system_comp.png)
 
 By means of simple matrix operations all axis orientations can be transformed into each other. But since we are only interested in the angle around the Z-axis, the conversions can be done as follows (CS = Coordinate System):
