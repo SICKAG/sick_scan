@@ -6,6 +6,20 @@
 cmake_minimum_required(VERSION 2.8.3)
 
 
+# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
+#
+
+# Added CMP0048 to avoid unstable warning of build process
+#
+if (POLICY CMP0048)
+    cmake_policy(SET CMP0048 OLD)
+endif (POLICY CMP0048)
+
+project(sick_scan)
+
+
+
 macro(use_cxx11)
     if (CMAKE_VERSION VERSION_LESS "3.1")
         if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -24,13 +38,6 @@ endmacro(use_cxx11)
 # Switch on, if you use c11-specific commands
 use_cxx11()
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-overflow")
-
-# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
-#
-
-
-project(sick_scan)
 
 # By uncommenting the following lines you can list all variable names ...
 # --- CUT ---
