@@ -555,7 +555,7 @@ namespace sick_scan
         basicParams[i].setNumberOfMaximumEchos(1);
         basicParams[i].setNumberOfLayers(1);
         basicParams[i].setNumberOfShots(2880);
-        basicParams[i].setAngularDegreeResolution(0.125);
+        basicParams[i].setAngularDegreeResolution(0.750);
         basicParams[i].setExpectedFrequency(55.0);
         basicParams[i].setUseBinaryProtocol(true);
         basicParams[i].setDeviceIsRadar(false); // Default

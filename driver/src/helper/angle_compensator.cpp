@@ -109,7 +109,10 @@ double AngleCompensator::compensateAngleInRadFromRos(double angleInRadFromRos)
     double angleInRadToRosCompensated = 0.0;
     if (useNegSign)
     {
-      angleInRadFromSickOrg = -angleInRadFromRos;
+      // NAV310-Handling
+      // maps from clockwise and x-axis backwards to counter-clockwise and x-axis forwards
+      // [-Pi,Pi] --> [0, 2*Pi]
+      angleInRadFromSickOrg = -angleInRadFromRos + M_PI;
     }
     else // NAV2xx
     {
@@ -121,7 +124,10 @@ double AngleCompensator::compensateAngleInRadFromRos(double angleInRadFromRos)
 
     if (useNegSign) // NAV3xx
     {
-      angleInRadToRosCompensated = -angleInRadFromSickCompensated;
+      // NAV310-Handling
+      // maps from clockwise and x-axis backwards to counter-clockwise and x-axis forwards
+      // [0,2*pi] --> [-Pi, Pi]
+      angleInRadToRosCompensated = -angleInRadFromSickCompensated + M_PI;
    }
    else // NAV2xx
    {

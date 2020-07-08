@@ -121,7 +121,7 @@
 // 1.7.3: 2020-06-10: NAV 3xx angle correction added
 // 1.7.4: 2020-06-10: NAV 3xx angle correction improved
 // 1.7.5: 2020-06-25: Preparing for Release Noetic
-// 1.7.6: 2020-02-07: NAV310 handling optimized
+// 1.7.6: 2020-07-08: NAV310 handling optimized (angle calculation and compensation)
 
 
 #define SICK_GENERIC_MAJOR_VER "1"

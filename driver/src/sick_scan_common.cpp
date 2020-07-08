@@ -3202,12 +3202,7 @@ namespace sick_scan
                                 msg.angle_min *= -1.0;
                                 msg.angle_increment *= -1.0;
                                 msg.angle_max *= -1.0;
-#if 0
-                                double tmp;
-                                tmp = msg.angle_min;
-                                msg.angle_min = msg.angle_max;
-                                msg.angle_max = tmp;
-#endif
+
                               }
                               float *rangePtr = NULL;
 
@@ -3600,7 +3595,7 @@ namespace sick_scan
               if (this->parser_->getCurrentParamPtr()->getScanMirroredAndShifted())
               {
 //                mirror_factor = -1.0;
-                angleShift = +M_PI/2.0; // subtract 90 deg for NAV3xx-series
+//                angleShift = +M_PI/2.0; // add 90 deg for NAV3xx-series
               }
 
               for (size_t iEcho = 0; iEcho < numValidEchos; iEcho++)
