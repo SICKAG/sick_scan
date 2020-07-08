@@ -1280,6 +1280,15 @@ namespace sick_scan
 
     bool restartDueToProcolChange = false;
 
+    /* NAV310 needs special handling */
+    /* The NAV310 does not support LMDscandatacfg and rotates clockwise. */
+    /* The X-axis shows backwards */
+    bool NAV3xxOutputRangeSpecialHandling=false;
+    if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
+    {
+      NAV3xxOutputRangeSpecialHandling = true;
+    }
+
 
     for (int i = 0; i < this->sopasCmdChain.size(); i++)
     {
@@ -1297,7 +1306,7 @@ namespace sick_scan
       }
       ROS_DEBUG("Command: %s", stripControl(sopasCmdVec).c_str());
 
-      // switch to either binary or ascii after switching the command mode
+        // switch to either binary or ascii after switching the command mode
       // via ... command
 
 
@@ -1639,7 +1648,7 @@ namespace sick_scan
         case CMD_GET_ANGLE_COMPENSATION_PARAM:
           {
             bool useNegSign = false;
-            if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
+            if (NAV3xxOutputRangeSpecialHandling == 0)
             {
               useNegSign = true; // use negative phase compensation for NAV3xx
             }
@@ -1698,7 +1707,10 @@ namespace sick_scan
       setNTPServerAndStart(NTPIpAdress, useBinaryCmd);
     }
 
-    if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
+    /*
+     * The NAV310 and of course the radar does not support angular resolution handling
+     */
+    if (this->parser_->getCurrentParamPtr()->getDeviceIsRadar() )
     {
       //=====================================================
       // Radar specific commands
@@ -1717,76 +1729,86 @@ namespace sick_scan
           10000.0 * this->parser_->getCurrentParamPtr()->getAngularDegreeResolution()));
       std::vector<unsigned char> askOutputAngularRangeReply;
 
-      if (useBinaryCmd)
+      // LMDscandatacfg corresponds to CMD_GET_OUTPUT_RANGES
+      // LMDscandatacfg is not supported by NAV310
+
+      if (NAV3xxOutputRangeSpecialHandling)
       {
-        std::vector<unsigned char> reqBinary;
-        this->convertAscii2BinaryCmd(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &reqBinary);
-        result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_OUTPUT_RANGES]);
+
       }
-      else
+      else // CMD_GET_OUTPUT_RANGE (i.e. handling of LMDscandatacfg
       {
-        result = sendSopasAndCheckAnswer(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &askOutputAngularRangeReply);
-      }
-
-
-      if (0 == result)
-      {
-        int askTmpAngleRes10000th = 0;
-        int askTmpAngleStart10000th = 0;
-        int askTmpAngleEnd10000th = 0;
-        char dummy0[MAX_STR_LEN] = {0};
-        char dummy1[MAX_STR_LEN] = {0};
-        int dummyInt = 0;
-
-        int iDummy0, iDummy1;
-        std::string askOutputAngularRangeStr = replyToString(askOutputAngularRangeReply);
-        // Binary-Reply Tab. 63
-        // 0x20 Space
-        // 0x00 0x01 -
-        // 0x00 0x00 0x05 0x14  // Resolution in 1/10000th degree  --> 0.13°
-        // 0x00 0x04 0x93 0xE0  // Start Angle 300000    -> 30°
-        // 0x00 0x16 0xE3 0x60  // End Angle   1.500.000 -> 150°    // in ROS +/-60°
-        // 0x83                 // Checksum
-
-        int numArgs;
-
         if (useBinaryCmd)
         {
-          iDummy0 = 0;
-          iDummy1 = 0;
-          dummyInt = 0;
-          askTmpAngleRes10000th = 0;
-          askTmpAngleStart10000th = 0;
-          askTmpAngleEnd10000th = 0;
-
-          const char *askOutputAngularRangeBinMask = "%4y%4ysRA LMPoutputRange %2y%4y%4y%4y";
-          numArgs = binScanfVec(&sopasReplyBinVec[CMD_GET_OUTPUT_RANGES], askOutputAngularRangeBinMask, &iDummy0,
-                                &iDummy1,
-                                &dummyInt,
-                                &askTmpAngleRes10000th,
-                                &askTmpAngleStart10000th,
-                                &askTmpAngleEnd10000th);
-          //
+          std::vector<unsigned char> reqBinary;
+          this->convertAscii2BinaryCmd(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &reqBinary);
+          result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_OUTPUT_RANGES]);
         }
         else
         {
-          numArgs = sscanf(askOutputAngularRangeStr.c_str(), "%s %s %d %X %X %X", dummy0, dummy1,
-                           &dummyInt,
-                           &askTmpAngleRes10000th,
-                           &askTmpAngleStart10000th,
-                           &askTmpAngleEnd10000th);
+          result = sendSopasAndCheckAnswer(sopasCmdVec[CMD_GET_OUTPUT_RANGES].c_str(), &askOutputAngularRangeReply);
         }
-        if (numArgs >= 6)
-        {
-          double askTmpAngleRes = askTmpAngleRes10000th / 10000.0;
-          double askTmpAngleStart = askTmpAngleStart10000th / 10000.0;
-          double askTmpAngleEnd = askTmpAngleEnd10000th / 10000.0;
 
-          angleRes10000th = askTmpAngleRes10000th;
-          ROS_INFO("Angle resolution of scanner is %0.5lf [deg]  (in 1/10000th deg: 0x%X)", askTmpAngleRes,
-                   askTmpAngleRes10000th);
-          ROS_INFO("[From:To] %0.5lf [deg] to %0.5lf [deg] (in 1/10000th deg: from 0x%X to 0x%X)",
-                   askTmpAngleStart, askTmpAngleEnd, askTmpAngleStart10000th, askTmpAngleEnd10000th);
+
+        if (0 == result)
+        {
+          int askTmpAngleRes10000th = 0;
+          int askTmpAngleStart10000th = 0;
+          int askTmpAngleEnd10000th = 0;
+          char dummy0[MAX_STR_LEN] = {0};
+          char dummy1[MAX_STR_LEN] = {0};
+          int dummyInt = 0;
+
+          int iDummy0, iDummy1;
+          std::string askOutputAngularRangeStr = replyToString(askOutputAngularRangeReply);
+          // Binary-Reply Tab. 63
+          // 0x20 Space
+          // 0x00 0x01 -
+          // 0x00 0x00 0x05 0x14  // Resolution in 1/10000th degree  --> 0.13°
+          // 0x00 0x04 0x93 0xE0  // Start Angle 300000    -> 30°
+          // 0x00 0x16 0xE3 0x60  // End Angle   1.500.000 -> 150°    // in ROS +/-60°
+          // 0x83                 // Checksum
+
+          int numArgs;
+
+          if (useBinaryCmd)
+          {
+            iDummy0 = 0;
+            iDummy1 = 0;
+            dummyInt = 0;
+            askTmpAngleRes10000th = 0;
+            askTmpAngleStart10000th = 0;
+            askTmpAngleEnd10000th = 0;
+
+            const char *askOutputAngularRangeBinMask = "%4y%4ysRA LMPoutputRange %2y%4y%4y%4y";
+            numArgs = binScanfVec(&sopasReplyBinVec[CMD_GET_OUTPUT_RANGES], askOutputAngularRangeBinMask, &iDummy0,
+                                  &iDummy1,
+                                  &dummyInt,
+                                  &askTmpAngleRes10000th,
+                                  &askTmpAngleStart10000th,
+                                  &askTmpAngleEnd10000th);
+            //
+          }
+          else
+          {
+            numArgs = sscanf(askOutputAngularRangeStr.c_str(), "%s %s %d %X %X %X", dummy0, dummy1,
+                             &dummyInt,
+                             &askTmpAngleRes10000th,
+                             &askTmpAngleStart10000th,
+                             &askTmpAngleEnd10000th);
+          }
+          if (numArgs >= 6)
+          {
+            double askTmpAngleRes = askTmpAngleRes10000th / 10000.0;
+            double askTmpAngleStart = askTmpAngleStart10000th / 10000.0;
+            double askTmpAngleEnd = askTmpAngleEnd10000th / 10000.0;
+
+            angleRes10000th = askTmpAngleRes10000th;
+            ROS_INFO("Angle resolution of scanner is %0.5lf [deg]  (in 1/10000th deg: 0x%X)", askTmpAngleRes,
+                     askTmpAngleRes10000th);
+            ROS_INFO("[From:To] %0.5lf [deg] to %0.5lf [deg] (in 1/10000th deg: from 0x%X to 0x%X)",
+                     askTmpAngleStart, askTmpAngleEnd, askTmpAngleStart10000th, askTmpAngleEnd10000th);
+          }
         }
       }
       //-----------------------------------------------------------------
@@ -1820,10 +1842,8 @@ namespace sick_scan
       std::vector<unsigned char> outputAngularRangeReply;
 
 
-      bool NAV3xxOutputRangeSpecialHandling=false;
-      if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
+      if (NAV3xxOutputRangeSpecialHandling == 0)
       {
-        NAV3xxOutputRangeSpecialHandling=true;
         const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES_NAV3].c_str();
         sprintf(requestOutputAngularRange, pcCmdMask,
             angleRes10000th, angleStart10000th, angleEnd10000th,
@@ -3176,17 +3196,18 @@ namespace sick_scan
 
                               if (this->parser_->getCurrentParamPtr()->getScanMirroredAndShifted())
                               {
+                                msg.angle_min -= M_PI/2;
+                                msg.angle_max -= M_PI/2;
+
                                 msg.angle_min *= -1.0;
                                 msg.angle_increment *= -1.0;
                                 msg.angle_max *= -1.0;
+#if 0
                                 double tmp;
                                 tmp = msg.angle_min;
                                 msg.angle_min = msg.angle_max;
                                 msg.angle_max = tmp;
-
-                                msg.angle_min += M_PI/2.0;
-                                msg.angle_max += M_PI/2.0;
-
+#endif
                               }
                               float *rangePtr = NULL;
 
@@ -3578,8 +3599,8 @@ namespace sick_scan
               float angleShift=0;
               if (this->parser_->getCurrentParamPtr()->getScanMirroredAndShifted())
               {
-                mirror_factor = -1.0;
-                angleShift = -M_PI/2.0; // subtract 90 deg for NAV3xx-series
+//                mirror_factor = -1.0;
+                angleShift = +M_PI/2.0; // subtract 90 deg for NAV3xx-series
               }
 
               for (size_t iEcho = 0; iEcho < numValidEchos; iEcho++)
