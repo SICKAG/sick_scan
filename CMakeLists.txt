@@ -6,6 +6,20 @@
 cmake_minimum_required(VERSION 2.8.3)
 
 
+# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
+#
+
+# Added CMP0048 to avoid unstable warning of build process
+#
+if (POLICY CMP0048)
+    cmake_policy(SET CMP0048 NEW)
+endif (POLICY CMP0048)
+
+project(sick_scan)
+
+
+
 macro(use_cxx11)
     if (CMAKE_VERSION VERSION_LESS "3.1")
         if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -24,13 +38,6 @@ endmacro(use_cxx11)
 # Switch on, if you use c11-specific commands
 use_cxx11()
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-overflow")
-
-# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
-#
-
-
-project(sick_scan)
 
 # By uncommenting the following lines you can list all variable names ...
 # --- CUT ---
@@ -51,7 +58,7 @@ project(sick_scan)
 # set(CATKIN_DEVEL_PREFIX "${CMAKE_BINARY_DIR}/devel")
 # set(CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/devel;/opt/ros/melodic")
 
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system serialization)
 
 
 find_package(catkin REQUIRED COMPONENTS
@@ -149,7 +156,8 @@ add_executable(radar_object_marker
         tools/radar_object_marker/src/radar_object_marker.cpp
         tools/pcl_converter/src/gnuplotPaletteReader.cpp
         include/radar_object_marker/radar_object_marker.h)
-target_link_libraries(radar_object_marker sick_scan_lib )
+
+target_link_libraries(radar_object_marker sick_scan_lib ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 #
 #
 #
