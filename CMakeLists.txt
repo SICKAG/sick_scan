@@ -72,6 +72,8 @@ find_package(catkin REQUIRED COMPONENTS
         sensor_msgs
         visualization_msgs
         message_generation
+        tf
+        tf2
         )
 
 
@@ -106,7 +108,7 @@ generate_messages(
 )
 
 catkin_package(
-        CATKIN_DEPENDS message_runtime roscpp sensor_msgs diagnostic_updater dynamic_reconfigure perception_pcl
+        CATKIN_DEPENDS message_runtime roscpp sensor_msgs diagnostic_updater dynamic_reconfigure perception_pcl tf tf2
         LIBRARIES sick_scan_lib
         INCLUDE_DIRS include
         DEPENDS Boost
