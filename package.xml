@@ -29,14 +29,17 @@
   <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>tf</build_depend>
-
+  <build_depend>tf2</build_depend>
+  
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>tf</build_export_depend>
+  <build_export_depend>tf2</build_export_depend>
 
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>tf</exec_depend>
+  <exec_depend>tf2</exec_depend>
   <exec_depend>perception_pcl</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>diagnostic_updater</exec_depend>
