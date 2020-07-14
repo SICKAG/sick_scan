@@ -205,6 +205,8 @@ namespace sick_scan
 
     static void imuParserTest();
 
+    static void quaternion2rpyTest(); // test for converting quaternion to rpy
+
     double simpleFmodTwoPi(double angle);
 
   private:

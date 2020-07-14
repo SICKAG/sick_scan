@@ -62,7 +62,7 @@
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
 
-#include <tf/tf.h>
+// #include <tf/tf.h>
 #include <geometry_msgs/Pose2D.h>
 
 #include "sensor_msgs/Imu.h"
@@ -428,6 +428,75 @@ namespace sick_scan
     return (0);
   }
 
+/*!
+\brief Test barebone implemetation from quaternio to euler (Roll-Pitch-Yaw-Sequence) to avoid problems using tf.h against bloom.
+ Include tf.h for a full test and uncomment #0 for this case
+
+*/
+
+  void SickScanImu::quaternion2rpyTest()
+  {
+    // Quaterions derived from https://quaternions.online/
+    double wxyz_test_vec[] = { 0.723,  0.440,  0.022, -0.532}; // corresponds to rpy 45,30,-60 in zyx-Order
+    double rad2deg = 180.0/M_PI;
+
+#if 0
+    tf::Quaternion qOrientation(
+        wxyz_test_vec[1], // x
+        wxyz_test_vec[2], // y
+        wxyz_test_vec[3], // z
+        wxyz_test_vec[0]); // w
+
+    tf::Matrix3x3 m(qOrientation);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw); // convert to roll pitch yaw and try to derive Angular Velocity from these values
+
+    printf("Test result\n");
+    printf("Roll   45.054 [deg]: %8.3lf [deg]\n", roll * rad2deg);
+    printf("Pitch: 30.004 [deg]: %8.3lf [deg]\n", pitch * rad2deg);
+    printf("Yaw:  -60.008 [deg]: %8.3lf [deg]\n", yaw * rad2deg);
+#endif
+
+    struct Quaternion {
+      double w, x, y, z;
+    };
+
+    struct EulerAngles {
+      double roll, pitch, yaw;
+    };
+
+    Quaternion q;
+    q.x = wxyz_test_vec[1];
+    q.y = wxyz_test_vec[2];
+    q.z = wxyz_test_vec[3];
+    q.w = wxyz_test_vec[0];
+
+    EulerAngles angles;
+
+
+    // roll (x-axis rotation)
+    double sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
+    double cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+    angles.roll = std::atan2(sinr_cosp, cosr_cosp);
+
+    // pitch (y-axis rotation)
+    double sinp = 2 * (q.w * q.y - q.z * q.x);
+    if (std::abs(sinp) >= 1)
+      angles.pitch = std::copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+    else
+      angles.pitch = std::asin(sinp);
+
+    // yaw (z-axis rotation)
+    double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+    double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+    angles.yaw = std::atan2(siny_cosp, cosy_cosp);
+
+    printf("Test result (should be similiar to the result above)\n");
+    printf("Roll   45 [deg]: %8.3lf [deg]\n", angles.roll * rad2deg);
+    printf("Pitch: 30 [deg]: %8.3lf [deg]\n", angles.pitch * rad2deg);
+    printf("Yaw:  -60 [deg]: %8.3lf [deg]\n", angles.yaw * rad2deg);
+
+  }
   void SickScanImu::imuParserTest()
   {
     sick_scan::SickScanImu scanImu(NULL);
@@ -451,7 +520,7 @@ namespace sick_scan
         56 Data Bytes + 2 Byte Timestamp + CRC
         14 Float + 4 Byte CRC
 
-        3 Acceleratoin = 12 Bytes
+        3 Acceleration = 12 Bytes
         3 AngularVelocity = 12
         Magnetic Field = 12 Bytes
         Orientatoin = 16 Bytes
@@ -561,15 +630,60 @@ namespace sick_scan
     imuMsg_.orientation.w = imuValue.QuaternionW();
     imuMsg_.orientation_covariance[0] = 1.0;
 
+    double roll, pitch, yaw;
+
+#if 0
+    // due to problems compile tf.h against the bloom server we implent a bare bone conversion from
+    // quaternion to euler following https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+    // include tf.h for testing it.
     tf::Quaternion qOrientation(
         imuMsg_.orientation.x,
         imuMsg_.orientation.y,
         imuMsg_.orientation.z,
         imuMsg_.orientation.w);
     tf::Matrix3x3 m(qOrientation);
-    double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw); // convert to roll pitch yaw and try to derive Angular Velocity from these values
+#else // barebone implementation without include tf.h
+    {
+      struct Quaternion {
+        double w, x, y, z;
+      };
 
+      struct EulerAngles {
+        double roll, pitch, yaw;
+      };
+
+      Quaternion q;
+      q.x =  imuMsg_.orientation.x;
+      q.y =  imuMsg_.orientation.y;
+      q.z =  imuMsg_.orientation.z;
+      q.w =  imuMsg_.orientation.w;
+
+      EulerAngles angles;
+
+
+      // roll (x-axis rotation)
+      double sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
+      double cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+      angles.roll = std::atan2(sinr_cosp, cosr_cosp);
+
+      // pitch (y-axis rotation)
+      double sinp = 2 * (q.w * q.y - q.z * q.x);
+      if (std::abs(sinp) >= 1)
+        angles.pitch = std::copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+      else
+        angles.pitch = std::asin(sinp);
+
+      // yaw (z-axis rotation)
+      double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+      double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+      angles.yaw = std::atan2(siny_cosp, cosy_cosp);
+
+      roll = angles.roll;
+      pitch = angles.pitch;
+      yaw = angles.yaw;
+    }
+#endif
     imuMsg_.angular_velocity.x = imuValue.AngularVelocityX();
     imuMsg_.angular_velocity.y = imuValue.AngularVelocityY();
     imuMsg_.angular_velocity.z = imuValue.AngularVelocityZ();
