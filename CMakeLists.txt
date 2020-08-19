@@ -108,7 +108,7 @@ generate_messages(
 )
 
 catkin_package(
-        CATKIN_DEPENDS message_runtime roscpp sensor_msgs diagnostic_updater dynamic_reconfigure perception_pcl tf tf2
+        CATKIN_DEPENDS message_runtime roscpp sensor_msgs diagnostic_updater dynamic_reconfigure pcl_conversions pcl_ros tf tf2
         LIBRARIES sick_scan_lib
         INCLUDE_DIRS include
         DEPENDS Boost
