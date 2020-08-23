@@ -40,7 +40,8 @@
   <exec_depend>rospy</exec_depend>
   <exec_depend>tf</exec_depend>
   <exec_depend>tf2</exec_depend>
-  <exec_depend>perception_pcl</exec_depend>
+  <exec_depend>pcl_conversions</exec_depend>
+  <exec_depend>pcl_ros</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>diagnostic_updater</exec_depend>
   <exec_depend>dynamic_reconfigure</exec_depend>
