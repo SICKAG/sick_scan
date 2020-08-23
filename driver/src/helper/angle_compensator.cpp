@@ -58,6 +58,15 @@
 *
 */
 
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#ifndef _USE_MATH_DEFINES // to ensure that M_PI is defined
+#define _USE_MATH_DEFINES
+#endif
+
+
 #include "sick_scan/helper/angle_compensator.h"
 #include <string>
 #include <vector>
@@ -262,7 +271,7 @@ int AngleCompensator::parseReply(bool isBinary, std::vector<unsigned char>& repl
   if (isBinary) // convert binary message into the ASCII format to reuse parsing algorithm
   {
     stmp = "";
-    int sLen = replyVec.size();
+    int sLen = (int)replyVec.size();
     assert((sLen == 40) || (sLen == 36));
 
     switch(sLen)

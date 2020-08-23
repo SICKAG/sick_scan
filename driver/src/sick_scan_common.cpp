@@ -120,7 +120,7 @@ void swap_endian(unsigned char *ptr, int numBytes)
 std::vector<unsigned char> stringToVector(std::string s)
 {
   std::vector<unsigned char> result;
-  for (int j = 0; j < s.length(); j++)
+  for (size_t j = 0; j < s.length(); j++)
   {
     result.push_back(s[j]);
   }
@@ -196,7 +196,7 @@ namespace sick_scan
     int spaceCnt = 0x00;
     int cnt0x02 = 0;
 
-    for (int i = 0; i < s.size(); i++)
+    for (size_t i = 0; i < s.size(); i++)
     {
       if (s[i] != 0x02)
       {
@@ -223,7 +223,7 @@ namespace sick_scan
 
       unsigned long lenId = 0x00;
       char szDummy[255] = {0};
-      for (int i = 0; i < s.size(); i++)
+      for (size_t i = 0; i < s.size(); i++)
       {
         switch (parseState)
         {
@@ -300,7 +300,7 @@ namespace sick_scan
     }
     else
     {
-      for (int i = 0; i < s.size(); i++)
+      for (size_t i = 0; i < s.size(); i++)
       {
 
         if (s[i] >= ' ')
@@ -560,7 +560,7 @@ namespace sick_scan
     std::string tmpStr = "";
     int cnt0x02 = 0;
     bool isBinary = false;
-    for (int i = 0; i < 4; i++)
+    for (size_t i = 0; i < 4; i++)
     {
       if (i < requestStr.size())
       {
@@ -671,7 +671,7 @@ namespace sick_scan
   int SickScanCommon::sendSopasAndCheckAnswer(std::string requestStr, std::vector<unsigned char> *reply, int cmdId = -1)
   {
     std::vector<unsigned char> requestStringVec;
-    for (int i = 0; i < requestStr.length(); i++)
+    for (size_t i = 0; i < requestStr.length(); i++)
     {
       requestStringVec.push_back(requestStr[i]);
     }
@@ -692,7 +692,7 @@ namespace sick_scan
 
     std::string cmdStr = "";
     int cmdLen = 0;
-    for (int i = 0; i < requestStr.size(); i++)
+    for (size_t i = 0; i < requestStr.size(); i++)
     {
       cmdLen++;
       cmdStr += (char) requestStr[i];
@@ -1289,8 +1289,7 @@ namespace sick_scan
       NAV3xxOutputRangeSpecialHandling = true;
     }
 
-
-    for (int i = 0; i < this->sopasCmdChain.size(); i++)
+    for (size_t i = 0; i < this->sopasCmdChain.size(); i++)
     {
       ros::Duration(0.2).sleep();   // could maybe removed
 
@@ -1300,7 +1299,7 @@ namespace sick_scan
       std::vector<unsigned char> reqBinary;
 
       std::vector<unsigned char> sopasCmdVec;
-      for (int j = 0; j < sopasCmd.length(); j++)
+      for (size_t j = 0; j < sopasCmd.length(); j++)
       {
         sopasCmdVec.push_back(sopasCmd[j]);
       }
@@ -2042,7 +2041,7 @@ namespace sick_scan
       // Except for the LMS5xx scanner here the mask is hard 00 see SICK Telegram listing "Telegram structure: sWN LMDscandatacfg" for details
 
       outputChannelFlagId = 0x00;
-      for (int i = 0; i < outputChannelFlag.size(); i++)
+      for (size_t i = 0; i < outputChannelFlag.size(); i++)
       {
         outputChannelFlagId |= ((outputChannelFlag[i] == true) << i);
       }
@@ -2535,7 +2534,7 @@ namespace sick_scan
           unsigned char val = *it;
           inHexPrintMode = true;
           sprintf(szTmp, "\\x%02x", val);
-          for (int ii = 0; ii < strlen(szTmp); ii++)
+          for (size_t ii = 0; ii < strlen(szTmp); ii++)
           {
             reply_str.push_back(szTmp[ii]);
           }
@@ -2804,6 +2803,9 @@ namespace sick_scan
         bool dataToProcess = true;
         std::vector<float> vang_vec;
         vang_vec.clear();
+		dstart = NULL;
+		dend = NULL;
+
         while (dataToProcess)
         {
           const int maxAllowedEchos = 5;
@@ -3328,10 +3330,12 @@ namespace sick_scan
 #else
                 sprintf(szFileName, "/tmp/dump%05d.txt", cnt);
 #endif
+#if 0
                 FILE *fout;
                 fout = fopen(szFileName, "wb");
                 fwrite(dstart, dlength, 1, fout);
                 fclose(fout);
+#endif
                 cnt++;
               }
             }
@@ -3430,8 +3434,8 @@ namespace sick_scan
             else
             {
 
-              int startOffset = 0;
-              int endOffset = 0;
+              size_t startOffset = 0;
+              size_t endOffset = 0;
               int echoPartNum = msg.ranges.size() / numEchos;
               for (int i = 0; i < numEchos; i++)
               {
@@ -3587,7 +3591,7 @@ namespace sick_scan
 
               std::vector<float> cosAlphaTable; // Lookup table for cos
               std::vector<float> sinAlphaTable; // Lookup table for sin
-              int rangeNum = rangeTmp.size() / numValidEchos;
+              size_t rangeNum = rangeTmp.size() / numValidEchos;
               cosAlphaTable.resize(rangeNum);
               sinAlphaTable.resize(rangeNum);
               float mirror_factor = 1.0;
@@ -3607,8 +3611,12 @@ namespace sick_scan
                 float *cosAlphaTablePtr = &cosAlphaTable[0];
                 float *sinAlphaTablePtr = &sinAlphaTable[0];
 
-                float *vangPtr = &vang_vec[0];
-                float *rangeTmpPtr = &rangeTmp[0];
+				float *vangPtr = NULL;
+				float *rangeTmpPtr = &rangeTmp[0];
+				if (vang_vec.size() > 0)
+				{
+					vangPtr = &vang_vec[0];
+				}
                 for (size_t i = 0; i < rangeNum; i++)
                 {
                   enum enum_index_descr
@@ -3825,7 +3833,10 @@ namespace sick_scan
             }
           }
           // Start Point
-          buffer_pos = dend + 1;
+		  if (dend != NULL)
+		  {
+			  buffer_pos = dend + 1;
+		  }
         } // end of while loop
       }
 
@@ -4243,7 +4254,6 @@ namespace sick_scan
   bool SickScanCommon::setNewIpAddress(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd)
   {
     int eepwritetTimeOut = 1;
-    char szCmd[255];
     bool result = false;
 
 
@@ -4268,19 +4278,19 @@ namespace sick_scan
     {
       std::vector<unsigned char> reqBinary;
       this->convertAscii2BinaryCmd(ipcommand, &reqBinary);
-      result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_IP_ADDR]);
+      result = (0 == sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_IP_ADDR]));
       reqBinary.clear();
       this->convertAscii2BinaryCmd(sopasCmdVec[CMD_WRITE_EEPROM].c_str(), &reqBinary);
-      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_WRITE_EEPROM]);
+      result &= (0 == sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_WRITE_EEPROM]));
       reqBinary.clear();
       this->convertAscii2BinaryCmd(sopasCmdVec[CMD_RUN].c_str(), &reqBinary);
-      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_RUN]);
+      result &= (0 == sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_RUN]));
       reqBinary.clear();
       this->convertAscii2BinaryCmd(sopasCmdVec[CMD_SET_ACCESS_MODE_3].c_str(), &reqBinary);
-      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_ACCESS_MODE_3]);
+      result &= (0 == sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_ACCESS_MODE_3]));
       reqBinary.clear();
       this->convertAscii2BinaryCmd(sopasCmdVec[CMD_REBOOT].c_str(), &reqBinary);
-      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_REBOOT]);
+      result &= (0 == sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_REBOOT]));
     }
     else
     {
@@ -4290,18 +4300,17 @@ namespace sick_scan
       std::string restartCmd = sopasCmdVec[CMD_REBOOT];
       std::string EEPCmd = sopasCmdVec[CMD_WRITE_EEPROM];
       std::string UserLvlCmd = sopasCmdVec[CMD_SET_ACCESS_MODE_3];
-      result = sendSopasAndCheckAnswer(ipcommand, &ipcomandReply);
-      result &= sendSopasAndCheckAnswer(EEPCmd, &resetReply);
-      result &= sendSopasAndCheckAnswer(runCmd, &resetReply);
-      result &= sendSopasAndCheckAnswer(UserLvlCmd, &resetReply);
-      result &= sendSopasAndCheckAnswer(restartCmd, &resetReply);
+      result = (0 == sendSopasAndCheckAnswer(ipcommand, &ipcomandReply));
+      result &= (0 == sendSopasAndCheckAnswer(EEPCmd, &resetReply));
+      result &= (0 == sendSopasAndCheckAnswer(runCmd, &resetReply));
+      result &= (0 == sendSopasAndCheckAnswer(UserLvlCmd, &resetReply));
+      result &= (0 == sendSopasAndCheckAnswer(restartCmd, &resetReply));
     }
     return (result);
   }
 
   bool SickScanCommon::setNTPServerAndStart(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd)
   {
-    char szCmd[255];
     bool result = false;
 
 
@@ -4332,16 +4341,16 @@ namespace sick_scan
     {
       std::vector<unsigned char> reqBinary;
       this->convertAscii2BinaryCmd(sopasCmdVec[CMD_SET_NTP_INTERFACE_ETH].c_str(), &reqBinary);
-      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_NTP_INTERFACE_ETH]);
+      result &= (0 == sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_NTP_INTERFACE_ETH]));
       reqBinary.clear();
       this->convertAscii2BinaryCmd(ntpipcommand, &reqBinary);
       result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_NTP_SERVER_IP_ADDR]);
       reqBinary.clear();
       this->convertAscii2BinaryCmd(ntpupdatetimecommand, &reqBinary);
-      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_NTP_UPDATETIME]);
+      result &= (0 == sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_NTP_UPDATETIME]));
       reqBinary.clear();
       this->convertAscii2BinaryCmd(sopasCmdVec[CMD_ACTIVATE_NTP_CLIENT].c_str(), &reqBinary);
-      result &= sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_ACTIVATE_NTP_CLIENT]);
+      result &= (0 == sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_ACTIVATE_NTP_CLIENT]));
       reqBinary.clear();
 
     }
@@ -4351,10 +4360,10 @@ namespace sick_scan
       std::vector<unsigned char> resetReply;
       std::string ntpInterFaceETHCmd = sopasCmdVec[CMD_SET_NTP_INTERFACE_ETH];
       std::string activateNTPCmd = sopasCmdVec[CMD_ACTIVATE_NTP_CLIENT];
-      result &= sendSopasAndCheckAnswer(ntpInterFaceETHCmd, &resetReply);
-      result = sendSopasAndCheckAnswer(ntpipcommand, &ipcomandReply);
-      result &= sendSopasAndCheckAnswer(activateNTPCmd, &resetReply);
-      result &= sendSopasAndCheckAnswer(ntpupdatetimecommand, &outputFilterntpupdatetimecommand);
+      result &= (0 == sendSopasAndCheckAnswer(ntpInterFaceETHCmd, &resetReply));
+      result &= (0 == sendSopasAndCheckAnswer(ntpipcommand, &ipcomandReply));
+      result &= (0 == sendSopasAndCheckAnswer(activateNTPCmd, &resetReply));
+      result &= (0 == sendSopasAndCheckAnswer(ntpupdatetimecommand, &outputFilterntpupdatetimecommand));
     }
     return (result);
   }
