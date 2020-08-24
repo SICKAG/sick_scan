@@ -74,6 +74,9 @@
 #include <iostream>
 #include <math.h>
 #include <assert.h>
+#include <string.h>
+#include <memory.h>
+
 
 using namespace std;
 
@@ -366,14 +369,15 @@ std::string AngleCompensator::getHumanReadableFormula(void)
 */
 void AngleCompensator::testbed()
 {
-  AngleCompensator ac(false);
   std::vector<unsigned char> testVec;
 
   std::string s = string("sRA MCAngleCompSin ");
 
   for (int iLoop = 0; iLoop < 2; iLoop++)
   {
-      bool bFlag = (iLoop == 0) ? false : true; // starte mit NAV2xx (iLoop = 0), //
+
+
+    bool bFlag = (iLoop == 0) ? false : true; // starte mit NAV2xx (iLoop = 0), //
     AngleCompensator ac(bFlag);
     testVec.clear(); // start with empty test vector
     switch(iLoop)
@@ -427,7 +431,7 @@ void AngleCompensator::testbed()
 
 
 
-
+  AngleCompensator ac(true);
 
   testVec.clear();
   s = "sRA MCAngleCompSin 765 FFFCC9B9 FFFFFF0B";
