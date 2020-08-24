@@ -17,7 +17,7 @@ have been measured by your sensor.
 
 SoftwarePLL is a generic module and independant from specific sensor types. It just uses the system timestamps and ticks,
 estimates their correlation and predicts the time from sensor ticks. See [timing.md](timing.md) for an application
-example using SICK laser scanner httpsgithub.comSICKAGsick_scan. 
+example using SICK laser scanner. 
 
 ## How Software PLL works
 
