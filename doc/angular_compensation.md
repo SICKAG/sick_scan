@@ -33,6 +33,34 @@ These corresponds to:
 * Phase-Compensation: -21.0503 [deg]
 * Offset-Compensation: -0.0245 [deg]
 
+### Compensation formula for example for NAV210/NAV245
+```
+Angle[comp.] = Angle[Raw] - 0.189300 * sin(Angle[Raw] + -21.050300 [deg]) -  -0.024500
+```
+
+### Compensation formula for example for NAV310
+```
+Angle[comp.] = Angle[Raw] + 0.189300 * sin(Angle[Raw] - -21.050300 [deg]) +  -0.024500
+```
+#### Example lookup values for NAV310 for this example
+```
+|IN [Deg]  | Out [Deg]| Correction [Deg]   |
+|----------|----------|--------------------|
+|  0.000000|  0.043494|  0.043494          |
+|  1.000000|  1.046567|  0.046567          |  
+|  2.000000|  2.049618|  0.049618          |
+|  3.000000|  3.052647|  0.052647          |
+|  4.000000|  4.055652|  0.055652          |  
+|  5.000000|  5.058633|  0.058633          |
+|  6.000000|  6.061588|  0.061588          |
+|  7.000000|  7.064518|  0.064518          |
+|  8.000000|  8.067420|  0.067420          | 
+|  9.000000|  9.070294|  0.070294          | 
+| 10.000000| 10.073139|  0.073139          |
+```
+
+
+
 ## Comparing compensated vs. raw values
 
 For the example the compensation function looks like this (X-Axis: measured angle [deg], Y-Axis: compensation in [deg])
