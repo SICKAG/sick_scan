@@ -42,7 +42,7 @@ Angle[comp.] = Angle[Raw] - 0.189300 * sin(Angle[Raw] + -21.050300 [deg]) -  -0.
 ```
 Angle[comp.] = Angle[Raw] + 0.189300 * sin(Angle[Raw] - -21.050300 [deg]) +  -0.024500
 ```
-#### Example lookup values for NAV310 for this example
+#### Example lookup values for NAV310 for this example (first entries)
 ```
 |IN [Deg]  | Out [Deg]| Correction [Deg]   |
 |----------|----------|--------------------|
