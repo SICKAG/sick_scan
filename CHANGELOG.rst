@@ -2,8 +2,8 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.7.8 (2020-09-02)
+------------------
 * fixes `#100 <https://github.com/SICKAG/sick_scan/issues/100>`_
 * Update software_pll.md
 * software pll information added
