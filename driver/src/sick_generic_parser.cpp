@@ -774,10 +774,10 @@ namespace sick_scan
                                         sensor_msgs::LaserScan &msg, int &numEchos, int &echoMask)
   {
     // echoMask introduced to get a workaround for cfg bug using MRS1104
-    ros::NodeHandle tmpParam("~");
+		// ros::NodeHandle tmpParam("~");
     bool dumpData = false;
     int verboseLevel = 0;
-    tmpParam.getParam("verboseLevel", verboseLevel);
+		// tmpParam.getParam("verboseLevel", verboseLevel);
 
     int HEADER_FIELDS = 32;
     char *cur_field;

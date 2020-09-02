@@ -2125,40 +2125,47 @@ namespace sick_scan
       {
         if (scan_freq != 0 && ang_res != 0)
         {
-          char requestLMDscancfg[MAX_STR_LEN];
-          //    sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %d 1 %d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
-          const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG].c_str();
-          sprintf(requestLMDscancfg, pcCmdMask, (long) (scan_freq * 100 + 1e-9), (long) (ang_res * 10000 + 1e-9));
-          if (useBinaryCmd)
+          if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0)
           {
-            std::vector<unsigned char> reqBinary;
-            this->convertAscii2BinaryCmd(requestLMDscancfg, &reqBinary);
-            result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_PARTIAL_SCAN_CFG]);
+            ROS_INFO("variable ang_res and scan_freq setings for NAV 3xx has not been implemented yet using 20 Hz 0.75 deg");
           }
           else
           {
-            std::vector<unsigned char> lmdScanCfgReply;
-            result = sendSopasAndCheckAnswer(requestLMDscancfg, &lmdScanCfgReply);
+            char requestLMDscancfg[MAX_STR_LEN];
+            //    sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG] = "\x02sMN mLMPsetscancfg %d 1 %d 0 0\x03";//scanfreq [1/100 Hz],angres [1/10000°],
+            const char *pcCmdMask = sopasCmdMaskVec[CMD_SET_PARTIAL_SCAN_CFG].c_str();
+            sprintf(requestLMDscancfg, pcCmdMask, (long) (scan_freq * 100 + 1e-9), (long) (ang_res * 10000 + 1e-9));
+            if (useBinaryCmd)
+            {
+              std::vector<unsigned char> reqBinary;
+              this->convertAscii2BinaryCmd(requestLMDscancfg, &reqBinary);
+              result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_SET_PARTIAL_SCAN_CFG]);
+            }
+            else
+            {
+              std::vector<unsigned char> lmdScanCfgReply;
+              result = sendSopasAndCheckAnswer(requestLMDscancfg, &lmdScanCfgReply);
+            }
+
+
+            // check setting
+            char requestLMDscancfgRead[MAX_STR_LEN];
+            // Uses sprintf-Mask to set bitencoded echos and rssi enable flag
+
+            strcpy(requestLMDscancfgRead, sopasCmdVec[CMD_GET_PARTIAL_SCAN_CFG].c_str());
+            if (useBinaryCmd)
+            {
+              std::vector<unsigned char> reqBinary;
+              this->convertAscii2BinaryCmd(requestLMDscancfgRead, &reqBinary);
+              result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_PARTIAL_SCAN_CFG]);
+            }
+            else
+            {
+              std::vector<unsigned char> lmdScanDataCfgReadReply;
+              result = sendSopasAndCheckAnswer(requestLMDscancfgRead, &lmdScanDataCfgReadReply);
+            }
+
           }
-
-
-          // check setting
-          char requestLMDscancfgRead[MAX_STR_LEN];
-          // Uses sprintf-Mask to set bitencoded echos and rssi enable flag
-
-          strcpy(requestLMDscancfgRead, sopasCmdVec[CMD_GET_PARTIAL_SCAN_CFG].c_str());
-          if (useBinaryCmd)
-          {
-            std::vector<unsigned char> reqBinary;
-            this->convertAscii2BinaryCmd(requestLMDscancfgRead, &reqBinary);
-            result = sendSopasAndCheckAnswer(reqBinary, &sopasReplyBinVec[CMD_GET_PARTIAL_SCAN_CFG]);
-          }
-          else
-          {
-            std::vector<unsigned char> lmdScanDataCfgReadReply;
-            result = sendSopasAndCheckAnswer(requestLMDscancfgRead, &lmdScanDataCfgReadReply);
-          }
-
         }
         else
         {
@@ -4068,35 +4075,73 @@ namespace sick_scan
     // 21
     if (cmdAscii.find(keyWord7) != std::string::npos)
     {
-      int keyWord3Len = keyWord7.length();
-      int dummyArr[14] = {0};
-      if (14 == sscanf(requestAscii + keyWord3Len + 1, " %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
-                       &dummyArr[0], &dummyArr[1], &dummyArr[2],
-                       &dummyArr[3], &dummyArr[4], &dummyArr[5],
-                       &dummyArr[6], &dummyArr[7], &dummyArr[8],
-                       &dummyArr[9], &dummyArr[10], &dummyArr[11], &dummyArr[12], &dummyArr[13]))
+      if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) != 0)
       {
-        for (int i = 0; i < 54; i++)
         {
-          buffer[i] = 0x00;
-        }
-        int targetPosArr[] = {0, 4, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54};
-        int numElem = (sizeof(targetPosArr) / sizeof(targetPosArr[0])) - 1;
-        for (int i = 0; i < numElem; i++)
-        {
-          int lenOfBytesToRead = targetPosArr[i + 1] - targetPosArr[i];
-          int adrPos = targetPosArr[i];
-          unsigned char *destPtr = buffer + adrPos;
-          memcpy(destPtr, &(dummyArr[i]), lenOfBytesToRead);
-          swap_endian(destPtr, lenOfBytesToRead);
-        }
-        bufferLen = targetPosArr[numElem];
-        /*
-         * 00 00 03 20 00 01
-00 00 09 C4 00 00 00 00 00 36 EE 80 00 00 09 C4 00 00 00 00 00 00 00 00 00 00 09 C4 00 00 00 00 00
-00 00 00 00 00 09 C4 00 00 00 00 00 00 00 00 00 00 09 C4 00 00 00 00 00 00 00 00 E4
-         */
+          bufferLen = 18;
+          for (int i = 0; i < bufferLen; i++)
+          {
+            unsigned char uch = 0x00;
+            switch (i)
+            {
+              case 5:
+                uch = 0x01;
+                break;
+            }
+            buffer[i] = uch;
+          }
+          char tmpStr[1024] = {0};
+          char szApplStr[255] = {0};
+          int keyWord7Len = keyWord7.length();
+          int scanDataStatus = 0;
+          int dummy0, dummy1;
+          strcpy(tmpStr, requestAscii + keyWord7Len + 2);
+          sscanf(tmpStr, "%d 1 %d", &dummy0, &dummy1);
 
+          buffer[0] = (unsigned char) (0xFF & (dummy0 >> 24));
+          buffer[1] = (unsigned char) (0xFF & (dummy0 >> 16));
+          buffer[2] = (unsigned char) (0xFF & (dummy0 >> 8));
+          buffer[3] = (unsigned char) (0xFF & (dummy0 >> 0));
+
+
+          buffer[6] = (unsigned char) (0xFF & (dummy1 >> 24));
+          buffer[7] = (unsigned char) (0xFF & (dummy1 >> 16));
+          buffer[8] = (unsigned char) (0xFF & (dummy1 >> 8));
+          buffer[9] = (unsigned char) (0xFF & (dummy1 >> 0));
+        }
+      }
+      else
+      {
+        int keyWord3Len = keyWord7.length();
+        int dummyArr[14] = {0};
+        if (14 == sscanf(requestAscii + keyWord3Len + 1, " %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+                         &dummyArr[0], &dummyArr[1], &dummyArr[2],
+                         &dummyArr[3], &dummyArr[4], &dummyArr[5],
+                         &dummyArr[6], &dummyArr[7], &dummyArr[8],
+                         &dummyArr[9], &dummyArr[10], &dummyArr[11], &dummyArr[12], &dummyArr[13]))
+        {
+          for (int i = 0; i < 54; i++)
+          {
+            buffer[i] = 0x00;
+          }
+          int targetPosArr[] = {0, 4, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54};
+          int numElem = (sizeof(targetPosArr) / sizeof(targetPosArr[0])) - 1;
+          for (int i = 0; i < numElem; i++)
+          {
+            int lenOfBytesToRead = targetPosArr[i + 1] - targetPosArr[i];
+            int adrPos = targetPosArr[i];
+            unsigned char *destPtr = buffer + adrPos;
+            memcpy(destPtr, &(dummyArr[i]), lenOfBytesToRead);
+            swap_endian(destPtr, lenOfBytesToRead);
+          }
+          bufferLen = targetPosArr[numElem];
+          /*
+           * 00 00 03 20 00 01
+  00 00 09 C4 00 00 00 00 00 36 EE 80 00 00 09 C4 00 00 00 00 00 00 00 00 00 00 09 C4 00 00 00 00 00
+  00 00 00 00 00 09 C4 00 00 00 00 00 00 00 00 00 00 09 C4 00 00 00 00 00 00 00 00 E4
+           */
+
+        }
       }
 
     }
