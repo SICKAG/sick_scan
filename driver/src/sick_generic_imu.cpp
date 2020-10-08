@@ -814,7 +814,7 @@ namespace sick_scan
       imuMsg_.linear_acceleration_covariance[7] = 0;
       imuMsg_.linear_acceleration_covariance[8] = 0;
 
-      imuMsg_.orientation_covariance[0] = -1;
+      imuMsg_.orientation_covariance[0] = 0;
       imuMsg_.orientation_covariance[1] = 0;
       imuMsg_.orientation_covariance[2] = 0;
       imuMsg_.orientation_covariance[3] = 0;
