@@ -120,8 +120,8 @@
 // 1.7.6: 2020-07-14: NAV310 handling optimized (angle calculation and compensation), barebone quaterion to euler
 // 1.7.7: 2020-07-21: barebone quaterion to euler
 #define SICK_GENERIC_MAJOR_VER "1"
-#define SICK_GENERIC_MINOR_VER "7"
-#define SICK_GENERIC_PATCH_LEVEL "8"
+#define SICK_GENERIC_MINOR_VER "8"
+#define SICK_GENERIC_PATCH_LEVEL "0"
 
 #include <algorithm> // for std::min
 

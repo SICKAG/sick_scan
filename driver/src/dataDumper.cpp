@@ -6,6 +6,8 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+#include <sstream>
+#include <iomanip>
 #include "dataDumper.h"
 
 int DataDumper::pushData(double timeStamp, std::string info, double val)
@@ -97,6 +99,30 @@ int DataDumper::dumpUcharBufferToConsole(unsigned char *buffer, int bufLen)
 	}
 	return(ret);
 }
+
+/*!
+ * Converts and returns binary data to ascii string with non-printable data represented as "\x<hexvalue>"
+ * @param[in] binary_data binary input data
+ * @return hex string
+ */
+std::string DataDumper::binDataToAsciiString(const uint8_t* binary_data, int length)
+{
+  std::stringstream out;
+  for(int n = 0; n < length; n++)
+  {
+    int val = (int)(binary_data[n] & 0xFF);
+    if ((val == 0x20) || (val >= 48 && val <= 57) || (val >= 65 && val <= 90) || (val >= 97 && val <= 122))
+    {
+      out << std::string(1,(char)(val & 0xFF));
+    }
+    else
+    {
+      out <<  "\\x" << std::setfill('0') << std::setw(2) << std::hex << val;
+    }
+  }
+  return out.str();
+}
+
 
 int DataDumper::testbed()
 {

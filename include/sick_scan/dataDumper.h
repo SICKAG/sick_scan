@@ -27,6 +27,13 @@ public:
 
   int dumpUcharBufferToConsole(unsigned char *buffer, int bufLen);
 
+  /*!
+   * Converts and returns binary data to ascii string with non-printable data represented as "\x<hexvalue>"
+   * @param[in] binary_data binary input data
+   * @return hex string
+   */
+  static std::string binDataToAsciiString(const uint8_t* binary_data, int length);
+
   int testbed();
 
 private:

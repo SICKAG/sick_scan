@@ -56,6 +56,9 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/String.h>
 
+#include <thread>
+#include <mutex>
+
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <diagnostic_updater/publisher.h>
 #include <sick_scan/sick_scan_common_nw.h>
@@ -72,6 +75,8 @@
 #include "sick_scan/sick_scan_common_nw.h"
 
 #include "sick_scan/Encoder.h"
+#include "sick_scan/sick_generic_field_mon.h"
+#include "sick_scan/sick_scan_marker.h"
 
 void swap_endian(unsigned char *ptr, int numBytes);
 
@@ -156,6 +161,12 @@ namespace sick_scan
       CMD_GET_ANGLE_COMPENSATION_PARAM, // Angle Compensation Parameter for NAV lidar
       CMD_SET_TO_COLA_A_PROTOCOL,  //		sWN EIHstCola 1  // Cola B 	sWN EIHstCola 0  // Cola A
       CMD_SET_TO_COLA_B_PROTOCOL,  //
+      CMD_GET_SAFTY_FIELD_CFG,// gets the safty fields cfg olny tim 7xxs supported at the moment
+
+      CMD_SET_LFEREC_ACTIVE,       // activate LFErec messages, send "sEN LFErec 1"
+      CMD_SET_LID_OUTPUTSTATE_ACTIVE,  // activate LIDoutputstate messages, send "sEN LIDoutputstate 1"
+      CMD_SET_LID_INPUTSTATE_ACTIVE,  // activate LIDinputstate messages, send "sEN LIDinputstate 1"
+
       // ML: Add above new CMD-Identifier
       //
       //
@@ -246,6 +257,17 @@ namespace sick_scan
       return (&config_);
     }
 
+    /// Converts reply from sendSOPASCommand to string
+    /**
+     * \param [in] reply reply from sendSOPASCommand
+     * \returns reply as string with special characters stripped out
+     */
+    std::string sopasReplyToString(const std::vector<unsigned char> &reply)
+    {
+      return replyToString(reply);
+    }
+
+
     // move back to private
     /* FÜR MRS10000 brauchen wir einen Publish und eine NAchricht */
     // Should we publish laser or point cloud?
@@ -326,6 +348,11 @@ namespace sick_scan
     ros::Publisher datagram_pub_;
     bool publish_datagram_;
 
+    ros::Publisher lferec_pub_;
+    bool publish_lferec_;
+    ros::Publisher lidoutputstate_pub_;
+    bool publish_lidoutputstate_;
+    SickScanMarker* cloud_marker_;
 
     // Diagnostics
     diagnostic_updater::DiagnosedPublisher<sensor_msgs::LaserScan> *diagnosticPub_;
@@ -358,6 +385,9 @@ namespace sick_scan
     bool setNTPServerAndStart(boost::asio::ip::address_v4 ipNewIPAddr, bool useBinaryCmd);
 
     int readTimeOutInMs;
+
+    std::mutex sopasSendMutex; // mutex to lock sendSopasAndCheckAnswer
+
   private:
     bool sensorIsRadar;
 

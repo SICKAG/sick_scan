@@ -1,0 +1,5 @@
+Testaufzeichung für Auswertung und Visualisierung LFErec und LIDoutputstate Nachrichten:
+1. Feld 1 wird mehrmals belegt (toggeln zwischen free/grün und infringed/gelb, sopas_et_field_test_1_2_both_010_field1_infringed.jpg)
+2. Feld 2 wird mehrmals belegt (toggeln zwischen free/grün und infringed/gelb, sopas_et_field_test_1_2_both_010_field2_infringed.jpg)
+3. Beide Felder werden mehrmals belegt (toggeln zwischen free/grün und infringed/gelb, sopas_et_field_test_1_2_both_010_both_infringed.jpg)
+siehe zugehöriges sopas-et video 10_sopas_et\sopas_et_field_test_1_2_both_010.webm

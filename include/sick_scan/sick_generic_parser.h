@@ -115,6 +115,10 @@ namespace sick_scan
 
     int8_t getEncoderMode();
 
+    bool getUseSaftyFields();
+
+    void setUseSaftyFields(bool _useSaftyFields);
+
   private:
     std::string scannerName;
     int numberOfLayers;
@@ -130,6 +134,7 @@ namespace sick_scan
     int8_t encoderMode;
     bool CartographerCompatibility;
     bool scanMirroredAndShifted;
+    bool useSaftyFields;
   };
 
 

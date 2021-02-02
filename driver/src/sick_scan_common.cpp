@@ -59,6 +59,7 @@
 #include <sick_scan/sick_scan_common_nw.h>
 #include <sick_scan/sick_scan_common.h>
 #include <sick_scan/sick_generic_radar.h>
+#include <sick_scan/sick_generic_field_mon.h>
 #include <sick_scan/helper/angle_compensator.h>
 #include <sick_scan/sick_scan_config_internal.h>
 
@@ -91,6 +92,7 @@
 #include <map>
 #include <climits>
 #include <sick_scan/sick_generic_imu.h>
+#include <sick_scan/sick_scan_messages.h>
 
 /*!
 \brief Universal swapping function
@@ -365,6 +367,18 @@ namespace sick_scan
       datagram_pub_ = nh_.advertise<std_msgs::String>("datagram", 1000);
     }
 
+    cloud_marker_ = 0;
+    publish_lferec_ = false;
+    publish_lidoutputstate_ = false;
+    const std::string scannername = parser_->getCurrentParamPtr()->getScannerName();
+    if (scannername.compare(SICK_SCANNER_TIM_7XXS_NAME) == 0)
+    {
+      lferec_pub_ = nh_.advertise<sick_scan::LFErecMsg>(scannername + "/lferec", 100);
+      lidoutputstate_pub_ = nh_.advertise<sick_scan::LIDoutputstateMsg>(scannername + "/lidoutputstate", 100);
+      publish_lferec_ = true;
+      publish_lidoutputstate_ = true;
+      cloud_marker_ = new sick_scan::SickScanMarker(&nh_, scannername + "/marker", "cloud");
+    }
 
     // Pointcloud2 publisher
     //
@@ -419,6 +433,21 @@ namespace sick_scan
     else
     {
       printf("\nSOPAS - Stopped streaming scan data.\n");
+    }
+
+    if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_7XXS_NAME) == 0)
+    {
+      if(sendSOPASCommand("\x02sEN LFErec 0\x03", NULL) != 0 // TiM781S: deactivate LFErec messages, send "sEN LFErec 0"
+      || sendSOPASCommand("\x02sEN LIDoutputstate 0\x03", NULL) != 0 // TiM781S: deactivate LIDoutputstate messages, send "sEN LIDoutputstate 0"
+      || sendSOPASCommand("\x02sEN LIDinputstate 0\x03", NULL) != 0) // TiM781S: deactivate LIDinputstate messages, send "sEN LIDinputstate 0"
+      {
+        // use printf because we cannot use ROS_ERROR from the destructor
+        printf("\nSOPAS - Error stopping streaming LFErec, LIDoutputstate and LIDinputstate messages!\n");
+      }
+      else
+      {
+        printf("\nSOPAS - Stopped streaming LFErec, LIDoutputstate and LIDinputstate messages\n");
+      }
     }
 
     return result;
@@ -537,6 +566,7 @@ namespace sick_scan
   */
   SickScanCommon::~SickScanCommon()
   {
+    delete cloud_marker_;
     delete diagnosticPub_;
 
     printf("sick_scan driver exiting.\n");
@@ -689,6 +719,7 @@ namespace sick_scan
   int SickScanCommon::sendSopasAndCheckAnswer(std::vector<unsigned char> requestStr, std::vector<unsigned char> *reply,
                                               int cmdId = -1)
   {
+    std::lock_guard<std::mutex> send_lock_guard(sopasSendMutex); // lock send mutex in case of asynchronous service calls
 
     std::string cmdStr = "";
     int cmdLen = 0;
@@ -931,6 +962,9 @@ namespace sick_scan
     */
     //                                                                   0320 01 09C4 0 0036EE80 09C4 0 0 09C4 0 0 09C4 0 0
 
+    sopasCmdVec[CMD_SET_LFEREC_ACTIVE] = "\x02sEN LFErec 1\x03";              // TiM781S: activate LFErec messages, send "sEN LFErec 1"
+    sopasCmdVec[CMD_SET_LID_OUTPUTSTATE_ACTIVE] = "\x02sEN LIDoutputstate 1\x03"; // TiM781S: activate LIDoutputstate messages, send "sEN LIDoutputstate 1"
+    sopasCmdVec[CMD_SET_LID_INPUTSTATE_ACTIVE] = "\x02sEN LIDinputstate 1\x03"; // TiM781S: activate LIDinputstate messages, send "sEN LIDinputstate 1"
 
     /*
      *  Angle Compensation Command
@@ -947,6 +981,7 @@ namespace sick_scan
     sopasCmdMaskVec[CMD_SET_OUTPUT_RANGES_NAV3] = "\x02sWN LMPoutputRange 1 %X %X %X %X %X %X %X %X %X %X %X %X\x03";
     //sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG]=  "\x02sWN LMDscandatacfg %02d 00 %d 00 %d 0 %d 0 0 0 1 +1\x03"; //outputChannelFlagId,rssiFlag, rssiResolutionIs16Bit ,EncoderSetings
     sopasCmdMaskVec[CMD_SET_PARTIAL_SCANDATA_CFG] = "\x02sWN LMDscandatacfg %02d 00 %d %d 0 0 %02d 0 0 0 1 1\x03";//outputChannelFlagId,rssiFlag, rssiResolutionIs16Bit ,EncoderSetings
+    sopasCmdMaskVec[CMD_GET_SAFTY_FIELD_CFG] = "\x02sRN field%03d\x03";
     /*
    configuration
  * in ASCII
@@ -1005,7 +1040,9 @@ namespace sick_scan
     sopasCmdErrMsg[CMD_SET_ENCODER_MODE] = "Error activating encoder in single incremnt mode";
     sopasCmdErrMsg[CMD_SET_INCREMENTSOURCE_ENC] = "Error seting encoder increment source to Encoder";
     sopasCmdErrMsg[CMD_SET_SCANDATACONFIGNAV] = "Error setting scandata config";
-
+    sopasCmdErrMsg[CMD_SET_LFEREC_ACTIVE] = "Error activating LFErec messages";
+    sopasCmdErrMsg[CMD_SET_LID_OUTPUTSTATE_ACTIVE] = "Error activating LIDoutputstate messages";
+    sopasCmdErrMsg[CMD_SET_LID_INPUTSTATE_ACTIVE] = "Error activating LIDinputstate messages";
     // ML: Add here more useful cmd and mask entries
 
     // After definition of command, we specify the command sequence for scanner initalisation
@@ -1110,6 +1147,7 @@ namespace sick_scan
     {
       sopasCmdChain.push_back(CMD_SET_SCANDATACONFIGNAV);
     }
+
     return (0);
 
   }
@@ -1132,11 +1170,13 @@ namespace sick_scan
 
     bool rssiFlag = false;
     bool rssiResolutionIs16Bit = true; //True=16 bit Flase=8bit
+    bool useSaftyields=false;
     int activeEchos = 0;
     ros::NodeHandle pn("~");
 
     pn.getParam("intensity", rssiFlag);
     pn.getParam("intensity_resolution_16bit", rssiResolutionIs16Bit);
+    pn.getParam("use_safty_fields", useSaftyields);
     //check new ip adress and add cmds to write ip to comand chain
     std::string sNewIPAddr = "";
     boost::asio::ip::address_v4 ipNewIPAddr;
@@ -1175,7 +1215,7 @@ namespace sick_scan
     }
 
     this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
-
+    this->parser_->getCurrentParamPtr()->setUseSaftyFields(useSaftyields);
     // parse active_echos entry and set flag array
     pn.getParam("active_echos", activeEchos);
 
@@ -2065,6 +2105,63 @@ namespace sick_scan
         rssiResolutionIs16Bit = this->parser_->getCurrentParamPtr()->getIntensityResolutionIs16Bit();
 
       }
+      //SAFTY FIELD PARSING
+      if (this->parser_->getCurrentParamPtr()->getUseSaftyFields())
+      {
+        ROS_INFO("Reading safety fields");
+        SickScanFieldMonSingleton *fieldMon = SickScanFieldMonSingleton::getInstance();
+        for(int fieldnum=0;fieldnum<48;fieldnum++) 
+        {
+          char requestFieldcfg[MAX_STR_LEN];
+          const char *pcCmdMask = sopasCmdMaskVec[CMD_GET_SAFTY_FIELD_CFG].c_str();
+          sprintf(requestFieldcfg, pcCmdMask, fieldnum);
+          if (useBinaryCmd) {
+            std::vector<unsigned char> reqBinary;
+            std::vector<unsigned char> fieldcfgReply;
+            this->convertAscii2BinaryCmd(requestFieldcfg, &reqBinary);
+            result = sendSopasAndCheckAnswer(reqBinary, &fieldcfgReply);
+            fieldMon->parseBinaryDatagram(fieldcfgReply);
+          } else {
+            std::vector<unsigned char> fieldcfgReply;
+            result = sendSopasAndCheckAnswer(requestFieldcfg, &fieldcfgReply);
+            fieldMon->parseAsciiDatagram(fieldcfgReply);
+          }
+        }
+        if(cloud_marker_)
+        {
+          int fieldset = 0;
+          // pn.getParam("fieldset", fieldset);
+          std::string LIDinputstateRequest = "\x02sRN LIDinputstate\x03";
+          std::vector<unsigned char> LIDinputstateResponse;
+          if (useBinaryCmd)
+          {
+            std::vector<unsigned char> reqBinary;
+            this->convertAscii2BinaryCmd(LIDinputstateRequest.c_str(), &reqBinary);
+            result = sendSopasAndCheckAnswer(reqBinary, &LIDinputstateResponse);
+            if(result == 0)
+            {
+              //fieldset = (LIDinputstateResponse[32] & 0xFF);
+              //fieldMon->setActiveFieldset(fieldset);
+              fieldMon->parseBinaryLIDinputstateMsg(LIDinputstateResponse.data(), LIDinputstateResponse.size());
+              ROS_INFO_STREAM("Safety fieldset response to \"sRN LIDinputstate\": " << DataDumper::binDataToAsciiString(LIDinputstateResponse.data(), LIDinputstateResponse.size())
+                << ", active fieldset = " << fieldMon->getActiveFieldset());
+            }
+          }
+          else
+          {
+            result = sendSopasAndCheckAnswer(LIDinputstateRequest.c_str(), &LIDinputstateResponse);
+          }
+
+          cloud_marker_->updateMarker(fieldMon->getMonFields(), fieldset);
+          std::stringstream field_info;
+          field_info << "Safety fieldset " << fieldset << ", pointcounter = [ ";
+          for(int n = 0; n < fieldMon->getMonFields().size(); n++)
+            field_info << (n > 0 ? ", " : " ") << fieldMon->getMonFields()[n].getPointCount();
+          field_info << " ]";
+          ROS_INFO_STREAM(field_info.str());
+        }
+        int test=100;
+      }
 
       // set scanning angle for tim5xx and for mrs1104
       if ((this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 1)
@@ -2345,6 +2442,30 @@ namespace sick_scan
       }
       startProtocolSequence.push_back(CMD_RUN);  // leave user level
       startProtocolSequence.push_back(CMD_START_SCANDATA);
+
+      if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_7XXS_NAME) == 0)
+      {
+        
+        // Activate LFErec, LIDoutputstate and LIDinputstate messages
+        ros::NodeHandle tmpParam("~");
+        bool activate_lferec = true, activate_lidoutputstate = true, activate_lidinputstate = true;
+        if (true == tmpParam.getParam("activate_lferec", activate_lferec) && true == activate_lferec)
+        {
+          startProtocolSequence.push_back(CMD_SET_LFEREC_ACTIVE);      // TiM781S: activate LFErec messages, send "sEN LFErec 1"
+          ROS_INFO_STREAM(parser_->getCurrentParamPtr()->getScannerName() << ": activating field monitoring by lferec messages");
+        }
+        if (true == tmpParam.getParam("activate_lidoutputstate", activate_lidoutputstate) && true == activate_lidoutputstate)
+        {
+          startProtocolSequence.push_back(CMD_SET_LID_OUTPUTSTATE_ACTIVE); // TiM781S: activate LIDoutputstate messages, send "sEN LIDoutputstate 1"
+          ROS_INFO_STREAM(parser_->getCurrentParamPtr()->getScannerName() << ": activating field monitoring by lidoutputstate messages");
+        }
+        if (true == tmpParam.getParam("activate_lidinputstate", activate_lidinputstate) && true == activate_lidinputstate)
+        {
+          startProtocolSequence.push_back(CMD_SET_LID_INPUTSTATE_ACTIVE); // TiM781S: activate LIDinputstate messages, send "sEN LIDinputstate 1"
+          ROS_INFO_STREAM(parser_->getCurrentParamPtr()->getScannerName() << ": activating field monitoring by lidinputstate messages");
+        }
+      }
+
       if (this->parser_->getCurrentParamPtr()->getNumberOfLayers() == 4)  // MRS1104 - start IMU-Transfer
       {
         ros::NodeHandle tmp("~");
@@ -2739,6 +2860,9 @@ namespace sick_scan
         return ExitSuccess;
       }
 
+      ROS_DEBUG_STREAM("SickScanCommon::loopOnce: received " << actual_length << " byte data " << DataDumper::binDataToAsciiString(&receiveBuffer[0], std::min(32, actual_length)) << " ... ");
+
+
       if (publish_datagram_)
       {
         std_msgs::String datagram_msg;
@@ -2786,8 +2910,75 @@ namespace sick_scan
 
         }
         return errorCode; // return success to continue looping
-
-
+      }
+      else if(memcmp(&receiveBuffer[8], "sSN LIDoutputstate", strlen("sSN LIDoutputstate")) == 0)
+      {
+        int errorCode = ExitSuccess;
+        ROS_DEBUG_STREAM("SickScanCommon: received " << actual_length << " byte LIDoutputstate " << DataDumper::binDataToAsciiString(&receiveBuffer[0], actual_length));
+        // Parse and convert LIDoutputstate message
+        sick_scan::LIDoutputstateMsg outputstate_msg;
+        if (sick_scan::SickScanMessages::parseLIDoutputstateMsg(recvTimeStamp, receiveBuffer, actual_length, useBinaryProtocol, parser_->getCurrentParamPtr()->getScannerName(), outputstate_msg))
+        {
+          // Publish LIDoutputstate message
+          if(publish_lidoutputstate_)
+          {
+            lidoutputstate_pub_.publish(outputstate_msg);
+          }
+          if(cloud_marker_)
+          {
+            cloud_marker_->updateMarker(outputstate_msg);
+          }
+        }
+        else
+        {
+          ROS_WARN_STREAM("## ERROR SickScanCommon: parseLIDoutputstateMsg failed, received " << actual_length << " byte LIDoutputstate " << DataDumper::binDataToAsciiString(&receiveBuffer[0], actual_length));
+        }
+        return errorCode; // return success to continue looping
+      }
+      else if(memcmp(&receiveBuffer[8], "sSN LIDinputstate", strlen("sSN LIDinputstate")) == 0)
+      {
+        int errorCode = ExitSuccess;
+        // Parse active_fieldsetfrom LIDinputstate message
+        SickScanFieldMonSingleton *fieldMon = SickScanFieldMonSingleton::getInstance();
+        if(fieldMon && useBinaryProtocol && actual_length > 32)
+        {
+          // int fieldset = (receiveBuffer[32] & 0xFF);
+          // fieldMon->setActiveFieldset(fieldset);
+          fieldMon->parseBinaryLIDinputstateMsg(receiveBuffer, actual_length);
+          ROS_DEBUG_STREAM("SickScanCommon: received " << actual_length << " byte LIDinputstate " << DataDumper::binDataToAsciiString(&receiveBuffer[0], actual_length) 
+            << ", active fieldset = " << fieldMon->getActiveFieldset());
+        }
+        return errorCode; // return success to continue looping
+      }
+      else if(memcmp(&receiveBuffer[8], "sSN LFErec", strlen("sSN LFErec")) == 0)
+      {
+        int errorCode = ExitSuccess;
+        ROS_DEBUG_STREAM("SickScanCommon: received " << actual_length << " byte LFErec " << DataDumper::binDataToAsciiString(&receiveBuffer[0], actual_length));
+        // Parse and convert LFErec message
+        sick_scan::LFErecMsg lferec_msg;
+        if (sick_scan::SickScanMessages::parseLFErecMsg(recvTimeStamp, receiveBuffer, actual_length, useBinaryProtocol, parser_->getCurrentParamPtr()->getScannerName(), lferec_msg))
+        {
+          // Publish LFErec message
+          if(publish_lferec_)
+          {
+            lferec_pub_.publish(lferec_msg);
+          }
+          if(cloud_marker_)
+          {
+            cloud_marker_->updateMarker(lferec_msg);
+          }
+        }
+        else
+        {
+          ROS_WARN_STREAM("## ERROR SickScanCommon: parseLFErecMsg failed, received " << actual_length << " byte LFErec " << DataDumper::binDataToAsciiString(&receiveBuffer[0], actual_length));
+        }
+        return errorCode; // return success to continue looping
+      }
+      else if(memcmp(&receiveBuffer[8], "sSN LMDscandatamon", strlen("sSN LMDscandatamon")) == 0)
+      {
+        int errorCode = ExitSuccess;
+        ROS_DEBUG_STREAM("SickScanCommon: received " << actual_length << " byte LMDscandatamon (ignored) ..."); // << DataDumper::binDataToAsciiString(&receiveBuffer[0], actual_length));
+        return errorCode; // return success to continue looping
       }
       else
       {
@@ -2938,6 +3129,20 @@ namespace sick_scan
                   //DataDumper::instance().pushData((double)SystemCountTransmit, "LASERTRANSMITTIME", SystemCountTransmit);
                   //DataDumper::instance().pushData((double)SystemCountScan, "LASERTRANSMITDELAY", debug_duration.toSec());
 #endif
+
+                  /*
+                  uint16_t u16_active_fieldset = 0;
+                  memcpy(&u16_active_fieldset, receiveBuffer + 46, 2); // byte 46 + 47: input status (0 0), active fieldset
+                  swap_endian((unsigned char *) &u16_active_fieldset, 2);
+                  SickScanFieldMonSingleton *fieldMon = SickScanFieldMonSingleton::getInstance();
+                  if(fieldMon)
+                  {
+                    fieldMon->setActiveFieldset(u16_active_fieldset & 0xFF);
+                    ROS_INFO("Binary scandata: active_fieldset = %d", fieldMon->getActiveFieldset());
+                  }
+                  */
+                  // byte 48 + 49: output status (0 0)
+                  // byte 50 + 51: reserved
 
                   memcpy(&scanFrequencyX100, receiveBuffer + 52, 4);
                   swap_endian((unsigned char *) &scanFrequencyX100, 4);
@@ -3930,6 +4135,7 @@ namespace sick_scan
     std::string keyWord9 = "sWN TSCTCSrvAddr";
     std::string keyWord10 = "sWN LICencres";
     std::string keyWord11 = "sWN LFPmeanfilter";
+    std::string KeyWord12 = "sRN field";
 
     //BBB
 
@@ -4112,9 +4318,9 @@ namespace sick_scan
       }
       else
       {
-        int keyWord3Len = keyWord7.length();
+        int keyWord7Len = keyWord7.length();
         int dummyArr[14] = {0};
-        if (14 == sscanf(requestAscii + keyWord3Len + 1, " %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+        if (14 == sscanf(requestAscii + keyWord7Len + 1, " %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
                          &dummyArr[0], &dummyArr[1], &dummyArr[2],
                          &dummyArr[3], &dummyArr[4], &dummyArr[5],
                          &dummyArr[6], &dummyArr[7], &dummyArr[8],
@@ -4193,6 +4399,13 @@ namespace sick_scan
       buffer[2] =dummy1%256;//
       buffer[3] =dummy2;
       bufferLen = 4;
+    }
+    if (cmdAscii.find(KeyWord12) != std::string::npos)
+    {
+      uint32_t fieldID = 0;
+      int keyWord12Len = KeyWord12.length();
+      sscanf(requestAscii + keyWord12Len + 1, "%d", &fieldID);
+      bufferLen = 0;
     }
     // copy base command string to buffer
     bool switchDoBinaryData = false;
