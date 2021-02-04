@@ -1,6 +1,6 @@
 #!/bin/bash
 printf "\033c"
-echo -e "run_simu_tim781.bash: starting TiM871 emulation\n"
+echo -e "run_simu_tim781.bash: starting TiM781S emulation\n"
 pushd ../../../..
 source /opt/ros/melodic/setup.bash
 source ./install/setup.bash
@@ -13,7 +13,7 @@ if [ $roscore_running -lt 1 ] ; then
 fi
 
 for emulator_launch_cfg in emulator_01_default.launch emulator_03_2nd_fieldset.launch emulator_02_toggle_fieldsets.launch ; do # emulator_04_fieldset_test.launch
-  echo -e "Starting TiM871 emulation $emulator_launch_cfg, shutdown ros nodes\n"
+  echo -e "Starting TiM781S emulation $emulator_launch_cfg, shutdown ros nodes\n"
   
   # Start sick_scan emulator
   roslaunch sick_scan $emulator_launch_cfg &
@@ -25,7 +25,8 @@ for emulator_launch_cfg in emulator_01_default.launch emulator_03_2nd_fieldset.l
   rosrun rviz rviz -d ./src/sick_scan/test/emulator/config/rviz_emulator_cfg.rviz --opengl 210 &
   sleep 1
   
-  # Start sick_scan driver for TiM871S
+  # Start sick_scan driver for TiM781S
+  # roslaunch sick_scan sick_tim_7xx.launch hostname:=127.0.0.1 &
   roslaunch sick_scan sick_tim_7xxS.launch hostname:=127.0.0.1 &
   sleep 1
   
@@ -42,21 +43,21 @@ for emulator_launch_cfg in emulator_01_default.launch emulator_03_2nd_fieldset.l
   
   # Wait for 'q' or 'Q' to exit or until rviz is closed
   while true ; do  
-    echo -e "TiM871 emulation running. Close rviz or press 'q' to exit..." ; read -t 1.0 -n1 -s key
+    echo -e "TiM781S emulation running. Close rviz or press 'q' to exit..." ; read -t 1.0 -n1 -s key
     if [[ $key = "q" ]] || [[ $key = "Q" ]]; then break ; fi
     rviz_running=`(ps -elf | grep rviz | grep -v grep | wc -l)`
     if [ $rviz_running -lt 1 ] ; then break ; fi
   done
   
   # Shutdown
-  echo -e "Finishing TiM871 emulation $emulator_launch_cfg, shutdown ros nodes\n"
+  echo -e "Finishing TiM781S emulation $emulator_launch_cfg, shutdown ros nodes\n"
   rosnode kill -a ; sleep 1
   killall sick_generic_caller ; sleep 1
   killall sick_scan_emulator ; sleep 1
 
 done
 killall rosmaster ; sleep 1
-echo -e "run_simu_tim781.bash: TiM871 emulation finished.\n\n"
+echo -e "run_simu_tim781.bash: TiM781S emulation finished.\n\n"
 
 popd
 

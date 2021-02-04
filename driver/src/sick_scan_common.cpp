@@ -1170,13 +1170,13 @@ namespace sick_scan
 
     bool rssiFlag = false;
     bool rssiResolutionIs16Bit = true; //True=16 bit Flase=8bit
-    bool useSaftyields=false;
+    // bool useSafetyfields=false;
     int activeEchos = 0;
     ros::NodeHandle pn("~");
 
     pn.getParam("intensity", rssiFlag);
     pn.getParam("intensity_resolution_16bit", rssiResolutionIs16Bit);
-    pn.getParam("use_safty_fields", useSaftyields);
+    // pn.getParam("use_safety_fields", useSafetyfields);
     //check new ip adress and add cmds to write ip to comand chain
     std::string sNewIPAddr = "";
     boost::asio::ip::address_v4 ipNewIPAddr;
@@ -1215,7 +1215,7 @@ namespace sick_scan
     }
 
     this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
-    this->parser_->getCurrentParamPtr()->setUseSaftyFields(useSaftyields);
+    // this->parser_->getCurrentParamPtr()->setUseSafetyFields(useSafetyfields);
     // parse active_echos entry and set flag array
     pn.getParam("active_echos", activeEchos);
 
@@ -2106,7 +2106,7 @@ namespace sick_scan
 
       }
       //SAFTY FIELD PARSING
-      if (this->parser_->getCurrentParamPtr()->getUseSaftyFields())
+      if (this->parser_->getCurrentParamPtr()->getUseSafetyFields())
       {
         ROS_INFO("Reading safety fields");
         SickScanFieldMonSingleton *fieldMon = SickScanFieldMonSingleton::getInstance();
