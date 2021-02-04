@@ -74,6 +74,8 @@
 
 #include <sick_scan/sick_generic_parser.h>
 #include <sick_scan/sick_generic_laser.h>
+#include <sick_scan/sick_scan_services.h>
+
 
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
@@ -311,7 +313,8 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
     colaDialectId = 'A';
   }
 
-
+  bool start_services = false;
+  sick_scan::SickScanServices* services = 0;
   int result = sick_scan::ExitError;
 
   sick_scan::SickScanConfig cfg;
@@ -340,6 +343,13 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
           s->setEmulSensor(true);
         }
         result = s->init();
+
+        // Start ROS services
+        if (true == nhPriv.getParam("start_services", start_services) && true == start_services)
+        {
+            services = new sick_scan::SickScanServices(&nhPriv, s, parser->getCurrentParamPtr()->getUseBinaryProtocol());
+            ROS_INFO("SickScanServices: ros services initialized");
+        }
 
         isInitialized = true;
         signal(SIGINT, SIG_DFL); // change back to standard signal handler after initialising
@@ -376,6 +386,11 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
         ROS_ERROR("Invalid run state in main loop");
         break;
     }
+  }
+  if(services)
+  {
+    delete services;
+    services = 0;
   }
   if (s != NULL)
   {

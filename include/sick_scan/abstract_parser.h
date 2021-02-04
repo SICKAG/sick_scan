@@ -41,11 +41,12 @@
 namespace sick_scan
 {
 
-  enum ExitCode
-  {
-    ExitSuccess = 0, ExitError = 1    // non-fatal error, retry
+enum ExitCode
+{
+    ExitSuccess = 0
+    , ExitError = 1    // non-fatal error, retry
     , ExitFatal = 2    // fatal error, exit
-  };
+};
 
   class AbstractParser
   {

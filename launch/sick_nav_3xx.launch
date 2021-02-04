@@ -1,4 +1,7 @@
 <?xml version="1.0"?>
+<!-- LAUNCH FILE FOR NAV310 -->
+<!-- NAV310 rotates clockwise and does not support the sWN LMPoutputRange -->
+<!-- The lidar has a angle resolution of 0.75 deg and exports in range of [0 ... 360[ deg 480 shots per scan -->
 
 <launch>
     <arg name="hostname" default="192.168.0.1"/>
@@ -7,11 +10,11 @@
     <node name="sick_nav_3xx" pkg="sick_scan" type="sick_generic_caller" respawn="false" output="screen">
         <param name="scanner_type" type="string" value="sick_nav_3xx"/>
 
-        <!-- -90° -->
-        <param name="min_ang" type="double" value="-1.570796327"/>
+        <!-- -180° -->
+        <param name="min_ang" type="double" value="-3.14159265359"/>
 
-        <!-- 270° -->
-        <param name="max_ang" type="double" value="4.71238898"/>
+        <!-- 180° -->
+        <param name="max_ang" type="double" value="+3.14159265359"/>
 
         <param name="use_binary_protocol" type="bool" value="true"/>
         <param name="intensity" type="bool" value="True"/>

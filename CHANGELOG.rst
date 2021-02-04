@@ -2,6 +2,20 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.7.8 (2020-09-02)
+------------------
+* fixes `#100 <https://github.com/SICKAG/sick_scan/issues/100>`_
+* Update software_pll.md
+* software pll information added
+* Update angular_compensation.md
+* angle compensator
+* compensation example plot updated
+* angle compensation fixed for NAV2xx
+* sizt_t warning reduced, bugfix for result flag by changing ip address
+* network comp. to windows
+* pcl dependency modified
+* Contributors: Michael Lehning
+
 1.6.0 (2020-05-14)
 ------------------
 * NAV 210+NAV245 support added code reformated

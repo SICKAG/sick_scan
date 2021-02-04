@@ -267,9 +267,9 @@ namespace sick_scan
 \param _scanMirrored: false for normal mounting true for up side down or NAV 310
 \sa setScanMirrored
 */
-  void ScannerBasicParam::setScanMirrored(bool _scannMirrored)
+  void ScannerBasicParam::setScanMirroredAndShifted(bool _scannMirroredAndShifted)
   {
-    scanMirrored = _scannMirrored;
+    scanMirroredAndShifted = _scannMirroredAndShifted;
   }
 
   /*!
@@ -277,9 +277,9 @@ namespace sick_scan
   \param _scanMirrored:  false for normal mounting true for up side down or NAV 310
   \sa getScanMirrored
   */
-  bool ScannerBasicParam::getScanMirrored(void)
+  bool ScannerBasicParam::getScanMirroredAndShifted(void)
   {
-    return (scanMirrored);
+    return (scanMirroredAndShifted);
   }
 
   /*!
@@ -332,6 +332,13 @@ namespace sick_scan
     return (useSafetyPasWD);
   }
 
+  bool ScannerBasicParam::getUseSaftyFields(){
+    return(useSaftyFields);
+  }
+
+  void ScannerBasicParam::setUseSaftyFields(bool _useSaftyFields){
+    this->useSaftyFields=_useSaftyFields;
+  }
   /*!
   \brief Construction of parameter object
 
@@ -409,7 +416,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) ==
           0)  // LMS1000 - 4 layer, 1101 shots per scan
@@ -424,7 +432,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_240_NAME) ==
           0) // TIM_5xx - 1 Layer, max. 811 shots per scan
@@ -438,7 +447,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
 
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_5XX_NAME) ==
@@ -453,7 +463,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
 
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_4XXX_NAME) == 0) // LMS_4xxx - 1 Layer, 600 Hz
@@ -467,7 +478,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_7XX_NAME) == 0) // TIM_7xx - 1 Layer Scanner
       {
@@ -480,7 +492,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_7XXS_NAME) == 0) // TIM_7xxS - 1 layer Safety Scanner
       {
@@ -493,7 +506,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(true); // Safety scanner
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(true);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0) // LMS_5xx - 1 Layer
       {
@@ -506,7 +520,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XX_NAME) == 0) // LMS_1xx - 1 Layer
       {
@@ -519,7 +534,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) //
       {
@@ -533,7 +549,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
       }
 
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_RMS_3XX_NAME) == 0) // Radar
@@ -548,18 +565,20 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(true); // Device is a radar
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0) // Nav 3xx
       {
         basicParams[i].setNumberOfMaximumEchos(1);
         basicParams[i].setNumberOfLayers(1);
         basicParams[i].setNumberOfShots(2880);
-        basicParams[i].setAngularDegreeResolution(0.125);
+        basicParams[i].setAngularDegreeResolution(0.750);
         basicParams[i].setExpectedFrequency(55.0);
         basicParams[i].setUseBinaryProtocol(true);
         basicParams[i].setDeviceIsRadar(false); // Default
-        basicParams[i].setScanMirrored(true); // other ortation direction than other scanners
+        basicParams[i].setScanMirroredAndShifted(true);
+        basicParams[i].setUseSaftyFields(false);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_NAV_2XX_NAME) == 0) // NAV_2xx - 1 Layer
       {
@@ -572,7 +591,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_4XX_NAME) == 0) // TiM433 and TiM443
       {
@@ -585,7 +605,8 @@ namespace sick_scan
         basicParams[i].setDeviceIsRadar(false); // Default
         basicParams[i].setUseSafetyPasWD(false); // Default
         basicParams[i].setEncoderMode(-1); // Default
-        basicParams[i].setScanMirrored(false);
+        basicParams[i].setScanMirroredAndShifted(false);
+        basicParams[i].setUseSaftyFields(false);
       }
     }
 
@@ -774,10 +795,10 @@ namespace sick_scan
                                         sensor_msgs::LaserScan &msg, int &numEchos, int &echoMask)
   {
     // echoMask introduced to get a workaround for cfg bug using MRS1104
-    ros::NodeHandle tmpParam("~");
+		// ros::NodeHandle tmpParam("~");
     bool dumpData = false;
     int verboseLevel = 0;
-    tmpParam.getParam("verboseLevel", verboseLevel);
+		// tmpParam.getParam("verboseLevel", verboseLevel);
 
     int HEADER_FIELDS = 32;
     char *cur_field;
@@ -801,7 +822,7 @@ namespace sick_scan
     if (verboseLevel > 0)
     {
       static int cnt = 0;
-      char szDumpFileName[255] = {0};
+      char szDumpFileName[511] = {0};
       char szDir[255] = {0};
 #ifdef _MSC_VER
       strcpy(szDir,"C:\\temp\\");
@@ -845,7 +866,7 @@ namespace sick_scan
     if (verboseLevel > 0)
     {
       static int cnt = 0;
-      char szDumpFileName[255] = {0};
+      char szDumpFileName[511] = {0};
       char szDir[255] = {0};
 #ifdef _MSC_VER
       strcpy(szDir,"C:\\temp\\");
@@ -984,7 +1005,19 @@ namespace sick_scan
     // 8: Scan counter (eg. 9A)
     // 9: Time since startup (eg. 13C8E59)
     // 10: Time of transmission (eg. 13C9CBE)
-    // 11 + 12: Input status (0 0)
+    // 11 + 12: Input status (0 0), active fieldset
+    /*
+    unsigned short u16_active_fieldset = 0;
+    if(sscanf(fields[12], "%hx", &u16_active_fieldset) == 1)
+    {
+        SickScanFieldMonSingleton *fieldMon = SickScanFieldMonSingleton::getInstance();
+        if(fieldMon)
+        {
+          fieldMon->setActiveFieldset(u16_active_fieldset & 0xFF);
+          ROS_INFO("Scandata: active_fieldset = %d", fieldMon->getActiveFieldset());
+        }
+    }
+    */
     // 13 + 14: Output status (8 0)
     // 15: Reserved Byte A (0)
 
@@ -1006,7 +1039,7 @@ namespace sick_scan
     // ROS_DEBUG("measurement_freq: %d, time_increment: %f", measurement_freq, msg.time_increment);
 
     // 18: Number of encoders (0)
-    // 19: Number of 16 bit channels (1)verbose
+    // 19: Number of 16 bit channels (1)
     // 20: Measured data contents (DIST1)
 
     // 21: Scaling factor (3F800000)
@@ -1083,7 +1116,7 @@ namespace sick_scan
 #endif
     // ----- consistency check
 
-    this->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001);
+    this->checkScanTiming(msg.time_increment, msg.scan_time, msg.angle_increment, 0.00001f);
     return ExitSuccess;
   }
 

@@ -73,13 +73,9 @@
 #include <string.h>
 
 #include "sick_scan/sick_generic_laser.h"
-#include "sick_scan/sick_generic_imu.h"
-#include "sick_scan/binScanf.hpp"
-#include "sick_scan/binPrintf.hpp"
 #include "sick_scan/dataDumper.h"
 
 #include "sick_scan/helper/angle_compensator.h"
-
 #ifdef _MSC_VER
 #include "sick_scan/rosconsole_simu.hpp"
 #endif
@@ -120,10 +116,12 @@
 // 1.7.2: 2020-06-09: TiM433 added and launch file info for TiM4xx added
 // 1.7.3: 2020-06-10: NAV 3xx angle correction added
 // 1.7.4: 2020-06-10: NAV 3xx angle correction improved
-
+// 1.7.5: 2020-06-25: Preparing for Release Noetic
+// 1.7.6: 2020-07-14: NAV310 handling optimized (angle calculation and compensation), barebone quaterion to euler
+// 1.7.7: 2020-07-21: barebone quaterion to euler
 #define SICK_GENERIC_MAJOR_VER "1"
-#define SICK_GENERIC_MINOR_VER "7"
-#define SICK_GENERIC_PATCH_LEVEL "4"
+#define SICK_GENERIC_MINOR_VER "8"
+#define SICK_GENERIC_PATCH_LEVEL "0"
 
 #include <algorithm> // for std::min
 
@@ -142,8 +140,6 @@ std::string getVersionInfo();
 */
 int main(int argc, char **argv)
 {
-  // AngleCompensator ac(false);
-  // ac.testbed();
 
   DataDumper::instance().writeToFileNameWhenBufferIsFull("/tmp/sickscan_debug.csv");
   char nameId[] = "__name:=";

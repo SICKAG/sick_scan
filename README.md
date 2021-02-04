@@ -33,8 +33,8 @@ ROS Device Driver for SICK lidar and radar sensors - supported scanner types:
 |                    |                                                                                                                                  | Scan-Rate: 50 Hz, 4x12.5 Hz            |                 |
 | LMS1104            | [1092445](https://www.sick.com/ag/en/detection-and-ranging-solutions/2d-lidar-sensors/lms1000/c/g387151)                         | 1 layer max. range: 64 m, ang. resol. 0.25 [deg] |  ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 150 Hz, 4x37.5 Hz   |                 |
-| TiM240             | prototype [more info here](doc/tim240/tim240.md) | 1 layer max. range: unknown, ang. resol. 1.00 [deg], 240 [deg]| ✔ [prototype]|
-|                    |                                                                                                                                  | Scan-Rate: 14.4 Hz   |                 |
+| TiM240             | prototype [more info here](doc/tim240/tim240.md) | 1 layer max. range: 10 m, ang. resol. 1.00 [deg], 240 [deg]| ✔ [prototype]|
+|                    |                                                                                                                                  | Scan-Rate: 14.5 Hz   |                 |
 | TiM433             | prototype  | 1 layer range: 0.05 m ... 15 m, ang. resol. 0.33 [deg], 240 [deg]| ✔ [prototype]|
 |                    |                                                                                                                                  | Scan-Rate: 15.0 Hz   |                 |
 | TiM443             | prototype  | 1 layer range: 0.05 m ... 15 m, ang. resol. 0.33 [deg], 240 [deg]| ✔ [prototype]|
@@ -45,9 +45,11 @@ ROS Device Driver for SICK lidar and radar sensors - supported scanner types:
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
 | TiM571             | [1079742](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/tim5xx/tim571-2050101/p/p412444)                 | 1 layer max. range: 25 m, ang. resol. 0.33 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| TiM781             | [1096807](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/tim7xx/tim781-2174101/p/p594148)                 | 1 layer max. range: 25 m, ang. resol. 0.33 [deg]| ✔ [stable]|
+| TiM771S            | [1105052](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/tim7xx/tim771s-2174104/p/p660929)                  | 1 layer max. range: 25 m, ang. resol. 0.33 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
-| TiM781S            | [1096363](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/tim7xx/tim781s-2174104/p/p594149)                 | 1 layer max. range: 25 m, ang. resol. 0.33 [deg]| ✔ [stable]|
+| TiM781             | [1096807](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/tim7xx/tim781-2174101/p/p594148)                   | 1 layer max. range: 25 m, ang. resol. 0.33 [deg]| ✔ [stable]|
+|                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
+| TiM781S            | [1096363](https://www.sick.com/de/de/mess-und-detektionsloesungen/2d-lidar-sensoren/tim7xx/tim781s-2174104/p/p594149)                  | 1 layer max. range: 25 m, ang. resol. 0.33 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 15 Hz   |                 |
 | LMS511-10100 PRO   | [e.g. 1046135](https://www.sick.com/de/en/detection-and-ranging-solutions/2d-lidar-sensors/lms5xx/c/g179651)     | 1 layer max. range: 80 m, ang. resol. 0.167 [deg]| ✔ [stable]|
 |                    |                                                                                                                                  | Scan-Rate: 100 Hz   |                 |
@@ -200,7 +202,9 @@ The use of the parameters can be looked up in the launch files. This is also rec
 - `frame_id`
   Frame id used for the published data
 
+
 ### Further useful parameters and features
+
 - `timelimit`
   Timelimit in [sec] for max. wait time of incoming sensor reply
 
@@ -208,6 +212,8 @@ The use of the parameters can be looked up in the launch files. This is also rec
   If true, the internal Software PLL is fored to sync the scan generation time stamp to a system timestamp
 
 - Angle compensation: For highest angle accuracy the NAV-Lidar series supports an [angle compensation mechanism](./doc/angular_compensation.md).
+
+- The **TiM7xxS** family has [extended settings for field monitoring](./doc/tim7xxs_extensions.md).
 
 ## Sopas Mode
 This driver supports both COLA-B (binary) and COLA-A (ASCII) communication with the laser scanner. Binary mode is activated by default. Since this mode generates less network traffic.
