@@ -12,7 +12,7 @@ uint8[] output_state  # output states, each state with value 0 (not active), 1 (
 uint32[] output_count # output counter
 
 # Time block (sensortime from the last change of min. one of the outputs)
-uint8 time_state   # No time data: 0, Time data: 1
+uint16 time_state   # No time data: 0, Time data: 1
 uint16 year        # f.e. 2021
 uint8 month        # 1 ... 12
 uint8 day          # 1 ... 31

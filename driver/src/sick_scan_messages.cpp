@@ -85,15 +85,44 @@ bool sick_scan::SickScanMessages::parseLIDoutputstateMsg(const ros::Time& timeSt
     if(useBinaryProtocol)
     {
         // parse and convert LIDoutputstate message
+        int dbg_telegram_length = receiveLength;
+        std::string dbg_telegram_hex_copy = DataDumper::binDataToAsciiString(receiveBuffer, receiveLength);
         int msg_start_idx = 27;  // 4 byte STX + 4 byte payload_length + 19 byte "sSN LIDoutputstate " = 27 byte
         int msg_parameter_length = receiveLength - msg_start_idx - 1; // start bytes + 1 byte CRC
-        int msg_output_states_length = msg_parameter_length - 18; // 2 byte version + 4 byte system + 12 byte timestamp = 18 byte
-        int number_of_output_states = msg_output_states_length / 5; // each output state has 1 byte state enum + 4 byte counter = 5 byte
-        if((msg_output_states_length % 5) != 0 || number_of_output_states <= 0)
+        if(msg_parameter_length < 8) // at least 6 byte (version+system) + 2 byte (timestamp status)
         {
-            ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLIDoutputstateMsg(): received " << receiveLength << " byte with " << msg_output_states_length << " byte states, expected multiple of 5 (" << __FILE__ << ":" << __LINE__ << ")");
+            ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLIDoutputstateMsg(): received " << receiveLength << " byte, expected at least 8 byte (" << __FILE__ << ":" << __LINE__ << ")");
             return false;
         }
+        // The LIDoutputstate parameter may have 11 byte timestamp or not, i.e. the parameter format is either:
+        // a) msg_parameter_length := (6 byte version+system) + number_of_output_states * (5 byte state+counter per output_state) + (2 byte 0x0000 no timestamp), or 
+        // b) msg_parameter_length := (6 byte version+system) + number_of_output_states * (5 byte state+counter per output_state) + (2 byte 0x0001 timestamp available) + (11 byte timestamp)
+        bool parameter_format_ok = false;
+        // Check parameter format a (default, TiM781S: no timestamp)
+        uint16_t timestamp_status = (receiveBuffer[receiveLength - 3] << 8) | (receiveBuffer[receiveLength - 2]); // 2 byte before receiveBuffer[receiveLength-1] = CRC
+        int number_of_output_states = (msg_parameter_length - 6 - 2) / 5; // each output state has 1 byte state enum + 4 byte counter = 5 byte
+        if(msg_parameter_length == 6 + number_of_output_states * 5 + 2 && timestamp_status == 0)
+        {
+            parameter_format_ok = true;
+            ROS_DEBUG_STREAM("SickScanMessages::parseLIDoutputstateMsg(): " << number_of_output_states << " output states, no timestamp" );
+        }
+        else // Check parameter format b with timestamp
+        {
+            timestamp_status = (receiveBuffer[receiveLength - 14] << 8) | (receiveBuffer[receiveLength - 13]); // 2 byte before receiveBuffer[receiveLength-12] = (11 byte timestamp) + (1 byte CRC)
+            number_of_output_states = (msg_parameter_length - 6 - 2 - 11) / 5; // each output state has 1 byte state enum + 4 byte counter = 5 byte
+            if(msg_parameter_length == 6 + number_of_output_states * 5 + 2 + 11 && timestamp_status > 0)
+            {
+                parameter_format_ok = true;
+                ROS_DEBUG_STREAM("SickScanMessages::parseLIDoutputstateMsg(): " << number_of_output_states << " output states and timestamp" );
+            }
+        }
+        if(!parameter_format_ok)
+        {
+            ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLIDoutputstateMsg(): received " << receiveLength << " byte with invalid format (" << __FILE__ << ":" << __LINE__ << "): "
+                << DataDumper::binDataToAsciiString(receiveBuffer, receiveLength));
+            return false;
+        }
+        // Read 2 byte version + 2 byte system status
         receiveBuffer += msg_start_idx;
         receiveLength -= msg_start_idx;
         if( !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.version_number)
@@ -102,6 +131,7 @@ bool sick_scan::SickScanMessages::parseLIDoutputstateMsg(const ros::Time& timeSt
             ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLIDoutputstateMsg(): error parsing version_number and system_counter (" << __FILE__ << ":" << __LINE__ << ")");
             return false;
         }
+        // Read N output states
         output_msg.output_state.reserve(number_of_output_states);
         output_msg.output_count.reserve(number_of_output_states);
         for(int state_cnt = 0; state_cnt < number_of_output_states; state_cnt++)
@@ -114,29 +144,51 @@ bool sick_scan::SickScanMessages::parseLIDoutputstateMsg(const ros::Time& timeSt
                 ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLIDoutputstateMsg(): error parsing version_number and system_counter (" << __FILE__ << ":" << __LINE__ << ")");
                 return false;
             }
-            output_msg.output_state.push_back(output_state);
-            output_msg.output_count.push_back(output_count);
+            if(output_state == 0 || output_state == 1) // 0: not active, 1: active, 2: not used
+            {
+                output_msg.output_state.push_back(output_state);
+                output_msg.output_count.push_back(output_count);
+            }
         }
-        if( !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.time_state)
-         || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.year)
-         || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.month)
-         || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.day)
-         || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.hour)
-         || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.minute)
-         || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.second)
-         || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.microsecond))
+        // Read timestamp state
+        if( !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.time_state))
         {
-            ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLIDoutputstateMsg(): error parsing timestamp (" << __FILE__ << ":" << __LINE__ << ")");
+            ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLIDoutputstateMsg(): error parsing time_state (" << __FILE__ << ":" << __LINE__ << ")");
             return false;
+        }
+        if(output_msg.time_state != timestamp_status) // time_state and previously parsed timestamp_status must be identical
+        {
+            ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLIDoutputstateMsg(): time_state mismatch, received " << (int)output_msg.time_state << ", expected " << (int)timestamp_status << " (" << __FILE__ << ":" << __LINE__ << ")");
+            return false;
+
+        }
+        // Read optional timestamp
+        if(timestamp_status > 0)
+        {
+            if(!readBinaryBuffer(receiveBuffer, receiveLength, output_msg.year)
+            || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.month)
+            || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.day)
+            || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.hour)
+            || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.minute)
+            || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.second)
+            || !readBinaryBuffer(receiveBuffer, receiveLength, output_msg.microsecond))
+            {
+                ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLIDoutputstateMsg(): error parsing timestamp (" << __FILE__ << ":" << __LINE__ << ")");
+                return false;
+            }
         }
         output_msg.header.stamp = timeStamp;
         output_msg.header.seq = 0;
         output_msg.header.frame_id = frame_id;
 
+        // Debug messages
         std::stringstream state_str;
-        for(int state_cnt = 0; state_cnt < number_of_output_states; state_cnt++)
+        assert(output_msg.output_state.size() == output_msg.output_state.size());
+        state_str << number_of_output_states << " output states received" << (timestamp_status?" with":", no") << " timestamp\n";
+        for(int state_cnt = 0; state_cnt < output_msg.output_count.size(); state_cnt++)
             state_str << "state[" << state_cnt << "]: " << (uint32_t)output_msg.output_state[state_cnt] << ", count=" << (uint32_t)output_msg.output_count[state_cnt] << "\n";
         ROS_DEBUG_STREAM("SickScanMessages::parseLIDoutputstateMsg():\n"
+            << dbg_telegram_length << " byte telegram: "  << dbg_telegram_hex_copy << "\n"
             << "version_number: " << (uint32_t)output_msg.version_number << ", system_counter: " << (uint32_t)output_msg.system_counter << "\n"
             << state_str.str()
             << "time state: " << (uint32_t)output_msg.time_state

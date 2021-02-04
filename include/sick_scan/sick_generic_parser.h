@@ -115,9 +115,9 @@ namespace sick_scan
 
     int8_t getEncoderMode();
 
-    bool getUseSaftyFields();
+    bool getUseSafetyFields();
 
-    void setUseSaftyFields(bool _useSaftyFields);
+    void setUseSafetyFields(bool _useSafetyFields);
 
   private:
     std::string scannerName;
@@ -134,7 +134,7 @@ namespace sick_scan
     int8_t encoderMode;
     bool CartographerCompatibility;
     bool scanMirroredAndShifted;
-    bool useSaftyFields;
+    bool useSafetyFields;
   };
 
 
