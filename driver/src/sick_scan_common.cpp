@@ -371,7 +371,7 @@ namespace sick_scan
     publish_lferec_ = false;
     publish_lidoutputstate_ = false;
     const std::string scannername = parser_->getCurrentParamPtr()->getScannerName();
-    if (scannername.compare(SICK_SCANNER_TIM_7XXS_NAME) == 0)
+    if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC)
     {
       lferec_pub_ = nh_.advertise<sick_scan::LFErecMsg>(scannername + "/lferec", 100);
       lidoutputstate_pub_ = nh_.advertise<sick_scan::LIDoutputstateMsg>(scannername + "/lidoutputstate", 100);
@@ -435,7 +435,7 @@ namespace sick_scan
       printf("\nSOPAS - Stopped streaming scan data.\n");
     }
 
-    if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_7XXS_NAME) == 0)
+    if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC)
     {
       if(sendSOPASCommand("\x02sEN LFErec 0\x03", NULL) != 0 // TiM781S: deactivate LFErec messages, send "sEN LFErec 0"
       || sendSOPASCommand("\x02sEN LIDoutputstate 0\x03", NULL) != 0 // TiM781S: deactivate LIDoutputstate messages, send "sEN LIDoutputstate 0"
@@ -1170,13 +1170,11 @@ namespace sick_scan
 
     bool rssiFlag = false;
     bool rssiResolutionIs16Bit = true; //True=16 bit Flase=8bit
-    // bool useSafetyfields=false;
     int activeEchos = 0;
     ros::NodeHandle pn("~");
 
     pn.getParam("intensity", rssiFlag);
     pn.getParam("intensity_resolution_16bit", rssiResolutionIs16Bit);
-    // pn.getParam("use_safety_fields", useSafetyfields);
     //check new ip adress and add cmds to write ip to comand chain
     std::string sNewIPAddr = "";
     boost::asio::ip::address_v4 ipNewIPAddr;
@@ -1215,7 +1213,6 @@ namespace sick_scan
     }
 
     this->parser_->getCurrentParamPtr()->setIntensityResolutionIs16Bit(rssiResolutionIs16Bit);
-    // this->parser_->getCurrentParamPtr()->setUseSafetyFields(useSafetyfields);
     // parse active_echos entry and set flag array
     pn.getParam("active_echos", activeEchos);
 
@@ -2106,7 +2103,7 @@ namespace sick_scan
 
       }
       //SAFTY FIELD PARSING
-      if (this->parser_->getCurrentParamPtr()->getUseSafetyFields())
+      if (this->parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC)
       {
         ROS_INFO("Reading safety fields");
         SickScanFieldMonSingleton *fieldMon = SickScanFieldMonSingleton::getInstance();
@@ -2443,7 +2440,7 @@ namespace sick_scan
       startProtocolSequence.push_back(CMD_RUN);  // leave user level
       startProtocolSequence.push_back(CMD_START_SCANDATA);
 
-      if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_7XXS_NAME) == 0)
+      if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC)
       {
         
         // Activate LFErec, LIDoutputstate and LIDinputstate messages
