@@ -6,8 +6,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 
 # build options: set OFF for relese version, ON for development and test
-option(ENABLE_EMULATOR "Build emulator for offline and unittests" ON) # OFF (release) or ON (development)
-option(BUILD_DEBUG_TARGET "Build debug target" ON) # OFF (release) or ON (development)
+option(ENABLE_EMULATOR "Build emulator for offline and unittests" OFF) # OFF (release) or ON (development)
+option(BUILD_DEBUG_TARGET "Build debug target" OFF) # OFF (release) or ON (development)
 
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
