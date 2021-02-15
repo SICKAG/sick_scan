@@ -58,6 +58,15 @@
 // namespace sensor_msgs
 namespace sick_scan
 {
+  enum EVAL_FIELD_SUPPORT // type of eval field support:
+  {
+    EVAL_FIELD_UNSUPPORTED = 0,        // Lidar does not support eval field (default)
+    USE_EVAL_FIELD_TIM7XX_LOGIC,       // eval fields supported by TiM7xx and TiM7xxS
+    USE_EVAL_FIELD_LMS5XX_LOGIC,       // eval fields supported by LMS5XX
+    USE_EVAL_FIELD_LMS5XX_UNSUPPORTED, // eval fields not supported by LMS5XX
+    USE_EVAL_FIELD_NUM                 // max number of eval field support types
+  };
+
   class ScannerBasicParam
   {
   public:
@@ -115,9 +124,9 @@ namespace sick_scan
 
     int8_t getEncoderMode();
 
-    bool getUseSafetyFields();
+    EVAL_FIELD_SUPPORT getUseEvalFields();
 
-    void setUseSafetyFields(bool _useSafetyFields);
+    void setUseEvalFields(EVAL_FIELD_SUPPORT _useEvalFields);
 
   private:
     std::string scannerName;
@@ -134,7 +143,7 @@ namespace sick_scan
     int8_t encoderMode;
     bool CartographerCompatibility;
     bool scanMirroredAndShifted;
-    bool useSafetyFields;
+    EVAL_FIELD_SUPPORT useEvalFields;
   };
 
 

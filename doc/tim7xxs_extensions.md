@@ -1,12 +1,12 @@
 # Extensions for TiM7xxS
 
-The TiM7xxS family has the following extended settings for field monitoring:
+The TiM7xx and TiM7xxS families have the following extended settings for field monitoring:
 
 ## Field monitoring messages
 
-TiM7xxS scanner support field monitoring. Fields can be configured by Sopas ET. Once they are configured, sick_scan publishes ros messages containing the monitoring information from the lidar. 
+TiM7xx and TiM7xxS scanner support field monitoring. Fields can be configured by Sopas ET. Once they are configured, sick_scan publishes ros messages containing the monitoring information from the lidar. 
 
-By default, field monitoring is enabled in the launch file [sick_tim_7xxS.launch](../launch/sick_tim_7xxS.launch) by following settings:
+By default, field monitoring is enabled in the launch file [sick_tim_7xx.launch](../launch/sick_tim_7xx.launch) resp. [sick_tim_7xxS.launch](../launch/sick_tim_7xxS.launch) by following settings:
 ```
 <param name="activate_lferec" type="bool" value="True"/> <!-- activate field monitoring by lferec messages -->
 <param name="activate_lidoutputstate" type="bool" value="True"/> <!-- activate field monitoring by lidoutputstate messages -->

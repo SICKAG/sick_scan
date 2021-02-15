@@ -213,7 +213,7 @@ The use of the parameters can be looked up in the launch files. This is also rec
 
 - Angle compensation: For highest angle accuracy the NAV-Lidar series supports an [angle compensation mechanism](./doc/angular_compensation.md).
 
-- The **TiM7xxS** family has [extended settings for field monitoring](./doc/tim7xxs_extensions.md).
+- The **TiM7xx** and **TiM7xxS** families have [extended settings for field monitoring](./doc/tim7xxs_extensions.md).
 
 ## Sopas Mode
 This driver supports both COLA-B (binary) and COLA-A (ASCII) communication with the laser scanner. Binary mode is activated by default. Since this mode generates less network traffic.
