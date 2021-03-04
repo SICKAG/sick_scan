@@ -128,6 +128,10 @@ namespace sick_scan
 
     void setUseEvalFields(EVAL_FIELD_SUPPORT _useEvalFields);
 
+    int getMaxEvalFields(void);
+    
+    void setMaxEvalFields(int _maxEvalFields);
+
   private:
     std::string scannerName;
     int numberOfLayers;
@@ -144,6 +148,7 @@ namespace sick_scan
     bool CartographerCompatibility;
     bool scanMirroredAndShifted;
     EVAL_FIELD_SUPPORT useEvalFields;
+    int maxEvalFields;
   };
 
 

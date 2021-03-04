@@ -86,8 +86,91 @@
 namespace sick_scan
 {
 
+  /*
+  ** @brief Converts a point of a segmented field to carthesian coordinates
+  ** @param[in] range range in meter
+  ** @param[in] angle_rad angle in radians
+  ** @param[out] x x in meter in ros coordinate system
+  ** @param[out] y y in meter in ros coordinate system
+  */
+  void SickScanMonFieldConverter::segmentedFieldPointToCarthesian(float range, float angle_rad, float& x, float& y)
+  {
+      y = -range * std::cos(angle_rad); // y_ros = -x_sick = -range * std::cos(angle_rad)
+      x = range * std::sin(angle_rad);  // x_ros = +y_sick = +range * std::sin(angle_rad)
+  }
 
-/* Null, because instance will be initialized on demand. */
+  /*
+  ** @brief Converts a rectangular field to carthesian coordinates, i.e. to 4 corner points carthesian (ros) coordinates
+  ** @param[in] distRefPointMeter range of ref point (rect center) in meter
+  ** @param[in] angleRefPointRad angle of ref point (rect center) in radians
+  ** @param[in] rotAngleRad rotation of rectangle in radians
+  ** @param[in] rectWidthMeter width of rectangle in meter
+  ** @param[in] rectLengthMeter width of rectangle in meter
+  ** @param[out] points_x x of corner points in meter in ros coordinate system
+  ** @param[out] points_y y of corner points in meter in ros coordinate system
+  */
+  void SickScanMonFieldConverter::rectangularFieldToCarthesian(float distRefPointMeter, float angleRefPointRad, float rotAngleRad, float rectWidthMeter, float rectLengthMeter, float points_x[4], float points_y[4])
+  {
+    // unrotated rectangle at base point, x_ros = +y_sick, y_ros = -x_sick
+    // base point is the lower left corner of the rectangle
+    points_x[0] = 0;
+    points_y[0] = 0;
+    points_x[1] = 0;
+    points_y[1] = -rectWidthMeter;
+    points_x[2] = rectLengthMeter;
+    points_y[2] = -rectWidthMeter;
+    points_x[3] = rectLengthMeter;
+    points_y[3] = 0;
+    // rotate by rotAngleRad
+    float sin_angle = sinf(rotAngleRad);
+    float cos_angle = cosf(rotAngleRad);
+    for(int n = 0; n < 4; n++)
+    {
+      float x = points_x[n], y = points_y[n];
+      points_x[n] = x * cos_angle - y * sin_angle;
+      points_y[n] = x * sin_angle + y * cos_angle;
+    }
+    // move to refPoint
+    float refPointX = 0, refPointY = 0;
+    segmentedFieldPointToCarthesian(distRefPointMeter, angleRefPointRad, refPointX, refPointY);
+    for(int n = 0; n < 4; n++)
+    {
+      points_x[n] += refPointX;
+      points_y[n] += refPointY;
+    }
+  }
+
+  /*
+  ** @brief Converts a dynamic field to carthesian coordinates. The dynamic field is just converted into 2 rectangular fields,
+  ** each rectangular field described by to 4 corner points carthesian (ros) coordinates.
+  ** The first rectangular field has size rectWidthMeter x maxLengthMeter, the second rectangular field has size rectWidthMeter x rectLengthMeter.
+  ** The rectangular fields are returned by 4 corner points (points_x[n], points_y[n]) with 0 <= n < 4 for the first (big) rectangle and 4 <= n < 8 for the second (smaller) rectangle.
+  ** @param[in] distRefPointMeter range of ref point (rect center) in meter
+  ** @param[in] angleRefPointRad angle of ref point (rect center) in radians
+  ** @param[in] rotAngleRad rotation of rectangle in radians
+  ** @param[in] rectWidthMeter width of rectangle in meter
+  ** @param[in] rectLengthMeter width of rectangle in meter at v = 0
+  ** @param[in] maxSpeedMeterPerSec max speed (unused)
+  ** @param[in] maxLengthMeter width of rectangle in meter at v = max. speed
+  ** @param[out] points_x x of corner points in meter in ros coordinate system
+  ** @param[out] points_y y of corner points in meter in ros coordinate system
+  */
+  void SickScanMonFieldConverter::dynamicFieldPointToCarthesian(float distRefPointMeter, float angleRefPointRad, float rotAngleRad, float rectWidthMeter, float rectLengthMeter, float maxSpeedMeterPerSec, float maxLengthMeter, float points_x[8], float points_y[8])
+  {
+    // set 2 rectangular fields: 1. rectangular field with rectWidthMeter x maxLengthMeter, 2.nd rectangular field with rectWidthMeter x rectLengthMeter
+   float field1_points_x[4], field1_points_y[4], field2_points_x[4], field2_points_y[4];
+   rectangularFieldToCarthesian(distRefPointMeter, angleRefPointRad, rotAngleRad, rectWidthMeter, maxLengthMeter, field1_points_x, field1_points_y);
+   rectangularFieldToCarthesian(distRefPointMeter, angleRefPointRad, rotAngleRad, rectWidthMeter, rectLengthMeter, field2_points_x, field2_points_y);
+   for(int n = 0; n < 4; n++)
+   {
+     points_x[n + 0] = field1_points_x[n];
+     points_y[n + 0] = field1_points_y[n];
+     points_x[n + 4] = field2_points_x[n];
+     points_y[n + 4] = field2_points_y[n];
+   }
+  }
+
+  /* Null, because instance will be initialized on demand. */
   SickScanFieldMonSingleton *SickScanFieldMonSingleton::instance = 0;
 
   SickScanFieldMonSingleton *SickScanFieldMonSingleton::getInstance()
@@ -168,7 +251,10 @@ namespace sick_scan
     int32_t angScaleFactorOffset;
     uint8_t fieldType;
     uint8_t fieldNumber;
-    uint16_t segmentedFieldCOnfigured;
+    uint16_t segmentedFieldConfigured = 0;
+    uint16_t rectangularFieldConfigured = 0;
+    uint16_t dynamicFieldConfigured = 0;
+    uint32_t dataPtrOffset = 0;
 
     unsigned char *dataPtr= &(datagram[0]);
     memcpy(&distScaleFactor, dataPtr  + 21, 4);
@@ -177,21 +263,24 @@ namespace sick_scan
     memcpy(&angScaleFactorOffset, dataPtr  + 33, 4);
     memcpy(&fieldType, dataPtr  + 37, 1);
     memcpy(&fieldNumber, dataPtr  + 38, 1);
-    memcpy(&segmentedFieldCOnfigured, dataPtr  + 39, 2);
+    memcpy(&segmentedFieldConfigured, dataPtr  + 39, 2);
     swap_endian((unsigned char *) &distScaleFactor, 4);
     swap_endian((unsigned char *) &distScaleFactorOffset, 4);
     swap_endian((unsigned char *) &angScaleFactor, 4);
     swap_endian((unsigned char *) &angScaleFactorOffset, 4);
     swap_endian((unsigned char *) &fieldType, 1);
     swap_endian((unsigned char *) &fieldNumber, 1);
-    swap_endian((unsigned char *) &segmentedFieldCOnfigured, 2);
-    if(segmentedFieldCOnfigured==1)//only segmented fields are supported at the moment
+    swap_endian((unsigned char *) &segmentedFieldConfigured, 2);
+    monFields[fieldNumberFromCMD].fieldType() = (SickScanMonFieldType)(fieldType);
+    dataPtrOffset = 41;
+    if(segmentedFieldConfigured==1) // configuration for segmented fields
     {
       uint16_t numOfFieldPoints;
       uint16_t angIDX;
       uint16_t startDist,stopDist;
       memcpy(&numOfFieldPoints, dataPtr  + 41, 2);
       swap_endian((unsigned char *) &numOfFieldPoints, 2);
+      monFields[fieldNumberFromCMD].pushFieldPointCarthesian(0, 0);
       for(uint16_t point=0;point<numOfFieldPoints;point++)
       {
         memcpy(&angIDX, dataPtr  + 43+point*6, 2);
@@ -201,10 +290,81 @@ namespace sick_scan
         swap_endian((unsigned char *) &startDist, 2);
         swap_endian((unsigned char *) &stopDist, 2);
         float angRad=(angIDX*angScaleFactor/1e4+angScaleFactorOffset/1e4)*deg2rad;
-        float distMeter=(stopDist*distScaleFactor+distScaleFactorOffset)/1000;//TODO check 1000
-        monFields[fieldNumberFromCMD].pushPoint(distMeter, angRad);
+        float distMeter=(stopDist*distScaleFactor+distScaleFactorOffset)/1000.0f;
+        float point_x = 0, point_y = 0;
+        SickScanMonFieldConverter::segmentedFieldPointToCarthesian(distMeter, angRad, point_x, point_y);
+        monFields[fieldNumberFromCMD].pushFieldPointCarthesian(point_x, point_y);
       }
-
+      dataPtrOffset = 43 + numOfFieldPoints * 6;
+    }
+    memcpy(&rectangularFieldConfigured, dataPtr + dataPtrOffset, 2);
+    swap_endian((unsigned char *) &rectangularFieldConfigured, 2);
+    dataPtrOffset += 2;
+    if(rectangularFieldConfigured==1) // configuration for rectangular fields
+    {
+      int32_t angleRefPoint;
+      uint16_t distRefPoint;
+      int32_t rotAngle;
+      uint32_t rectWidth, rectLength;
+      memcpy(&angleRefPoint, dataPtr + dataPtrOffset + 0, 4);
+      memcpy(&distRefPoint, dataPtr + dataPtrOffset + 4, 2);
+      memcpy(&rotAngle, dataPtr + dataPtrOffset + 6, 4);
+      memcpy(&rectWidth, dataPtr + dataPtrOffset + 10, 4);
+      memcpy(&rectLength, dataPtr + dataPtrOffset + 14, 4);
+      dataPtrOffset += 18;
+      swap_endian((unsigned char *) &angleRefPoint, 4);
+      swap_endian((unsigned char *) &distRefPoint, 2);
+      swap_endian((unsigned char *) &rotAngle, 4);
+      swap_endian((unsigned char *) &rectWidth, 4);
+      swap_endian((unsigned char *) &rectLength, 4);
+      float angleRefPointRad=(angleRefPoint/1e4+angScaleFactorOffset/1e4)*deg2rad;
+      float distRefPointMeter=(distRefPoint*distScaleFactor+distScaleFactorOffset)/1000.0f;
+      float rotAngleRad=(rotAngle/1e4)*deg2rad;
+      float rectWidthMeter=(rectWidth)/1000.0f;
+      float rectLengthMeter=(rectLength)/1000.0f;
+      float points_x[4] = {0}, points_y[4] = {0};
+      SickScanMonFieldConverter::rectangularFieldToCarthesian(distRefPointMeter, angleRefPointRad, rotAngleRad, rectWidthMeter, rectLengthMeter, points_x, points_y);
+      for(int n = 0; n < 4; n++)
+        monFields[fieldNumberFromCMD].pushFieldPointCarthesian(points_x[n], points_y[n]);
+    }
+    dataPtrOffset += 2; // 2 byte radial field configured, always 0, currently not supported (not used in LMS5xx and TiM7xx)
+    memcpy(&dynamicFieldConfigured, dataPtr + dataPtrOffset, 2);
+    swap_endian((unsigned char *) &dynamicFieldConfigured, 2);
+    dataPtrOffset += 2;
+    if(dynamicFieldConfigured==1) // configuration for dynamic fields
+    {
+      int32_t angleRefPoint;
+      uint16_t distRefPoint;
+      int32_t rotAngle;
+      uint32_t rectWidth, rectLength;
+      int16_t maxSpeed;
+      uint32_t maxLength;
+      memcpy(&angleRefPoint, dataPtr + dataPtrOffset + 0, 4);
+      memcpy(&distRefPoint, dataPtr + dataPtrOffset + 4, 2);
+      memcpy(&rotAngle, dataPtr + dataPtrOffset + 6, 4);
+      memcpy(&rectWidth, dataPtr + dataPtrOffset + 10, 4);
+      memcpy(&rectLength, dataPtr + dataPtrOffset + 14, 4);
+      memcpy(&maxSpeed, dataPtr + dataPtrOffset + 18, 2);
+      memcpy(&maxLength, dataPtr + dataPtrOffset + 20, 4);
+      dataPtrOffset += 24;
+      swap_endian((unsigned char *) &angleRefPoint, 4);
+      swap_endian((unsigned char *) &distRefPoint, 2);
+      swap_endian((unsigned char *) &rotAngle, 4);
+      swap_endian((unsigned char *) &rectWidth, 4);
+      swap_endian((unsigned char *) &rectLength, 4);
+      swap_endian((unsigned char *) &maxSpeed, 2);
+      swap_endian((unsigned char *) &maxLength, 4);
+      float angleRefPointRad=(angleRefPoint/1e4+angScaleFactorOffset/1e4)*deg2rad;
+      float distRefPointMeter=(distRefPoint*distScaleFactor+distScaleFactorOffset)/1000.0f;
+      float rotAngleRad=(rotAngle/1e4)*deg2rad;
+      float rectWidthMeter=(rectWidth)/1000.0f;
+      float rectLengthMeter=(rectLength)/1000.0f;
+      float maxSpeedMeterPerSec=(maxSpeed)/1000.0f;
+      float maxLengthMeter=(maxLength)/1000.0f;
+      float points_x[8] = {0}, points_y[8] = {0};
+      SickScanMonFieldConverter::dynamicFieldPointToCarthesian(distRefPointMeter, angleRefPointRad, rotAngleRad, rectWidthMeter, rectLengthMeter, maxSpeedMeterPerSec, maxLengthMeter, points_x, points_y);
+      for(int n = 0; n < 8; n++)
+        monFields[fieldNumberFromCMD].pushFieldPointCarthesian(points_x[n], points_y[n]);
     }
 
     return (exitCode);

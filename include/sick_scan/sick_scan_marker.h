@@ -47,6 +47,7 @@
 #include "sick_scan/LIDoutputstateMsg.h"
 #include "sick_scan/sick_generic_field_mon.h"
 
+
 namespace sick_scan
 {
   class SickScanMarker
@@ -57,11 +58,11 @@ namespace sick_scan
 
     virtual ~SickScanMarker();
 
-    void updateMarker(const std::vector<SickScanMonField>& fields, int fieldset);
+    void updateMarker(const std::vector<SickScanMonField>& fields, int fieldset, int eval_field_logic);
 
-    void updateMarker(sick_scan::LIDoutputstateMsg& msg);
+    void updateMarker(sick_scan::LIDoutputstateMsg& msg, int eval_field_logic);
 
-    void updateMarker(sick_scan::LFErecMsg& msg);
+    void updateMarker(sick_scan::LFErecMsg& msg, int eval_field_logic);
 
   protected:
 
@@ -91,6 +92,7 @@ namespace sick_scan
     std::vector<visualization_msgs::Marker> m_scan_mon_field_legend;
     std::vector<visualization_msgs::Marker> m_scan_fieldset_legend;
     std::vector<visualization_msgs::Marker> m_scan_outputstate_legend;
+    float m_marker_output_legend_offset_x;
 
   }; /* class SickScanMarker */
 

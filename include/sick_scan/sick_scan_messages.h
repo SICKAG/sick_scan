@@ -94,12 +94,13 @@ namespace sick_scan
      * @param[in] receiveBuffer byte array of lidar message
      * @param[in] receiveLength size of lidar message in byte
      * @param[in] useBinaryProtocol binary lidar message (true, Cola-B) or ascii lidar message (false, Cola-A)
+     * @param[in] eval_field_logic USE_EVAL_FIELD_LMS5XX_LOGIC or USE_EVAL_FIELD_TIM7XX_LOGIC
      * @param[in] frame_id frame id of output message
      * @param[out] output_msg converted output message
      * 
      * @return true on success, false on error
      */
-    static bool parseLFErecMsg(const ros::Time& timeStamp, uint8_t* receiveBuffer, int receiveLength, bool useBinaryProtocol, const std::string& frame_id, sick_scan::LFErecMsg& output_msg);
+    static bool parseLFErecMsg(const ros::Time& timeStamp, uint8_t* receiveBuffer, int receiveLength, bool useBinaryProtocol, EVAL_FIELD_SUPPORT eval_field_logic, const std::string& frame_id, sick_scan::LFErecMsg& output_msg);
 
   protected:
 

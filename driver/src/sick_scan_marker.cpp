@@ -35,14 +35,11 @@
  *         Michael Lehning <michael.lehning@lehning.de>
  *
  */
+#include <sick_scan/sick_scan_common_nw.h>
+#include <sick_scan/sick_scan_common.h>
+#include <sick_scan/sick_generic_parser.h>
 
 #include "sick_scan/sick_scan_marker.h"
-
-static void monFieldToCarthesian(float range, float angle_rad, float& x, float& y)
-{
-    y = -range * std::cos(angle_rad); // y_ros = -x_sick = -range * std::cos(angle_rad)
-    x = range * std::sin(angle_rad);  // x_ros = +y_sick = +range * std::sin(angle_rad)
-}
 
 static std_msgs::ColorRGBA color(float r, float g, float b, float a = 0.5f)
 {
@@ -80,7 +77,7 @@ static std_msgs::ColorRGBA gray(void) // invalid fields (default)
 }
 
 sick_scan::SickScanMarker::SickScanMarker(ros::NodeHandle* nh, const std::string & marker_topic, const std::string & marker_frame_id)
-: m_scan_mon_fieldset(0)
+: m_scan_mon_fieldset(0), m_marker_output_legend_offset_x(-0.5)
 {
     if(nh)
     {
@@ -93,22 +90,28 @@ sick_scan::SickScanMarker::~SickScanMarker()
 {
 }
 
-void sick_scan::SickScanMarker::updateMarker(const std::vector<SickScanMonField>& fields, int fieldset)
+void sick_scan::SickScanMarker::updateMarker(const std::vector<SickScanMonField>& fields, int fieldset, int _eval_field_logic)
 {
+    sick_scan::EVAL_FIELD_SUPPORT eval_field_logic = (sick_scan::EVAL_FIELD_SUPPORT)_eval_field_logic;
     m_scan_mon_fields = fields;
-    m_scan_mon_fieldset = fieldset; // todo: query selected field set - maybe "sRN uiSelectedFieldNum" ??? "sRA uiSelectedFieldNum" returns 0 in 001_sopas_et_binary_startup.pcapng.json
-    std::vector<FieldInfo> default_fields = {FieldInfo(0,0,"-","3",gray()), FieldInfo(1,0,"-","2",gray()), FieldInfo(2,0,"-","1",gray())};
-    m_scan_mon_field_marker = createMonFieldMarker(default_fields);
-    m_scan_mon_field_legend = createMonFieldLegend(default_fields);
-    // m_scan_fieldset_legend = createMonFieldsetLegend(0);
+    if(eval_field_logic == USE_EVAL_FIELD_TIM7XX_LOGIC)
+    {
+        m_scan_mon_fieldset = fieldset;
+        std::vector<FieldInfo> default_fields = {FieldInfo(0,0,"-","3",gray()), FieldInfo(1,0,"-","2",gray()), FieldInfo(2,0,"-","1",gray())};
+        m_scan_mon_field_marker = createMonFieldMarker(default_fields);
+        m_scan_mon_field_legend = createMonFieldLegend(default_fields);
+    }
+    // if(eval_field_logic != USE_EVAL_FIELD_LMS5XX_LOGIC)
+    //     m_scan_fieldset_legend = createMonFieldsetLegend(0);
     // m_scan_outputstate_legend = createOutputStateLegend({"0", "0", "0"}, {"-", "-", "-"}, {gray(), gray(), gray()}); // only if outputstates active, i.e. after updateMarker(LIDoutputstateMsg)
     publishMarker();
 }
 
-void sick_scan::SickScanMarker::updateMarker(sick_scan::LIDoutputstateMsg& msg)
+void sick_scan::SickScanMarker::updateMarker(sick_scan::LIDoutputstateMsg& msg, int _eval_field_logic)
 {
+    sick_scan::EVAL_FIELD_SUPPORT eval_field_logic = (sick_scan::EVAL_FIELD_SUPPORT)_eval_field_logic;
     SickScanFieldMonSingleton *fieldMon = SickScanFieldMonSingleton::getInstance();
-    if(fieldMon)
+    if(fieldMon && eval_field_logic == USE_EVAL_FIELD_TIM7XX_LOGIC)
     {
         m_scan_mon_fieldset = fieldMon->getActiveFieldset();
         ROS_DEBUG_STREAM("SickScanMarker: active_fieldset = " << fieldMon->getActiveFieldset());
@@ -140,15 +143,17 @@ void sick_scan::SickScanMarker::updateMarker(sick_scan::LIDoutputstateMsg& msg)
         dbg_info << ((field_idx > 0) ? ", (" : "(") << output_state[field_idx] << "," << output_count[field_idx] << ")";
     dbg_info << " }";
     ROS_DEBUG_STREAM(dbg_info.str());
-    m_scan_fieldset_legend = createMonFieldsetLegend(m_scan_mon_fieldset);
+    if(eval_field_logic == USE_EVAL_FIELD_TIM7XX_LOGIC)
+        m_scan_fieldset_legend = createMonFieldsetLegend(m_scan_mon_fieldset);
     m_scan_outputstate_legend = createOutputStateLegend(output_state, output_count, output_colors);
     publishMarker();
 }
 
-void sick_scan::SickScanMarker::updateMarker(sick_scan::LFErecMsg& msg)
+void sick_scan::SickScanMarker::updateMarker(sick_scan::LFErecMsg& msg, int _eval_field_logic)
 {
+    sick_scan::EVAL_FIELD_SUPPORT eval_field_logic = (sick_scan::EVAL_FIELD_SUPPORT)_eval_field_logic;
     SickScanFieldMonSingleton *fieldMon = SickScanFieldMonSingleton::getInstance();
-    if(fieldMon)
+    if(fieldMon && eval_field_logic == USE_EVAL_FIELD_TIM7XX_LOGIC)
     {
         m_scan_mon_fieldset = fieldMon->getActiveFieldset();
         ROS_DEBUG_STREAM("SickScanMarker: active_fieldset = " << fieldMon->getActiveFieldset());
@@ -174,8 +179,10 @@ void sick_scan::SickScanMarker::updateMarker(sick_scan::LFErecMsg& msg)
             field_info[field_idx].field_status = "Incorrect";
             field_info[field_idx].field_color = gray();
         }
-        field_info[field_idx].field_name = std::to_string(field_info.size() - field_idx); // field_info[field_info_idx].field_index;
-
+        if(eval_field_logic == USE_EVAL_FIELD_TIM7XX_LOGIC)
+            field_info[field_idx].field_name = std::to_string(field_info.size() - field_idx); // field_info[field_info_idx].field_index;
+        else
+            field_info[field_idx].field_name = std::to_string(msg.fields[field_idx].field_index);
     }
     std::stringstream dbg_info;
     dbg_info << "SickScanMarker::updateMarker(): LFErec states={";
@@ -188,7 +195,8 @@ void sick_scan::SickScanMarker::updateMarker(sick_scan::LFErecMsg& msg)
     ROS_DEBUG_STREAM(dbg_info.str());
     m_scan_mon_field_marker = createMonFieldMarker(field_info);
     m_scan_mon_field_legend = createMonFieldLegend(field_info);
-    m_scan_fieldset_legend = createMonFieldsetLegend(m_scan_mon_fieldset);
+    if(eval_field_logic == USE_EVAL_FIELD_TIM7XX_LOGIC)
+        m_scan_fieldset_legend = createMonFieldsetLegend(m_scan_mon_fieldset);
     publishMarker();
 }
 
@@ -207,13 +215,41 @@ void sick_scan::SickScanMarker::publishMarker(void)
     m_marker_publisher.publish(marker_array);
 }
 
+static void appendTrianglePoints(int point_count, const std::vector<float>& points_x, const std::vector<float>& points_y, 
+    visualization_msgs::Marker& marker_point, int& triangle_idx, int nr_triangles, std_msgs::ColorRGBA field_color)
+{
+    for(int point_idx = 2; point_idx < point_count && triangle_idx < nr_triangles; point_idx++, triangle_idx++)
+    {
+        
+        marker_point.points[3 * triangle_idx + 0].x = points_x[0];
+        marker_point.points[3 * triangle_idx + 0].y = points_y[0];
+        marker_point.points[3 * triangle_idx + 0].z = 0;
+
+        marker_point.points[3 * triangle_idx + 1].x = points_x[point_idx - 1];
+        marker_point.points[3 * triangle_idx + 1].y = points_y[point_idx - 1];
+        marker_point.points[3 * triangle_idx + 1].z = 0;
+
+        marker_point.points[3 * triangle_idx + 2].x = points_x[point_idx];
+        marker_point.points[3 * triangle_idx + 2].y = points_y[point_idx];
+        marker_point.points[3 * triangle_idx + 2].z = 0;
+
+        marker_point.colors[3 * triangle_idx + 0] = field_color;
+        marker_point.colors[3 * triangle_idx + 1] = field_color;
+        marker_point.colors[3 * triangle_idx + 2] = field_color;
+    }
+}
+
 std::vector<visualization_msgs::Marker> sick_scan::SickScanMarker::createMonFieldMarker(const std::vector<FieldInfo>& field_info)
 {
     int nr_triangles = 0;
     for(int field_info_idx = 0; field_info_idx < field_info.size(); field_info_idx++)
     {
         int field_idx = field_info[field_info_idx].field_index_scan_mon;
-        nr_triangles += std::max(0, m_scan_mon_fields[field_idx].getPointCount() - 1); // 2 points: 1 triangle, 3 points: 2 triangles, and so on
+        SickScanMonFieldType field_typ = m_scan_mon_fields[field_idx].fieldType();
+        if(field_typ == MON_FIELD_DYNAMIC) // dynamic fields have two rectangle (first rectangle for v = max, second rectangle for v = 0)
+            nr_triangles += 2 * std::max(0, m_scan_mon_fields[field_idx].getPointCount()/2 - 2); // 3 points: 1 triangle, 4 points: 3 triangles, and so on
+        else
+            nr_triangles += std::max(0, m_scan_mon_fields[field_idx].getPointCount() - 2); // 3 points: 1 triangle, 4 points: 3 triangles, and so on
     }
 
     // Draw fields using marker triangles
@@ -245,27 +281,30 @@ std::vector<visualization_msgs::Marker> sick_scan::SickScanMarker::createMonFiel
     {
         int field_idx = field_info[field_info_idx].field_index_scan_mon;
         std_msgs::ColorRGBA field_color = field_info[field_info_idx].field_color;
-        for(int point_idx = 1; point_idx < m_scan_mon_fields[field_idx].getPointCount() && triangle_idx < nr_triangles; point_idx++, triangle_idx++)
+        int point_count = m_scan_mon_fields[field_idx].getPointCount();
+        const std::vector<float>& points_x = m_scan_mon_fields[field_idx].getFieldPointsX();
+        const std::vector<float>& points_y = m_scan_mon_fields[field_idx].getFieldPointsY();
+        SickScanMonFieldType field_typ = m_scan_mon_fields[field_idx].fieldType();
+        if(field_typ == MON_FIELD_DYNAMIC) // dynamic fields have two rectangle (first rectangle for v = max, second rectangle for v = 0)
         {
-            float p1_x = 0, p1_y = 0, p1_z = 0, p2_x = 0, p2_y = 0, p2_z = 0, p3_x = 0, p3_y = 0, p3_z = 0;
-            monFieldToCarthesian(m_scan_mon_fields[field_idx].getRanges()[point_idx - 1], m_scan_mon_fields[field_idx].getAnglesRad()[point_idx - 1], p2_x, p2_y);
-            monFieldToCarthesian(m_scan_mon_fields[field_idx].getRanges()[point_idx - 0], m_scan_mon_fields[field_idx].getAnglesRad()[point_idx - 0], p3_x, p3_y);
-
-            marker_point.points[3 * triangle_idx + 0].x = p1_x;
-            marker_point.points[3 * triangle_idx + 0].y = p1_y;
-            marker_point.points[3 * triangle_idx + 0].z = p1_z;
-
-            marker_point.points[3 * triangle_idx + 1].x = p2_x;
-            marker_point.points[3 * triangle_idx + 1].y = p2_y;
-            marker_point.points[3 * triangle_idx + 1].z = p2_z;
-
-            marker_point.points[3 * triangle_idx + 2].x = p3_x;
-            marker_point.points[3 * triangle_idx + 2].y = p3_y;
-            marker_point.points[3 * triangle_idx + 2].z = p3_z;
-
-            marker_point.colors[3 * triangle_idx + 0] = field_color;
-            marker_point.colors[3 * triangle_idx + 1] = field_color;
-            marker_point.colors[3 * triangle_idx + 2] = field_color;
+            std::vector<float> field1_points_x(point_count/2), field1_points_y(point_count/2), field2_points_x(point_count/2), field2_points_y(point_count/2);
+            for(int n = 0; n < point_count/2; n++)
+            {
+                field1_points_x[n] = points_x[n];
+                field1_points_y[n] = points_y[n];
+                field2_points_x[n] = points_x[n + point_count/2];
+                field2_points_y[n] = points_y[n + point_count/2];
+            }
+            std_msgs::ColorRGBA field1_color = field_color, field2_color = field_color;
+            field1_color.r *= 0.5;
+            field1_color.g *= 0.5;
+            field1_color.b *= 0.5;
+            appendTrianglePoints(point_count/2, field1_points_x, field1_points_y, marker_point, triangle_idx, nr_triangles, field1_color);
+            appendTrianglePoints(point_count/2, field2_points_x, field2_points_y, marker_point, triangle_idx, nr_triangles, field2_color);
+        }
+        else
+        {
+            appendTrianglePoints(point_count, points_x, points_y, marker_point, triangle_idx, nr_triangles, field_color);
         }
     }
 
@@ -277,21 +316,21 @@ std::vector<visualization_msgs::Marker> sick_scan::SickScanMarker::createMonFiel
     for(int field_info_idx = 0; field_info_idx < field_info.size(); field_info_idx++)
     {
         int field_idx = field_info[field_info_idx].field_index_scan_mon;
-        if(m_scan_mon_fields[field_idx].getPointCount() >= 2)
+        if(m_scan_mon_fields[field_idx].getPointCount() >= 3)
         {
             geometry_msgs::Point triangle_centroid;
             triangle_centroid.x = 0;
             triangle_centroid.y = 0;
             triangle_centroid.z = 0;
+            const std::vector<float>& points_x = m_scan_mon_fields[field_idx].getFieldPointsX();
+            const std::vector<float>& points_y = m_scan_mon_fields[field_idx].getFieldPointsY();
             for(int point_idx = 0; point_idx < m_scan_mon_fields[field_idx].getPointCount(); point_idx++)
             {
-                float x = 0, y = 0, z = 0;
-                monFieldToCarthesian(m_scan_mon_fields[field_idx].getRanges()[point_idx], m_scan_mon_fields[field_idx].getAnglesRad()[point_idx], x, y);
-                triangle_centroid.x += x;
-                triangle_centroid.y += y;
+                triangle_centroid.x += points_x[point_idx];
+                triangle_centroid.y += points_y[point_idx];
             }
-            triangle_centroid.x /= (float)(m_scan_mon_fields[field_idx].getPointCount() + 1);
-            triangle_centroid.y /= (float)(m_scan_mon_fields[field_idx].getPointCount() + 1);
+            triangle_centroid.x /= (float)(m_scan_mon_fields[field_idx].getPointCount());
+            triangle_centroid.y /= (float)(m_scan_mon_fields[field_idx].getPointCount());
             visualization_msgs::Marker marker_field_name;
             marker_field_name.header.stamp = ros::Time::now();
             marker_field_name.header.frame_id = m_frame_id;
@@ -330,7 +369,7 @@ std::vector<visualization_msgs::Marker> sick_scan::SickScanMarker::createMonFiel
     return marker_array;
 }
 
-std::vector<visualization_msgs::Marker> sick_scan::SickScanMarker::createMonFieldLegend(const std::vector<FieldInfo>& field_info)//, std_msgs::ColorRGBA default_color)
+std::vector<visualization_msgs::Marker> sick_scan::SickScanMarker::createMonFieldLegend(const std::vector<FieldInfo>& field_info)
 {
     std::vector<visualization_msgs::Marker> marker_array;
     marker_array.reserve(2 * field_info.size());
@@ -365,6 +404,8 @@ std::vector<visualization_msgs::Marker> sick_scan::SickScanMarker::createMonFiel
                 marker_text << field_info[field_info_idx].field_status;
             marker_point.text = marker_text.str();
             marker_array.push_back(marker_point);
+            if(m_marker_output_legend_offset_x > marker_point.pose.position.x - 0.1)
+                m_marker_output_legend_offset_x = marker_point.pose.position.x - 0.1;
         }
     }
     return marker_array;
@@ -421,7 +462,7 @@ std::vector<visualization_msgs::Marker> sick_scan::SickScanMarker::createOutputS
             marker_point.id = 400 + loop_cnt * output_count.size() + field_idx;
             marker_point.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
             marker_point.scale.z = 0.1;
-            marker_point.pose.position.x = -0.1 * field_idx - 0.5;
+            marker_point.pose.position.x = -0.1 * field_idx + m_marker_output_legend_offset_x;
             marker_point.pose.position.y = ((loop_cnt == 0) ? 0.16 : -0.3);
             marker_point.pose.position.z = 0.0;
             marker_point.pose.orientation.x = 0.0;

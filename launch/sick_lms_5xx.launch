@@ -47,7 +47,11 @@ Check IP-address, if you scanner is not found after roslaunch.
          The parameters scan_freq and ang_res must always be used together.
         <param name="ang_res" type="double" value="0.1667" />
         <param name="scan_freq" type="double" value="25" />
-    -->
+         -->
+        <param name="start_services" type="bool" value="True"/> <!-- start ros service for cola commands -->
+        <param name="activate_lferec" type="bool" value="True"/> <!-- activate field monitoring by lferec messages -->
+        <param name="activate_lidoutputstate" type="bool" value="True"/> <!-- activate field monitoring by lidoutputstate messages -->
+        <param name="activate_lidinputstate" type="bool" value="True"/> <!-- activate field monitoring by lidinputstate messages -->
 
     </node>
 </launch>
