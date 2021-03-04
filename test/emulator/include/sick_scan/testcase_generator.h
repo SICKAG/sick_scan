@@ -98,7 +98,7 @@ namespace sick_scan
      * @param[in] cola_request Cola request from client
      * @return Synthetical cola response from server
      */
-    static sick_scan::SickLocColaTelegramMsg createColaResponse(const sick_scan::SickLocColaTelegramMsg & cola_request);
+    static sick_scan::SickLocColaTelegramMsg createColaResponse(const sick_scan::SickLocColaTelegramMsg & cola_request, const std::string& scanner_type);
   
     /*!
      * Returns the result pose interval, i.e. the interval in number of scans

@@ -366,26 +366,28 @@ namespace sick_scan
     {
       datagram_pub_ = nh_.advertise<std_msgs::String>("datagram", 1000);
     }
+    std::string cloud_topic_val = "cloud";
+    pn.getParam("cloud_topic", cloud_topic_val);
+    std::string frame_id_val = cloud_topic_val;
+    pn.getParam("frame_id", frame_id_val);
+
 
     cloud_marker_ = 0;
     publish_lferec_ = false;
     publish_lidoutputstate_ = false;
     const std::string scannername = parser_->getCurrentParamPtr()->getScannerName();
-    if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC)
+    if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC || parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_LMS5XX_LOGIC)
     {
       lferec_pub_ = nh_.advertise<sick_scan::LFErecMsg>(scannername + "/lferec", 100);
       lidoutputstate_pub_ = nh_.advertise<sick_scan::LIDoutputstateMsg>(scannername + "/lidoutputstate", 100);
       publish_lferec_ = true;
       publish_lidoutputstate_ = true;
-      cloud_marker_ = new sick_scan::SickScanMarker(&nh_, scannername + "/marker", "cloud");
+      cloud_marker_ = new sick_scan::SickScanMarker(&nh_, scannername + "/marker", frame_id_val); // "cloud");
     }
 
     // Pointcloud2 publisher
     //
 
-
-    std::string cloud_topic_val = "cloud";
-    pn.getParam("cloud_topic", cloud_topic_val);
 
     ROS_INFO("Publishing laserscan-pointcloud2 to %s", cloud_topic_val.c_str());
     cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(cloud_topic_val, 100);
@@ -435,7 +437,7 @@ namespace sick_scan
       printf("\nSOPAS - Stopped streaming scan data.\n");
     }
 
-    if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC)
+    if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC || parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_LMS5XX_LOGIC)
     {
       if(sendSOPASCommand("\x02sEN LFErec 0\x03", NULL) != 0 // TiM781S: deactivate LFErec messages, send "sEN LFErec 0"
       || sendSOPASCommand("\x02sEN LIDoutputstate 0\x03", NULL) != 0 // TiM781S: deactivate LIDoutputstate messages, send "sEN LIDoutputstate 0"
@@ -2103,11 +2105,12 @@ namespace sick_scan
 
       }
       //SAFTY FIELD PARSING
-      if (this->parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC)
+      if (this->parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC || this->parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_LMS5XX_LOGIC)
       {
         ROS_INFO("Reading safety fields");
         SickScanFieldMonSingleton *fieldMon = SickScanFieldMonSingleton::getInstance();
-        for(int fieldnum=0;fieldnum<48;fieldnum++) 
+        int maxFieldnum = this->parser_->getCurrentParamPtr()->getMaxEvalFields();
+        for(int fieldnum=0;fieldnum<maxFieldnum;fieldnum++) 
         {
           char requestFieldcfg[MAX_STR_LEN];
           const char *pcCmdMask = sopasCmdMaskVec[CMD_GET_SAFTY_FIELD_CFG].c_str();
@@ -2149,15 +2152,31 @@ namespace sick_scan
             result = sendSopasAndCheckAnswer(LIDinputstateRequest.c_str(), &LIDinputstateResponse);
           }
 
-          cloud_marker_->updateMarker(fieldMon->getMonFields(), fieldset);
+          std::string scanner_name = parser_->getCurrentParamPtr()->getScannerName();
+          EVAL_FIELD_SUPPORT eval_field_logic = this->parser_->getCurrentParamPtr()->getUseEvalFields();
+          cloud_marker_->updateMarker(fieldMon->getMonFields(), fieldset, eval_field_logic);
           std::stringstream field_info;
           field_info << "Safety fieldset " << fieldset << ", pointcounter = [ ";
           for(int n = 0; n < fieldMon->getMonFields().size(); n++)
             field_info << (n > 0 ? ", " : " ") << fieldMon->getMonFields()[n].getPointCount();
           field_info << " ]";
           ROS_INFO_STREAM(field_info.str());
+          for(int n = 0; n < fieldMon->getMonFields().size(); n++)
+          {
+            if(fieldMon->getMonFields()[n].getPointCount() > 0)
+            {
+              std::stringstream field_info2;
+              field_info2 << "Safety field " << n << ", type " << (int)(fieldMon->getMonFields()[n].fieldType()) << " : ";
+              for(int m = 0; m < fieldMon->getMonFields()[n].getPointCount(); m++)
+              {
+                if(m > 0)
+                  field_info2 << ", ";
+                field_info2 << "(" << fieldMon->getMonFields()[n].getFieldPointsX()[m] << "," << fieldMon->getMonFields()[n].getFieldPointsY()[m] << ")";
+              }
+              ROS_INFO_STREAM(field_info2.str());
+            }
+          }
         }
-        int test=100;
       }
 
       // set scanning angle for tim5xx and for mrs1104
@@ -2440,7 +2459,7 @@ namespace sick_scan
       startProtocolSequence.push_back(CMD_RUN);  // leave user level
       startProtocolSequence.push_back(CMD_START_SCANDATA);
 
-      if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC)
+      if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC || parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_LMS5XX_LOGIC)
       {
         
         // Activate LFErec, LIDoutputstate and LIDinputstate messages
@@ -2913,8 +2932,10 @@ namespace sick_scan
         int errorCode = ExitSuccess;
         ROS_DEBUG_STREAM("SickScanCommon: received " << actual_length << " byte LIDoutputstate " << DataDumper::binDataToAsciiString(&receiveBuffer[0], actual_length));
         // Parse and convert LIDoutputstate message
+        std::string scanner_name = parser_->getCurrentParamPtr()->getScannerName();
+        EVAL_FIELD_SUPPORT eval_field_logic = this->parser_->getCurrentParamPtr()->getUseEvalFields();
         sick_scan::LIDoutputstateMsg outputstate_msg;
-        if (sick_scan::SickScanMessages::parseLIDoutputstateMsg(recvTimeStamp, receiveBuffer, actual_length, useBinaryProtocol, parser_->getCurrentParamPtr()->getScannerName(), outputstate_msg))
+        if (sick_scan::SickScanMessages::parseLIDoutputstateMsg(recvTimeStamp, receiveBuffer, actual_length, useBinaryProtocol, scanner_name, outputstate_msg))
         {
           // Publish LIDoutputstate message
           if(publish_lidoutputstate_)
@@ -2923,7 +2944,7 @@ namespace sick_scan
           }
           if(cloud_marker_)
           {
-            cloud_marker_->updateMarker(outputstate_msg);
+            cloud_marker_->updateMarker(outputstate_msg, eval_field_logic);
           }
         }
         else
@@ -2953,7 +2974,9 @@ namespace sick_scan
         ROS_DEBUG_STREAM("SickScanCommon: received " << actual_length << " byte LFErec " << DataDumper::binDataToAsciiString(&receiveBuffer[0], actual_length));
         // Parse and convert LFErec message
         sick_scan::LFErecMsg lferec_msg;
-        if (sick_scan::SickScanMessages::parseLFErecMsg(recvTimeStamp, receiveBuffer, actual_length, useBinaryProtocol, parser_->getCurrentParamPtr()->getScannerName(), lferec_msg))
+        std::string scanner_name = parser_->getCurrentParamPtr()->getScannerName();
+        EVAL_FIELD_SUPPORT eval_field_logic = parser_->getCurrentParamPtr()->getUseEvalFields(); // == USE_EVAL_FIELD_LMS5XX_LOGIC
+        if (sick_scan::SickScanMessages::parseLFErecMsg(recvTimeStamp, receiveBuffer, actual_length, useBinaryProtocol, eval_field_logic, scanner_name, lferec_msg))
         {
           // Publish LFErec message
           if(publish_lferec_)
@@ -2962,7 +2985,7 @@ namespace sick_scan
           }
           if(cloud_marker_)
           {
-            cloud_marker_->updateMarker(lferec_msg);
+            cloud_marker_->updateMarker(lferec_msg, eval_field_logic);
           }
         }
         else

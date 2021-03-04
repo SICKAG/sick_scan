@@ -68,24 +68,83 @@
 
 namespace sick_scan
 {
+  enum SickScanMonFieldType
+  {
+    MON_FIELD_RADIAL = 0, // not supported
+    MON_FIELD_RECTANGLE = 1,
+    MON_FIELD_SEGMENTED = 2,
+    MON_FIELD_DYNAMIC = 3
+  };
+
+  class SickScanMonFieldConverter
+  { 
+  public:
+    /*
+    ** @brief Converts a point of a segmented field to carthesian coordinates
+    ** @param[in] range range in meter
+    ** @param[in] angle_rad angle in radians
+    ** @param[out] x x in meter in ros coordinate system
+    ** @param[out] y y in meter in ros coordinate system
+    */
+    static void segmentedFieldPointToCarthesian(float range, float angle_rad, float& x, float& y);
+
+    /*
+    ** @brief Converts a rectangular field to carthesian coordinates, i.e. to 4 corner points carthesian (ros) coordinates
+    ** @param[in] distRefPointMeter range of ref point (rect center) in meter
+    ** @param[in] angleRefPointRad angle of ref point (rect center) in radians
+    ** @param[in] rotAngleRad rotation of rectangle in radians
+    ** @param[in] rectWidthMeter width of rectangle in meter
+    ** @param[in] rectLengthMeter width of rectangle in meter
+    ** @param[out] points_x x of corner points in meter in ros coordinate system
+    ** @param[out] points_y y of corner points in meter in ros coordinate system
+    */
+    static void rectangularFieldToCarthesian(float distRefPointMeter, float angleRefPointRad, float rotAngleRad, float rectWidthMeter, float rectLengthMeter, float points_x[4], float points_y[4]);
+
+    /*
+    ** @brief Converts a dynamic field to carthesian coordinates. The dynamic field is just converted into 2 rectangular fields,
+    ** each rectangular field described by to 4 corner points carthesian (ros) coordinates.
+    ** The first rectangular field has size rectWidthMeter x maxLengthMeter, the second rectangular field has size rectWidthMeter x rectLengthMeter.
+    ** The rectangular fields are returned by 4 corner points (points_x[n], points_y[n]) with 0 <= n < 4 for the first (big) rectangle and 4 <= n < 8 for the second (smaller) rectangle.
+    ** @param[in] distRefPointMeter range of ref point (rect center) in meter
+    ** @param[in] angleRefPointRad angle of ref point (rect center) in radians
+    ** @param[in] rotAngleRad rotation of rectangle in radians
+    ** @param[in] rectWidthMeter width of rectangle in meter
+    ** @param[in] rectLengthMeter width of rectangle in meter at v = 0
+    ** @param[in] maxSpeedMeterPerSec max speed (unused)
+    ** @param[in] maxLengthMeter width of rectangle in meter at v = max. speed
+    ** @param[out] points_x x of corner points in meter in ros coordinate system
+    ** @param[out] points_y y of corner points in meter in ros coordinate system
+    */
+    static void dynamicFieldPointToCarthesian(float distRefPointMeter, float angleRefPointRad, float rotAngleRad, float rectWidthMeter, float rectLengthMeter, float maxSpeedMeterPerSec, float maxLengthMeter, float points_x[8], float points_y[8]);
+
+  };
 
   class SickScanMonField
-  {
+  { 
   public:
-    void pushPoint(float _R,float _Phi) {
-      R.push_back(_R);
-      Phi.push_back(_Phi);
-      pointCount++;
+
+    SickScanMonFieldType& fieldType(void) { return m_fieldType; }
+    const SickScanMonFieldType& fieldType(void) const { return m_fieldType; }
+
+    void pushFieldPointCarthesian(float x, float y)
+    {
+      m_fieldPoints_X.push_back(x);
+      m_fieldPoints_Y.push_back(y);
     }
 
-    int getPointCount(void) const { return pointCount; }
-    const std::vector<float>& getRanges(void) const { return R; }
-    const std::vector<float>& getAnglesRad(void) const { return Phi; }
+    int getPointCount(void) const
+    { 
+      assert(m_fieldPoints_X.size() == m_fieldPoints_Y.size());
+      return m_fieldPoints_X.size(); 
+    }
+
+    const std::vector<float>& getFieldPointsX(void) const { return m_fieldPoints_X; }
+    const std::vector<float>& getFieldPointsY(void) const { return m_fieldPoints_Y; }
     
   private:
-    std::vector<float>R;
-    std::vector<float>Phi;
-    int pointCount=0;
+    SickScanMonFieldType m_fieldType = MON_FIELD_RADIAL;
+    std::vector<float> m_fieldPoints_X;
+    std::vector<float> m_fieldPoints_Y;
   };
 
 

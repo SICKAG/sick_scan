@@ -64,15 +64,17 @@ def closeJsonfile(json_filename):
         json_file.write("\n]\n")
         json_file.close()
 
-def appendToCppfile(cpp_filename, payload):
+def appendToCppfile(cpp_filename, payload, is_cola_ascii):
     if os.path.isfile(cpp_filename):
         cpp_file = open(cpp_filename, "a")
     else:
         cpp_file = open(cpp_filename, "a")
         cpp_file.write("    std::map<std::string, sick_scan::SickLocColaTelegramMsg> emulator_responses = { // emulator responses to driver requests\n")
-    # remove 8 byte 0x02020202 + { 4 byte length } and remove trailing CRC byte
     payload_all = [b for b in payload]
-    payload_unpacked = payload_all[8:-1]
+    if is_cola_ascii: # cola ascii: remove 1 leading byte <STX> = 0x02 and remove trailing <ETX> = 0x03
+        payload_unpacked = payload_all[1:-1]
+    else: # cola binary: remove 8 byte 0x02020202 + { 4 byte length } and remove trailing CRC byte
+        payload_unpacked = payload_all[8:-1]
     # Split command into <type> <name> <parameter>
     sep_idx1 = 0
     sep_idx2 = 0
@@ -127,6 +129,7 @@ if __name__ == "__main__":
     start_timestamp = -1.0
     payload = b''
     payload_completed = False
+    cola_ascii = False # default: cola binary
     with open(pcap_filename, 'rb') as pcap_file:
         pcap_scanner = FileScanner(pcap_file)
         for block_cnt, block in enumerate(pcap_scanner):
@@ -150,15 +153,27 @@ if __name__ == "__main__":
                     start_timestamp = block.timestamp
                 if isinstance(block_decoded.payload, scapy.packet.Raw) and len(block_decoded.payload) > 0:                
                     payload_chunk = bytes(block_decoded.payload)
-                    if payload_chunk.startswith(b'\x02\x02\x02\x02'): # start of a new message
+                    # Check start resp. continuation of binary messages
+                    if payload_chunk.startswith(b'\x02\x02\x02\x02'): # start of a new binary message
                         relative_timestamp = block.timestamp - start_timestamp
                         payload = payload_chunk
-                        payload_completed = (len(payload) >= (parseColaPayloadLength(payload) + 9)) # message := { 4 byte STX 0x02020202 } +  { 4 byte message_payload_length } + { message_payload } + { 1 byte CRC }
-                    elif payload_completed == False and payload.startswith(b'\x02\x02\x02\x02'):    # message continued
+                        payload_completed = (len(payload) >= (parseColaPayloadLength(payload) + 9)) # binary message := { 4 byte STX 0x02020202 } +  { 4 byte message_payload_length } + { message_payload } + { 1 byte CRC }
+                    elif payload_completed == False and payload.startswith(b'\x02\x02\x02\x02'):    # binary message continued
                         payload = payload + payload_chunk
                         payload_completed = (len(payload) >= (parseColaPayloadLength(payload) + 9)) # message := { 4 byte STX 0x02020202 } +  { 4 byte message_payload_length } + { message_payload } + { 1 byte CRC }
-                    if payload_completed == True and payload.startswith(b'\x02\x02\x02\x02'):
-                        appendToCppfile(cpp_filename, payload)
+                    # Check start resp. continuation of ascii messages
+                    elif payload_chunk.startswith(b'\x02\x73'): # start of a new ascii message <STX>s...<ETX> with <STX>=\x02 and <ETX>=\x03
+                        relative_timestamp = block.timestamp - start_timestamp
+                        payload = payload_chunk
+                        payload_completed = (payload.find(b'\x03') > 0)                     # ascii message ends with <ETX>=\x03
+                    elif payload_completed == False and payload.startswith(b'\x02\x73'):    # ascii message continued
+                        payload = payload + payload_chunk
+                        payload_completed = (payload.find(b'\x03') > 0)                     # ascii message ends with <ETX>=\x03
+                    # Write payload (binary or ascii messages)
+                    is_cola_ascii = payload.startswith(b'\x02\x73')
+                    is_cola_binary = payload.startswith(b'\x02\x02\x02\x02')
+                    if payload_completed == True and (is_cola_binary or is_cola_ascii):
+                        appendToCppfile(cpp_filename, payload, is_cola_ascii)
                         appendToJsonfile(json_filename, relative_timestamp, payload, pcap_filename)
                         print("block {}: rel_timestamp = {}, payload = {}".format(block_cnt, relative_timestamp, payload))
                         payload = b''

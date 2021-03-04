@@ -87,6 +87,7 @@ sick_scan::TestServerThread::TestServerThread(ROS::NodePtr nh, int ip_port_resul
 
     ROS::param<std::string>(nh, "/sick_scan_emulator/scandatafiles", m_scandatafiles, m_scandatafiles); // comma separated list of jsonfiles to emulate scandata messages, f.e. "tim781s_scandata.pcapng.json,tim781s_sopas.pcapng.json"
     ROS::param<std::string>(nh, "/sick_scan_emulator/scandatatypes", m_scandatatypes, m_scandatatypes); // comma separated list of scandata message types, f.e. "sSN LMDscandata,sSN LMDscandatamon"
+    ROS::param<std::string>(nh, "/sick_scan_emulator/scanner_type", m_scanner_type, m_scanner_type);    // currently supported: "sick_lms_5xx", "sick_tim_7xx"
     ROS::param<double>(nh, "/sick_scan/test_server/start_scandata_delay", m_start_scandata_delay, m_start_scandata_delay); // delay between scandata activation ("LMCstartmeas" request) and first scandata message, default: 1 second
     std::string result_testcases_topic = "/sick_scan/test_server/result_testcases"; // default topic to publish testcases with result port telegrams (type SickLocResultPortTestcaseMsg)
     ROS::param<double>(nh, "/sick_scan/test_server/result_telegrams_rate", m_result_telegram_rate, m_result_telegram_rate);
@@ -472,7 +473,7 @@ void sick_scan::TestServerThread::runWorkerThreadColaCb(boost::asio::ip::tcp::so
       ROS_INFO_STREAM("TestServerThread: received cola request " << ascii_telegram);
       sick_scan::SickLocColaTelegramMsg telegram_msg = sick_scan::ColaParser::decodeColaTelegram(ascii_telegram);
       // Generate a synthetical response depending on the request
-      sick_scan::SickLocColaTelegramMsg telegram_answer = sick_scan::TestcaseGenerator::createColaResponse(telegram_msg);
+      sick_scan::SickLocColaTelegramMsg telegram_answer = sick_scan::TestcaseGenerator::createColaResponse(telegram_msg, m_scanner_type);
       if (m_error_simulation_flag.get() == SEND_INVALID_TELEGRAMS) // error simulation: testserver sends invalid telegrams (invalid data, false checksums, etc.)
       {
         telegram_answer.command_name = random_ascii.generate(random_length.generate()); // random ascii string
@@ -483,11 +484,8 @@ void sick_scan::TestServerThread::runWorkerThreadColaCb(boost::asio::ip::tcp::so
       }
       std::vector<uint8_t> binary_response = sick_scan::ColaParser::encodeColaTelegram(telegram_answer);
       std::string ascii_response = sick_scan::ColaAsciiBinaryConverter::ConvertColaAscii(binary_response);
-      if(cola_binary)
-      {
-        // binary_response = sick_scan::ColaAsciiBinaryConverter::ColaAsciiToColaBinary(binary_response);
+      if(cola_binary) // binary_response = sick_scan::ColaAsciiBinaryConverter::ColaAsciiToColaBinary(binary_response);
         binary_response = sick_scan::ColaAsciiBinaryConverter::ColaTelegramToColaBinary(telegram_answer);
-      }
       ROS_INFO_STREAM("TestServerThread: sending cola response " << ascii_response << (cola_binary ? " (Cola-Binary)" : " (Cola-ASCII)"));
       // Send command response to tcp client
       if(cola_binary)
@@ -589,7 +587,7 @@ void sick_scan::TestServerThread::runWorkerThreadScandataCb(boost::asio::ip::tcp
     // Send messages
     // ROS_DEBUG_STREAM("TestServerThread: sending scan data " << sick_scan::Utils::toHexString(binary_message.data));
     ROS_INFO_STREAM("TestServerThread: sending " << binary_message.data.size() << " byte scan data " 
-      << sick_scan::Utils::toAsciiString(&binary_message.data[8], std::min(32, (int)binary_message.data.size() - 8)) << " ... ");
+      << sick_scan::Utils::toAsciiString(&binary_message.data[0], std::min(32, (int)binary_message.data.size())) << " ... ");
     ROS::Time send_timestamp = ROS::now();
     if (!sick_scan::ColaTransmitter::send(*p_socket, binary_message.data, send_timestamp))
     {

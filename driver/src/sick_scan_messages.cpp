@@ -222,15 +222,19 @@ bool sick_scan::SickScanMessages::parseLIDoutputstateMsg(const ros::Time& timeSt
  * @param[in] receiveBuffer byte array of lidar message
  * @param[in] receiveLength size of lidar message in byte
  * @param[in] useBinaryProtocol binary lidar message (true, Cola-B) or ascii lidar message (false, Cola-A)
+ * @param[in] eval_field_logic USE_EVAL_FIELD_LMS5XX_LOGIC or USE_EVAL_FIELD_TIM7XX_LOGIC
  * @param[in] frame_id frame id of output message
  * @param[out] output_msg converted output message
  * 
  * @return true on success, false on error
  */
-bool sick_scan::SickScanMessages::parseLFErecMsg(const ros::Time& timeStamp, uint8_t* receiveBuffer, int receiveLength, bool useBinaryProtocol, const std::string& frame_id, sick_scan::LFErecMsg& output_msg)
+bool sick_scan::SickScanMessages::parseLFErecMsg(const ros::Time& timeStamp, uint8_t* receiveBuffer, int receiveLength, bool useBinaryProtocol, EVAL_FIELD_SUPPORT eval_field_logic, const std::string& frame_id, sick_scan::LFErecMsg& output_msg)
 {
     if(useBinaryProtocol)
     {
+        uint8_t* msg_receiveBuffer = receiveBuffer;
+        int msg_receiveLength = receiveLength;
+
         // parse and convert LFErec messages, see https://github.com/SICKAG/libsick_ldmrs/blob/master/src/sopas/LdmrsSopasLayer.cpp lines 1414 ff.
         int msg_start_idx = 19;  // 4 byte STX + 4 byte payload_length + 11 byte "sSN LFErec " = 19 byte
         receiveBuffer += msg_start_idx;
@@ -240,13 +244,13 @@ bool sick_scan::SickScanMessages::parseLFErecMsg(const ros::Time& timeStamp, uin
         if(!readBinaryBuffer(receiveBuffer, receiveLength, output_msg.fields_number) || output_msg.fields_number <= 0)
         {
             ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): parse error, fields number = " << output_msg.fields_number<< " should be greater 0 (" << __FILE__ << ":" << __LINE__ << ")");
+            ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): " << msg_receiveLength << " byte received: " << DataDumper::binDataToAsciiString(msg_receiveBuffer, msg_receiveLength));
             return false;
         }
         output_msg.fields.reserve(output_msg.fields_number);
         for(int field_idx = 0; field_idx < output_msg.fields_number; field_idx++)
         {
             sick_scan::LFErecFieldMsg field_msg;
-            uint16_t dummies[3] = {0};
             if( !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.version_number)
              || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.field_index)
              || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.sys_count)
@@ -254,32 +258,77 @@ bool sick_scan::SickScanMessages::parseLFErecMsg(const ros::Time& timeStamp, uin
              || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.dist_scale_offset)
              || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.angle_scale_factor)
              || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.angle_scale_offset)
-             || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.field_result_mrs)
-             || !readBinaryBuffer(receiveBuffer, receiveLength, dummies[0])
-             || !readBinaryBuffer(receiveBuffer, receiveLength, dummies[1])
-             || !readBinaryBuffer(receiveBuffer, receiveLength, dummies[2])
-             || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.time_state)
-             || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.year)
-             || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.month)
-             || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.day)
-             || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.hour)
-             || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.minute)
-             || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.second)
-             || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.microsecond))
+             || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.field_result_mrs))
             {
                 ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): parse error field " << field_idx << " (" << __FILE__ << ":" << __LINE__ << ")");
+                ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): " << msg_receiveLength << " byte received: " << DataDumper::binDataToAsciiString(msg_receiveBuffer, msg_receiveLength));
                 return false;
+            }
+            uint16_t dummy_byte[3] = {0};
+            if(!readBinaryBuffer(receiveBuffer, receiveLength, dummy_byte[0])
+            || !readBinaryBuffer(receiveBuffer, receiveLength, dummy_byte[1])
+            || !readBinaryBuffer(receiveBuffer, receiveLength, dummy_byte[2]))
+            {
+                ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): parse error field " << field_idx << " (" << __FILE__ << ":" << __LINE__ << ")");
+                ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): " << msg_receiveLength << " byte received: " << DataDumper::binDataToAsciiString(msg_receiveBuffer, msg_receiveLength));
+                return false;
+            }
+            int additional_dummy_byte_length = 0;
+            // if(eval_field_logic == USE_EVAL_FIELD_LMS5XX_LOGIC && field_msg.field_result_mrs == 2)
+            //     additional_dummy_byte_length = (21 - 6);
+            if(eval_field_logic == USE_EVAL_FIELD_LMS5XX_LOGIC && (dummy_byte[0] != 0 || dummy_byte[1] != 0 || dummy_byte[2] != 0))
+                additional_dummy_byte_length = (21 - 6);
+            receiveBuffer += additional_dummy_byte_length;
+            receiveLength -= additional_dummy_byte_length;
+            if(receiveLength < 0)
+            {
+                ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): parse error field " << field_idx << " (" << __FILE__ << ":" << __LINE__ << ")");
+                ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): " << msg_receiveLength << " byte received: " << DataDumper::binDataToAsciiString(msg_receiveBuffer, msg_receiveLength));
+                return false;
+            }
+            if(!readBinaryBuffer(receiveBuffer, receiveLength, field_msg.time_state))
+            {
+                ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): parse error field " << field_idx << " (" << __FILE__ << ":" << __LINE__ << ")");
+                ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): " << msg_receiveLength << " byte received: " << DataDumper::binDataToAsciiString(msg_receiveBuffer, msg_receiveLength));
+                return false;
+            }
+            if(field_msg.time_state)
+            {
+                if( !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.year)
+                || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.month)
+                || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.day)
+                || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.hour)
+                || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.minute)
+                || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.second)
+                || !readBinaryBuffer(receiveBuffer, receiveLength, field_msg.microsecond))
+                {
+                    ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): parse error field " << field_idx << " (" << __FILE__ << ":" << __LINE__ << ")");
+                    ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): " << msg_receiveLength << " byte received: " << DataDumper::binDataToAsciiString(msg_receiveBuffer, msg_receiveLength));
+                    return false;
+                }
+            }
+            else
+            {
+                field_msg.year = 0;
+                field_msg.month = 0;
+                field_msg.day = 0;
+                field_msg.hour = 0;
+                field_msg.minute = 0;
+                field_msg.second = 0;
+                field_msg.microsecond = 0;
             }
             output_msg.fields.push_back(field_msg);
         }
         if(output_msg.fields.size() != output_msg.fields_number)
         {
             ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): parse error, fields number = " << output_msg.fields_number << ", but " << output_msg.fields.size() << " fields parsed (" << __FILE__ << ":" << __LINE__ << ")");
+            ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): " << msg_receiveLength << " byte received: " << DataDumper::binDataToAsciiString(msg_receiveBuffer, msg_receiveLength));
             return false;
         }
         if(receiveLength != 1) // 1 byte CRC still in receiveBuffer
         {
             ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): parse error, " << receiveLength << " bytes in buffer after decoding all fields, should be 0 (" << __FILE__ << ":" << __LINE__ << ")");
+            ROS_ERROR_STREAM("## ERROR SickScanMessages::parseLFErecMsg(): " << msg_receiveLength << " byte received: " << DataDumper::binDataToAsciiString(msg_receiveBuffer, msg_receiveLength));
             return false;
         }
 

@@ -238,6 +238,7 @@ namespace sick_scan
     bool m_demo_move_in_circles;                             ///< true: simulate a sensor moving in circles, false (default): create random based result port telegrams
     std::string m_scandatafiles;                             ///< comma separated list of jsonfiles to emulate scandata messages, f.e. "tim781s_scandata.pcapng.json,tim781s_sopas.pcapng.json"
     std::string m_scandatatypes;                             ///< comma separated list of scandata message types, f.e. "sSN LMDscandata,sSN LMDscandatamon"
+    std::string m_scanner_type;                              ///< currently supported: "sick_lms_5xx", "sick_tim_7xx"
 
     /*
      * configuration and member data for error simulation

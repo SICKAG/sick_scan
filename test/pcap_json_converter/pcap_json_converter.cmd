@@ -13,6 +13,9 @@ echo PYTHON_DIR=%PYTHON_DIR%
 python --version
 @echo.
 
+python pcap_json_converter.py --pcap_filename=q:/tmp/pa0350_sick_field_monitoring/10_info_material/LMS511_fields/20210302_lms111.pcapng
+python pcap_json_converter.py --pcap_filename=q:/tmp/pa0350_sick_field_monitoring/10_info_material/LMS511_fields/20210302_lms511.pcapng
+python pcap_json_converter.py --pcap_filename=q:/tmp/pa0350_sick_field_monitoring/10_info_material/LMS511_fields/ascii_sopaslog_fields_lms511.pcapng
 python pcap_json_converter.py --pcap_filename=q:/tmp/pa0350_sick_field_monitoring/10_info_material/40_inputstate_debugging/20210126-test-fieldsets.pcapng
 python pcap_json_converter.py --pcap_filename=q:/tmp/pa0350_sick_field_monitoring/10_info_material/40_inputstate_debugging/20210125-tim781s-scandata.pcapng
 python pcap_json_converter.py --pcap_filename=q:/tmp/pa0350_sick_field_monitoring/10_info_material/40_inputstate_debugging/fieldset_trial_0000.pcapng

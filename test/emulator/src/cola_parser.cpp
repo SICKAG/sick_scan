@@ -69,7 +69,7 @@
  */
 const std::string sick_scan::ColaParser::s_command_type_string[MAX_COLA_COMMAND_NUMBER] =
   {
-    "sINVALID", "sRN", "sRA", "sMN", "sAN", "sMA", "sWN", "sWA", "sEN", "sEA", "sSN"
+    "sINVALID", "sRN", "sRA", "sMN", "sAN", "sMA", "sWN", "sWA", "sEN", "sEA", "sSN", "sFA"
   };
 
 /*!
@@ -77,7 +77,7 @@ const std::string sick_scan::ColaParser::s_command_type_string[MAX_COLA_COMMAND_
  */
 const std::map<std::string, sick_scan::ColaParser::COLA_SOPAS_COMMAND> sick_scan::ColaParser::s_command_type_map =
   {
-    {"", sINVALID}, {"sINVALID", sINVALID}, {"sRN", sRN}, {"sRA", sRA}, {"sMN", sMN}, {"sAN", sAN}, {"sMA", sMA}, {"sWN", sWN}, {"sWA", sWA}, {"sEN", sEN}, {"sEA", sEA}, {"sSN", sSN}
+    {"", sINVALID}, {"sINVALID", sINVALID}, {"sRN", sRN}, {"sRA", sRA}, {"sMN", sMN}, {"sAN", sAN}, {"sMA", sMA}, {"sWN", sWN}, {"sWA", sWA}, {"sEN", sEN}, {"sEA", sEA}, {"sSN", sSN}, {"sFA", sFA}
   };
 
 /*!

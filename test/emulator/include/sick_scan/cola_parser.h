@@ -102,6 +102,7 @@ namespace sick_scan
        sEN = 8,      ///< Event by name (request)
        sEA = 9,      ///< Event answer (response)
        sSN = 10,     ///< Answer (response)
+       sFA = 11,     ///< Error Answer with error code (response)
        MAX_COLA_COMMAND_NUMBER ///< Number of possible COLA_SOPAS_COMMANDs incl. invalid command
     } COLA_SOPAS_COMMAND;
   

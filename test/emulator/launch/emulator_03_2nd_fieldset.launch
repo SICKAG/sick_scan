@@ -8,6 +8,7 @@
   <node name="sick_scan_emulator" pkg="sick_scan" type="sick_scan_emulator" output="screen">
     <param name="scandatafiles" type="string" value="$(arg scandatafiles)"/>
     <param name="scandatatypes" type="string" value="$(arg scandatatypes)"/>
+    <param name="scanner_type" type="string" value="sick_tim_7xx"/>
   </node>
 
 </launch>
