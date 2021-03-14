@@ -12,10 +12,10 @@ The following launch sequence is an example:
  
 ```roslaunch sick_scan sick_new_ip.launch hostname:=192.168.0.1 new_IP:=192.168.0.100```
 
-The launchfile restarts the scanner after the address change and stops the sick_scan node. After a few seconds of booting time the scanner is reachable under the new IP address. The Python script is experimental. It is known that some ethernet adapter are not fully supported. As a fallback solution you can always use the SOPAS ET software under windows.
+The launchfile restarts the lidar after the address change and stops the sick_scan node. After a few seconds of booting time the scanner is reachable under the new IP address. The Python script is experimental. It is known that some ethernet adapter are not fully supported. As a fallback solution you can always use the SOPAS ET software under windows.
 
 ## Starting with a new scanner
-The scanner is delivered with a standard IP address, to read or change it the [SICK SOPAS ET](https://www.sick.com/de/de/sopas-engineering-tool-2018/p/p367244) for windows can be used.
+The lidar is delivered with a standard IP address, to read or change it the [SICK SOPAS ET](https://www.sick.com/de/de/sopas-engineering-tool-2018/p/p367244) for windows can be used.
 When the tool is started, a search is performed which lists all scanners available in the network. 
 ![SOPAS start](./scanner_found.PNG "SOPAS start")
 Double-click to select the scanner for the project
