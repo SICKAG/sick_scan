@@ -2,6 +2,13 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update ipconfig.md
+* Update ipconfig.md
+* Update ipconfig.md
+* Contributors: Michael Lehning
+
 1.7.8 (2020-09-02)
 ------------------
 * fixes `#100 <https://github.com/SICKAG/sick_scan/issues/100>`_
