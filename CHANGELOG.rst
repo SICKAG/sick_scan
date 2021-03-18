@@ -2,8 +2,8 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.10.0 (2021-03-18)
+-------------------
 * Update ipconfig.md
 * Update ipconfig.md
 * Update ipconfig.md
