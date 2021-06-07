@@ -251,6 +251,7 @@ Overview of the tools:
 * Setting up a brand new scanner: To set up a brand new scanner,
   it is recommended to use the two tools "sick_generic_device_finder.py" to find the scanner in the network
   and the launch file sick_new_ip.launch to set a new IP address. If further settings are to be saved that cannot be made via ROS   parameters, we recommend using the Windows tool "Sopas ET" from SICK.
+* Unit tests: For a quick unit test after installation without the sensor hardware, a test server is provided to simulate a scanner. See [emulator](doc/emulator.md) for further details.
 
 
 ## Troubleshooting
