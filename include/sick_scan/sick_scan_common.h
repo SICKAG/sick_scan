@@ -392,6 +392,9 @@ namespace sick_scan
     bool sensorIsRadar;
 
     AngleCompensator *angleCompensator = NULL;
+
+    double m_min_intensity; // Set range of LaserScan messages to infinity, if intensity < min_intensity (default: 0)
+
   };
 
 } /* namespace sick_scan */

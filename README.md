@@ -196,6 +196,9 @@ The use of the parameters can be looked up in the launch files. This is also rec
 - `intensity_resolution_16bit`
   If true, the intensity values is transferred as 16 bit value. If false, as 8 bit value.
 
+- `min_intensity`
+  If min_intensity > 0, all range values in a LaserScan message are set to infinity, if their intensity value is below min_intensity
+
 - `cloud_topic`
   Topic name of the published pointcloud2 data
 
