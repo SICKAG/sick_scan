@@ -352,6 +352,16 @@ namespace sick_scan
     this->maxEvalFields = _maxEvalFields;
   }
 
+  void ScannerBasicParam::setScanAngleShift(double _scanAngleShift)
+  {
+    this->scanAngleShift = _scanAngleShift;
+  }
+
+  double ScannerBasicParam::getScanAngleShift()
+  {
+    return this->scanAngleShift;
+  }
+
 
   /*!
   \brief Construction of parameter object
@@ -436,6 +446,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
+        basicParams[i].setScanAngleShift(-M_PI/2);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) ==
           0)  // LMS1000 - 4 layer, 1101 shots per scan
@@ -453,6 +464,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
+        basicParams[i].setScanAngleShift(-M_PI/2);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_240_NAME) ==
           0) // TIM_5xx - 1 Layer, max. 811 shots per scan
@@ -469,6 +481,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
+        basicParams[i].setScanAngleShift(0);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_5XX_NAME) ==
           0) // TIM_5xx - 1 Layer, max. 811 shots per scan
@@ -485,6 +498,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
+        basicParams[i].setScanAngleShift(-M_PI/2);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_4XXX_NAME) == 0) // LMS_4xxx - 1 Layer, 600 Hz
       {
@@ -500,6 +514,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
+        basicParams[i].setScanAngleShift(0);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_7XX_NAME) == 0) // TIM_7xx - 1 Layer Scanner
       {
@@ -515,6 +530,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(USE_EVAL_FIELD_TIM7XX_LOGIC);
         basicParams[i].setMaxEvalFields(48);
+        basicParams[i].setScanAngleShift(-M_PI/2);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_7XXS_NAME) == 0) // TIM_7xxS - 1 layer Safety Scanner
       {
@@ -530,6 +546,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(USE_EVAL_FIELD_TIM7XX_LOGIC);
         basicParams[i].setMaxEvalFields(48);
+        basicParams[i].setScanAngleShift(-M_PI/2);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_5XX_NAME) == 0) // LMS_5xx - 1 Layer
       {
@@ -545,6 +562,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(USE_EVAL_FIELD_LMS5XX_LOGIC);
         basicParams[i].setMaxEvalFields(30);
+        basicParams[i].setScanAngleShift(-M_PI/2);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_LMS_1XX_NAME) == 0) // LMS_1xx - 1 Layer
       {
@@ -560,6 +578,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(USE_EVAL_FIELD_LMS5XX_LOGIC);
         basicParams[i].setMaxEvalFields(30);
+        basicParams[i].setScanAngleShift(-M_PI/2);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_MRS_6XXX_NAME) == 0) //
       {
@@ -576,6 +595,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
+        basicParams[i].setScanAngleShift(0);
       }
 
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_RMS_3XX_NAME) == 0) // Radar
@@ -593,6 +613,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
+        basicParams[i].setScanAngleShift(0);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_NAV_3XX_NAME) == 0) // Nav 3xx
       {
@@ -606,6 +627,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(true);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
+        basicParams[i].setScanAngleShift(0);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_NAV_2XX_NAME) == 0) // NAV_2xx - 1 Layer
       {
@@ -621,6 +643,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
+        basicParams[i].setScanAngleShift(0);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_4XX_NAME) == 0) // TiM433 and TiM443
       {
@@ -636,6 +659,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
+        basicParams[i].setScanAngleShift(-M_PI/2);
       }
     }
 
@@ -1083,7 +1107,7 @@ namespace sick_scan
     // 23: Starting angle (FFF92230)
     int starting_angle = -1;
     sscanf(fields[23], "%x", &starting_angle);
-    msg.angle_min = (starting_angle / 10000.0) / 180.0 * M_PI - M_PI / 2;
+    msg.angle_min = (starting_angle / 10000.0) / 180.0 * M_PI +this->getCurrentParamPtr()->getScanAngleShift();
     // ROS_DEBUG("starting_angle: %d, angle_min: %f", starting_angle, msg.angle_min);
 
     // 24: Angular step width (2710)

@@ -131,6 +131,9 @@ namespace sick_scan
     int getMaxEvalFields(void);
     
     void setMaxEvalFields(int _maxEvalFields);
+    void setScanAngleShift(double _scanAngleShift);//for NAV310 should be changed in only mirrord in comibantion with new scanangelshift param
+
+    double getScanAngleShift();
 
   private:
     std::string scannerName;
@@ -149,6 +152,7 @@ namespace sick_scan
     bool scanMirroredAndShifted;
     EVAL_FIELD_SUPPORT useEvalFields;
     int maxEvalFields;
+    double scanAngleShift;
   };
 
 

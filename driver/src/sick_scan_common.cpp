@@ -1861,19 +1861,13 @@ namespace sick_scan
       ROS_INFO("MIN_ANG: %8.3f [rad] %8.3f [deg]", config_.min_ang, rad2deg(this->config_.min_ang));
       ROS_INFO("MAX_ANG: %8.3f [rad] %8.3f [deg]", config_.max_ang, rad2deg(this->config_.max_ang));
 
+
       // convert to 10000th degree
       double minAngSopas = rad2deg(this->config_.min_ang);
       double maxAngSopas = rad2deg(this->config_.max_ang);
 
-      if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_240_NAME) == 0)
-      {
-        // the TiM240 operates directly in the ros coordinate system
-      }
-      else
-      {
-        minAngSopas += 90.0;
-        maxAngSopas += 90.0;
-      }
+      minAngSopas -= rad2deg(this->parser_->getCurrentParamPtr()->getScanAngleShift());
+      maxAngSopas -= rad2deg(this->parser_->getCurrentParamPtr()->getScanAngleShift());
 
       angleStart10000th = (int) (boost::math::round(10000.0 * minAngSopas));
       angleEnd10000th = (int) (boost::math::round(10000.0 * maxAngSopas));
@@ -2049,17 +2043,10 @@ namespace sick_scan
         double askAngleStart = askAngleStart10000th / 10000.0;
         double askAngleEnd = askAngleEnd10000th / 10000.0;
 
-        if (this->parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_TIM_240_NAME) == 0)
-        {
-          // the TiM240 operates directly in the ros coordinate system
-        }
-        else
-        {
-          askAngleStart -= 90; // angle in ROS relative to y-axis
-          askAngleEnd -= 90; // angle in ROS relative to y-axis
-        }
-        this->config_.min_ang = askAngleStart / 180.0 * M_PI;
-        this->config_.max_ang = askAngleEnd / 180.0 * M_PI;
+
+        askAngleStart += rad2deg(this->parser_->getCurrentParamPtr()->getScanAngleShift());
+        askAngleEnd += rad2deg(this->parser_->getCurrentParamPtr()->getScanAngleShift());
+
         ros::NodeHandle nhPriv("~");
         nhPriv.setParam("min_ang",
                         this->config_.min_ang); // update parameter setting with "true" values read from scanner
