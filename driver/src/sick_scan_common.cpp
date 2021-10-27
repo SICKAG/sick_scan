@@ -3776,7 +3776,7 @@ namespace sick_scan
                     outputChannelFlagId)  // publish only configured channels - workaround for cfg-bug MRS1104
                 {
 
-                  pub_.publish(msg);
+                  diagnosticPub_->publish(msg);
 
                 }
 #else
