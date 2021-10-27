@@ -4,6 +4,10 @@ This stack provides a ROS driver for the SICK lidar and radar sensors mentioned 
 The SICK MRS6124 is a multi-layer, multi-echo 3D laser scanner that is geared
 towards rough outdoor environments.
 
+## Remark
+During the last years we have developed different repositories within the driver development with the projects sick_scan, sick_scan2 and sick_scan_base, with which many lidars and radars of our company can be used under ROS1, ROS2 and generically under C++. For harmonization, due to customer requests and to increase clarity, we decided to combine these developments in the future. As a result of this work, at the end of 2021 we have created the repository [sick_scan_xd](https://github.com/SICKAG/sick_scan_xd), where we will continue future developments. We recommend using this new repository for development so that you can continue to benefit from our improvements and additions to our drivers.
+
+
 ## Table of Contents
 
 - [Supported Hardware](#supported-hardware)
