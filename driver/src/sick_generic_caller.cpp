@@ -120,8 +120,8 @@
 // 1.7.6: 2020-07-14: NAV310 handling optimized (angle calculation and compensation), barebone quaterion to euler
 // 1.7.7: 2020-07-21: barebone quaterion to euler
 #define SICK_GENERIC_MAJOR_VER "1"
-#define SICK_GENERIC_MINOR_VER "10"
-#define SICK_GENERIC_PATCH_LEVEL "1"
+#define SICK_GENERIC_MINOR_VER "12"
+#define SICK_GENERIC_PATCH_LEVEL "0"
 
 #include <algorithm> // for std::min
 
@@ -131,7 +131,7 @@ std::string getVersionInfo();
 /*!
 \brief Startup routine - if called with no argmuments we assume debug session.
        Set scanner name variable by parsing for "__name:=". This will be changed in the future
-	   by setting a parameter. Calls mainGenericLaser after parsing.
+       by setting a parameter. Calls mainGenericLaser after parsing.
 
 \param argc: Number of Arguments
 \param argv: Argument variable

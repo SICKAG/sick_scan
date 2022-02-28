@@ -2,6 +2,16 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.12.0
+-------------------
+* bugfix #158 (driver terminates)
+* modified SOPAS-startup sequence
+
+
+1.11.0 (2021-07-13)
+-------------------
+* Added option min_intensity
+
 1.10.1 (2021-03-18)
 -------------------
 * Update ipconfig.md

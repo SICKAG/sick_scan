@@ -42,6 +42,7 @@ for sick_scan_launch_file in sick_tim_7xx.launch sick_tim_7xxS.launch ; do
     # rosservice call /sick_tim_7xx/ColaMsg "{request: 'sRN LIDinputstate'}" # response: "sRA LIDinputstate \\x00\\x00\\x00\\x00\\x00\\x00\\x01\\x00\\x00\\x00\\x00\\x00"
     # rostopic echo "/sick_tim_7xxS/lferec" &
     # rostopic echo "/sick_tim_7xxS/lidoutputstate" &
+    rostopic echo /diagnostics &
     
     # Wait for 'q' or 'Q' to exit or until rviz is closed
     while true ; do  
