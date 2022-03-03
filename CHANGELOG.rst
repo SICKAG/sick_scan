@@ -2,6 +2,10 @@
 Changelog for package sick_scan
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.12.1
+-------------------
+* Corrected angle shift parameter for LMS-4xxx
+
 1.12.0
 -------------------
 * bugfix #158 (driver terminates)

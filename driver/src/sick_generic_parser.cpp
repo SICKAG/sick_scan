@@ -346,7 +346,7 @@ namespace sick_scan
   {
     return this->maxEvalFields;
   }
-  
+
   void ScannerBasicParam::setMaxEvalFields(int _maxEvalFields)
   {
     this->maxEvalFields = _maxEvalFields;
@@ -514,7 +514,7 @@ namespace sick_scan
         basicParams[i].setScanMirroredAndShifted(false);
         basicParams[i].setUseEvalFields(EVAL_FIELD_UNSUPPORTED);
         basicParams[i].setMaxEvalFields(0);
-        basicParams[i].setScanAngleShift(0);
+        basicParams[i].setScanAngleShift(-M_PI/2);
       }
       if (basicParams[i].getScannerName().compare(SICK_SCANNER_TIM_7XX_NAME) == 0) // TIM_7xx - 1 Layer Scanner
       {
@@ -848,10 +848,10 @@ namespace sick_scan
                                         sensor_msgs::LaserScan &msg, int &numEchos, int &echoMask)
   {
     // echoMask introduced to get a workaround for cfg bug using MRS1104
-		// ros::NodeHandle tmpParam("~");
+        // ros::NodeHandle tmpParam("~");
     bool dumpData = false;
     int verboseLevel = 0;
-		// tmpParam.getParam("verboseLevel", verboseLevel);
+        // tmpParam.getParam("verboseLevel", verboseLevel);
 
     int HEADER_FIELDS = 32;
     char *cur_field;
