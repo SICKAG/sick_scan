@@ -319,7 +319,9 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
 
   sick_scan::SickScanConfig cfg;
 
-  while (ros::ok())
+  bool run = true;
+
+  while (ros::ok() && run)
   {
     switch (runState)
     {
@@ -380,10 +382,13 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
         {
           runState = scanner_finalize; // interrupt
         }
+        break;
       case scanner_finalize:
+        run = false;
         break; // ExitError or similiar -> interrupt while-Loop
       default:
         ROS_ERROR("Invalid run state in main loop");
+        run = false;
         break;
     }
   }
