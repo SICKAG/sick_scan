@@ -1,3 +1,5 @@
+# **IMPORTANT: This repository will not be maintained further. The sources have been completely transferred to the repository https://github.com/SICKAG/sick_scan_xd. The repository will be deleted after 12/31/2022 in 2023 without further notice.**
+
 # sick_scan
 
 This stack provides a ROS driver for the SICK lidar and radar sensors mentioned in the following list.
