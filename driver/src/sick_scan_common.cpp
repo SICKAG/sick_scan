@@ -362,41 +362,11 @@ namespace sick_scan
 #endif
     // datagram publisher (only for debug)
     ros::NodeHandle pn("~");
-    pn.param<bool>("publish_datagram", publish_datagram_, false);
-    if (publish_datagram_)
-    {
-      datagram_pub_ = nh_.advertise<std_msgs::String>("datagram", 1000);
-    }
-    std::string cloud_topic_val = "cloud";
-    pn.getParam("cloud_topic", cloud_topic_val);
-    std::string frame_id_val = cloud_topic_val;
-    pn.getParam("frame_id", frame_id_val);
 
+    pn.param<std::string>("frame_id", "scan");
 
-    cloud_marker_ = 0;
-    publish_lferec_ = false;
-    publish_lidoutputstate_ = false;
     const std::string scannername = parser_->getCurrentParamPtr()->getScannerName();
-    if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC || parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_LMS5XX_LOGIC)
-    {
-      lferec_pub_ = nh_.advertise<sick_scan::LFErecMsg>(scannername + "/lferec", 100);
-      lidoutputstate_pub_ = nh_.advertise<sick_scan::LIDoutputstateMsg>(scannername + "/lidoutputstate", 100);
-      publish_lferec_ = true;
-      publish_lidoutputstate_ = true;
-      cloud_marker_ = new sick_scan::SickScanMarker(&nh_, scannername + "/marker", frame_id_val); // "cloud");
-    }
 
-    // Pointcloud2 publisher
-    //
-
-
-    ROS_INFO("Publishing laserscan-pointcloud2 to %s", cloud_topic_val.c_str());
-    cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(cloud_topic_val, 100);
-
-    imuScan_pub_ = nh_.advertise<sensor_msgs::Imu>("imu", 100);
-
-
-    Encoder_pub = nh_.advertise<sick_scan::Encoder>("encoder", 100);
     // scan publisher
     pub_ = nh_.advertise<sensor_msgs::LaserScan>("scan", 1000);
 
@@ -1315,8 +1285,8 @@ namespace sick_scan
     bool useBinaryCmdNow = false;
     int maxCmdLoop = 2; // try binary and ascii during startup
 
-    const int shortTimeOutInMs = 5000; // during startup phase to check binary or ascii
-    const int defaultTimeOutInMs = 120000; // standard time out 120 sec.
+    const int shortTimeOutInMs = 1000; // during startup phase to check binary or ascii
+    const int defaultTimeOutInMs = 1000; // standard time out 120 sec.
 
     setReadTimeOutInMs(shortTimeOutInMs);
 
@@ -2861,22 +2831,7 @@ namespace sick_scan
         return ExitSuccess;
       } // return success to continue looping
 
-      // ----- if requested, skip frames
-      if (iteration_count++ % (config_.skip + 1) != 0)
-      {
-        return ExitSuccess;
-      }
-
       ROS_DEBUG_STREAM("SickScanCommon::loopOnce: received " << actual_length << " byte data " << DataDumper::binDataToAsciiString(&receiveBuffer[0], std::min(32, actual_length)) << " ... ");
-
-
-      if (publish_datagram_)
-      {
-        std_msgs::String datagram_msg;
-        datagram_msg.data = std::string(reinterpret_cast<char *>(receiveBuffer));
-        datagram_pub_.publish(datagram_msg);
-      }
-
 
       if (verboseLevel > 0)
       {
@@ -2928,11 +2883,6 @@ namespace sick_scan
         sick_scan::LIDoutputstateMsg outputstate_msg;
         if (sick_scan::SickScanMessages::parseLIDoutputstateMsg(recvTimeStamp, receiveBuffer, actual_length, useBinaryProtocol, scanner_name, outputstate_msg))
         {
-          // Publish LIDoutputstate message
-          if(publish_lidoutputstate_)
-          {
-            lidoutputstate_pub_.publish(outputstate_msg);
-          }
           if(cloud_marker_)
           {
             cloud_marker_->updateMarker(outputstate_msg, eval_field_logic);
@@ -2969,11 +2919,6 @@ namespace sick_scan
         EVAL_FIELD_SUPPORT eval_field_logic = parser_->getCurrentParamPtr()->getUseEvalFields(); // == USE_EVAL_FIELD_LMS5XX_LOGIC
         if (sick_scan::SickScanMessages::parseLFErecMsg(recvTimeStamp, receiveBuffer, actual_length, useBinaryProtocol, eval_field_logic, scanner_name, lferec_msg))
         {
-          // Publish LFErec message
-          if(publish_lferec_)
-          {
-            lferec_pub_.publish(lferec_msg);
-          }
           if(cloud_marker_)
           {
             cloud_marker_->updateMarker(lferec_msg, eval_field_logic);
@@ -3112,26 +3057,6 @@ namespace sick_scan
                   double DeltaTime = timestampfloat - timestampfloat_coor;
                   //ROS_INFO("%F,%F,%u,%u,%F",timestampfloat,timestampfloat_coor,SystemCountTransmit,SystemCountScan,DeltaTime);
                   //TODO Handle return values
-                  if (config_.sw_pll_only_publish == true && bRet == false)
-                  {
-                    int packets_expected_to_drop = SoftwarePLL::instance().fifoSize - 1;
-                    SoftwarePLL::instance().packeds_droped++;
-                    ROS_INFO("%i / %i Packet dropped Software PLL not yet locked.",
-                             SoftwarePLL::instance().packeds_droped, packets_expected_to_drop);
-                    if (SoftwarePLL::instance().packeds_droped == packets_expected_to_drop)
-                    {
-                      ROS_INFO("Software PLL is expected to be ready now!");
-                    }
-                    if (SoftwarePLL::instance().packeds_droped > packets_expected_to_drop)
-                    {
-                      ROS_WARN("More packages than expected were dropped!!\n"
-                               "Check the network connection.\n"
-                               "Check if the system time has been changed in a leap.\n"
-                               "If the problems can persist, disable the software PLL with the option sw_pll_only_publish=False  !");
-                    }
-                    dataToProcess = false;
-                    break;
-                  }
 
 #ifdef DEBUG_DUMP_ENABLED
                   double elevationAngleInDeg = elevationAngleInRad = -elevAngleX200 / 200.0;
@@ -3765,10 +3690,6 @@ namespace sick_scan
 
                 }
 #ifndef _MSC_VER
-                if (parser_->getCurrentParamPtr()->getEncoderMode() >= 0 && FireEncoder == true)//
-                {
-                  Encoder_pub.publish(EncoderMsg);
-                }
                 if (numOfLayers > 4)
                 {
                   sendMsg = false; // too many layers for publish as scan message. Only pointcloud messages will be pub.
@@ -3935,135 +3856,6 @@ namespace sick_scan
               if ((msg.header.seq == 0) || (msg.header.seq == 237))
               {
                 shallIFire = true;
-              }
-
-
-              static int layerCnt = 0;
-              static int layerSeq[4];
-
-              if (config_.cloud_output_mode > 0)
-              {
-
-                layerSeq[layerCnt % 4] = layer;
-                if (layerCnt >= 4)  // mind. erst einmal vier Layer zusammensuchen
-                {
-                  shallIFire = true; // here are at least 4 layers available
-                }
-                else
-                {
-                  shallIFire = false;
-                }
-
-                layerCnt++;
-              }
-
-              if (shallIFire) // shall i fire the signal???
-              {
-                if (config_.cloud_output_mode == 0)
-                {
-                  // standard handling of scans
-                  cloud_pub_.publish(cloud_);
-
-                }
-                else if (config_.cloud_output_mode == 2)
-                {
-                  // Following cases are interesting:
-                  // LMS5xx: seq is always 0 -> publish every scan
-                  // MRS1104: Every 4th-Layer is 0 -> publish pointcloud every 4th layer message
-                  // LMS1104: Publish every layer. The timing for the LMS1104 seems to be:
-                  //          Every 67 ms receiving of a new scan message
-                  //          Scan message contains 367 measurements
-                  //          angle increment is 0.75° (yields 274,5° covery -> OK)
-                  // MRS6124: Publish very 24th layer at the layer = 237 , MRS6124 contains no sequence with seq 0
-                  //BBB
-#ifndef _MSC_VER
-                  int numTotalShots = 360; //TODO where is this from ?
-                  int numPartialShots = 40; //
-
-                  for (int i = 0; i < numTotalShots; i += numPartialShots)
-                  {
-                    sensor_msgs::PointCloud2 partialCloud;
-                    partialCloud = cloud_;
-                    ros::Time partialTimeStamp = cloud_.header.stamp;
-
-                    partialTimeStamp += ros::Duration((i + 0.5 * (numPartialShots - 1)) * timeIncrement);
-                    partialTimeStamp += ros::Duration((3 * numTotalShots) * timeIncrement);
-                    partialCloud.header.stamp = partialTimeStamp;
-                    partialCloud.width = numPartialShots * 3;  // die sind sicher in diesem Bereich
-
-                    int diffTo1100 = cloud_.width - 3 * (numTotalShots + i);
-                    if (diffTo1100 > numPartialShots)
-                    {
-                      diffTo1100 = numPartialShots;
-                    }
-                    if (diffTo1100 < 0)
-                    {
-                      diffTo1100 = 0;
-                    }
-                    partialCloud.width += diffTo1100;
-                    // printf("Offset: %4d Breite: %4d\n", i, partialCloud.width);
-                    partialCloud.height = 1;
-
-
-                    partialCloud.is_bigendian = false;
-                    partialCloud.is_dense = true;
-                    partialCloud.point_step = numChannels * sizeof(float);
-                    partialCloud.row_step = partialCloud.point_step * partialCloud.width;
-                    partialCloud.fields.resize(numChannels);
-                    for (int ii = 0; ii < numChannels; ii++)
-                    {
-                      std::string channelId[] = {"x", "y", "z", "intensity"};
-                      partialCloud.fields[ii].name = channelId[ii];
-                      partialCloud.fields[ii].offset = ii * sizeof(float);
-                      partialCloud.fields[ii].count = 1;
-                      partialCloud.fields[ii].datatype = sensor_msgs::PointField::FLOAT32;
-                    }
-
-                    partialCloud.data.resize(partialCloud.row_step);
-
-                    int partOff = 0;
-                    for (int j = 0; j < 4; j++)
-                    {
-                      int layerIdx = (j + (layerCnt)) % 4;  // j = 0 -> oldest
-                      int rowIdx = 1 + layerSeq[layerIdx % 4]; // +1, da es bei -1 beginnt
-                      int colIdx = j * numTotalShots + i;
-                      int maxAvail = cloud_.width - colIdx; //
-                      if (maxAvail < 0)
-                      {
-                        maxAvail = 0;
-                      }
-
-                      if (maxAvail > numPartialShots)
-                      {
-                        maxAvail = numPartialShots;
-                      }
-
-                      // printf("Most recent LayerIdx: %2d RowIdx: %4d ColIdx: %4d\n", layer, rowIdx, colIdx);
-                      if (maxAvail > 0)
-                      {
-                        memcpy(&(partialCloud.data[partOff]),
-                               &(cloud_.data[(rowIdx * cloud_.width + colIdx + i) * cloud_.point_step]),
-                               cloud_.point_step * maxAvail);
-
-                      }
-
-                      partOff += maxAvail * partialCloud.point_step;
-                    }
-                    assert(partialCloud.data.size() == partialCloud.width * partialCloud.point_step);
-
-
-                    cloud_pub_.publish(partialCloud);
-#if 0
-                    memcpy(&(partialCloud.data[0]), &(cloud_.data[0]) + i * cloud_.point_step, cloud_.point_step * numPartialShots);
-                    cloud_pub_.publish(partialCloud);
-#endif
-                  }
-                }
-                //                cloud_pub_.publish(cloud_);
-
-#else
-                printf("PUBLISH:\n");
-#endif
               }
             }
           }

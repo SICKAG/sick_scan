@@ -620,7 +620,7 @@ namespace sick_scan
     */
     imuMsg_.header.stamp = timeStamp;
     imuMsg_.header.seq = 0;
-    imuMsg_.header.frame_id = commonPtr->config_.imu_frame_id; //
+    imuMsg_.header.frame_id = ""; //
 
 
 
@@ -760,75 +760,36 @@ namespace sick_scan
 
     }
 
-    if (commonPtr->config_.cloud_output_mode == 2)
-    {
-      imuMsg_.angular_velocity_covariance[0] = 0.02;
-      imuMsg_.angular_velocity_covariance[1] = 0;
-      imuMsg_.angular_velocity_covariance[2] = 0;
-      imuMsg_.angular_velocity_covariance[3] = 0;
-      imuMsg_.angular_velocity_covariance[4] = 0.02;
-      imuMsg_.angular_velocity_covariance[5] = 0;
-      imuMsg_.angular_velocity_covariance[6] = 0;
-      imuMsg_.angular_velocity_covariance[7] = 0;
-      imuMsg_.angular_velocity_covariance[8] = 0.02;
+    imuMsg_.angular_velocity_covariance[0] = 0;
+    imuMsg_.angular_velocity_covariance[1] = 0;
+    imuMsg_.angular_velocity_covariance[2] = 0;
+    imuMsg_.angular_velocity_covariance[3] = 0;
+    imuMsg_.angular_velocity_covariance[4] = 0;
+    imuMsg_.angular_velocity_covariance[5] = 0;
+    imuMsg_.angular_velocity_covariance[6] = 0;
+    imuMsg_.angular_velocity_covariance[7] = 0;
+    imuMsg_.angular_velocity_covariance[8] = 0;
 
-      imuMsg_.linear_acceleration_covariance[0] = 0.04;
-      imuMsg_.linear_acceleration_covariance[1] = 0;
-      imuMsg_.linear_acceleration_covariance[2] = 0;
-      imuMsg_.linear_acceleration_covariance[3] = 0;
-      imuMsg_.linear_acceleration_covariance[4] = 0.04;
-      imuMsg_.linear_acceleration_covariance[5] = 0;
-      imuMsg_.linear_acceleration_covariance[6] = 0;
-      imuMsg_.linear_acceleration_covariance[7] = 0;
-      imuMsg_.linear_acceleration_covariance[8] = 0.04;
+    imuMsg_.linear_acceleration_covariance[0] = 0;
+    imuMsg_.linear_acceleration_covariance[1] = 0;
+    imuMsg_.linear_acceleration_covariance[2] = 0;
+    imuMsg_.linear_acceleration_covariance[3] = 0;
+    imuMsg_.linear_acceleration_covariance[4] = 0;
+    imuMsg_.linear_acceleration_covariance[5] = 0;
+    imuMsg_.linear_acceleration_covariance[6] = 0;
+    imuMsg_.linear_acceleration_covariance[7] = 0;
+    imuMsg_.linear_acceleration_covariance[8] = 0;
 
-      imuMsg_.orientation_covariance[0] = 0.0025;
-      imuMsg_.orientation_covariance[1] = 0;
-      imuMsg_.orientation_covariance[2] = 0;
-      imuMsg_.orientation_covariance[3] = 0;
-      imuMsg_.orientation_covariance[4] = 0.0025;
-      imuMsg_.orientation_covariance[5] = 0;
-      imuMsg_.orientation_covariance[6] = 0;
-      imuMsg_.orientation_covariance[7] = 0;
-      imuMsg_.orientation_covariance[8] = 0.0025;
-    }
-    else
-    {
-      imuMsg_.angular_velocity_covariance[0] = 0;
-      imuMsg_.angular_velocity_covariance[1] = 0;
-      imuMsg_.angular_velocity_covariance[2] = 0;
-      imuMsg_.angular_velocity_covariance[3] = 0;
-      imuMsg_.angular_velocity_covariance[4] = 0;
-      imuMsg_.angular_velocity_covariance[5] = 0;
-      imuMsg_.angular_velocity_covariance[6] = 0;
-      imuMsg_.angular_velocity_covariance[7] = 0;
-      imuMsg_.angular_velocity_covariance[8] = 0;
+    imuMsg_.orientation_covariance[0] = 0;
+    imuMsg_.orientation_covariance[1] = 0;
+    imuMsg_.orientation_covariance[2] = 0;
+    imuMsg_.orientation_covariance[3] = 0;
+    imuMsg_.orientation_covariance[4] = 0;
+    imuMsg_.orientation_covariance[5] = 0;
+    imuMsg_.orientation_covariance[6] = 0;
+    imuMsg_.orientation_covariance[7] = 0;
+    imuMsg_.orientation_covariance[8] = 0;
 
-      imuMsg_.linear_acceleration_covariance[0] = 0;
-      imuMsg_.linear_acceleration_covariance[1] = 0;
-      imuMsg_.linear_acceleration_covariance[2] = 0;
-      imuMsg_.linear_acceleration_covariance[3] = 0;
-      imuMsg_.linear_acceleration_covariance[4] = 0;
-      imuMsg_.linear_acceleration_covariance[5] = 0;
-      imuMsg_.linear_acceleration_covariance[6] = 0;
-      imuMsg_.linear_acceleration_covariance[7] = 0;
-      imuMsg_.linear_acceleration_covariance[8] = 0;
-
-      imuMsg_.orientation_covariance[0] = 0;
-      imuMsg_.orientation_covariance[1] = 0;
-      imuMsg_.orientation_covariance[2] = 0;
-      imuMsg_.orientation_covariance[3] = 0;
-      imuMsg_.orientation_covariance[4] = 0;
-      imuMsg_.orientation_covariance[5] = 0;
-      imuMsg_.orientation_covariance[6] = 0;
-      imuMsg_.orientation_covariance[7] = 0;
-      imuMsg_.orientation_covariance[8] = 0;
-
-    }
-    if (true == bRet)
-    {
-      this->commonPtr->imuScan_pub_.publish(imuMsg_);
-    }
     return (exitCode);
 
   }

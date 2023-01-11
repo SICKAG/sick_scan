@@ -105,7 +105,7 @@ std::string getVersionInfo()
 
 enum NodeRunState
 {
-  scanner_init, scanner_run, scanner_finalize
+  scanner_init, scanner_run, scanner_finalize, scanner_wait
 };
 
 NodeRunState runState = scanner_init;  //
@@ -368,7 +368,6 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
         else
         {
           runState = scanner_init; // If there was an error, try to restart scanner
-
         }
         break;
 
@@ -380,12 +379,9 @@ int mainGenericLaser(int argc, char **argv, std::string nodeName)
         }
         else
         {
-          runState = scanner_finalize; // interrupt
+          runState = scanner_init; // interrupt
         }
         break;
-      case scanner_finalize:
-        run = false;
-        break; // ExitError or similiar -> interrupt while-Loop
       default:
         ROS_ERROR("Invalid run state in main loop");
         run = false;

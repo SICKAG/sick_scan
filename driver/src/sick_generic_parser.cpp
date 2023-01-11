@@ -1126,18 +1126,6 @@ namespace sick_scan
 
 
     checkForDistAndRSSI(fields, number_of_data, distNum, rssiNum, msg.ranges, msg.intensities, echoMask);
-    if (config.intensity)
-    {
-      if (rssiNum > 0)
-      {
-
-      }
-      else
-      {
-        ROS_WARN_ONCE("Intensity parameter is enabled, but the scanner is not configured to send RSSI values! "
-                      "Please read the section 'Enabling intensity (RSSI) output' here: http://wiki.ros.org/sick_tim.");
-      }
-    }
     numEchos = distNum;
 #endif
     // 26 + n: RSSI data included

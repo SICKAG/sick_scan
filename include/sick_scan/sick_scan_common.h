@@ -267,15 +267,6 @@ namespace sick_scan
       return replyToString(reply);
     }
 
-
-    // move back to private
-    /* FÜR MRS10000 brauchen wir einen Publish und eine NAchricht */
-    // Should we publish laser or point cloud?
-    // ros::Publisher cloud_pub_;
-    ros::Publisher cloud_pub_;
-    ros::Publisher imuScan_pub_;
-    ros::Publisher Encoder_pub;
-    // sensor_msgs::PointCloud cloud_;
     sensor_msgs::PointCloud2 cloud_;
     //////
     // Dynamic Reconfigure
@@ -345,13 +336,6 @@ namespace sick_scan
     // ROS
     ros::NodeHandle nh_;
     ros::Publisher pub_;
-    ros::Publisher datagram_pub_;
-    bool publish_datagram_;
-
-    ros::Publisher lferec_pub_;
-    bool publish_lferec_;
-    ros::Publisher lidoutputstate_pub_;
-    bool publish_lidoutputstate_;
     SickScanMarker* cloud_marker_;
 
     // Diagnostics
